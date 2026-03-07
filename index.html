@@ -1572,6 +1572,7 @@ button.danger:hover{background:#a00000;}
 <meta name="apple-mobile-web-app-title" content="Guitar">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -1774,6 +1775,8 @@ button.danger:hover{background:#a00000;}
 
   <!-- Export / Import at bottom -->
   <div style="margin-top:auto;padding-top:1rem;display:flex;flex-direction:column;gap:.4rem;">
+    <button class="sidebar-btn export" id="gdriveBtn" onclick="gdriveSync()" style="background:#1a1a2e;border:1px solid #2a2a5a;color:#7a9fff;">☁ Save to Google Drive</button>
+    <button class="sidebar-btn export" id="gdriveLoadBtn" onclick="gdriveLoad()" style="background:#1a1a2e;border:1px solid #2a2a5a;color:#7a9fff;">☁ Load from Google Drive</button>
     <button class="sidebar-btn export" onclick="exportData()">⬇ Export data</button>
     <button class="sidebar-btn export" onclick="importData()">⬆ Import data</button>
   </div>
@@ -7809,7 +7812,95 @@ function toggleCardsExpanded(){
 }
 
 
-initTuningAutocomplete();
+// ── Google Drive Sync ─────────────────────────────────
+const GDRIVE_CLIENT_ID = '550181738594-acuc7336far1ju0414hipacaq5peauvv.apps.googleusercontent.com';
+const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FILENAME = 'guitar-journal-data.json';
+let gdriveToken = null;
+
+function gdriveGetToken(callback){
+  if(gdriveToken){
+    callback(gdriveToken);
+    return;
+  }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope: GDRIVE_SCOPE,
+    callback: (resp) => {
+      if(resp.error){ showToast('Google sign-in failed'); return; }
+      gdriveToken = resp.access_token;
+      callback(gdriveToken);
+    }
+  });
+  client.requestAccessToken();
+}
+
+async function gdriveFindFile(token){
+  const res = await fetch(
+    'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27guitar-journal-data.json%27&fields=files(id,name)',
+    { headers: { Authorization: 'Bearer ' + token } }
+  );
+  const data = await res.json();
+  return data.files && data.files.length ? data.files[0].id : null;
+}
+
+async function gdriveSync(){
+  const btn = document.getElementById('gdriveBtn');
+  btn.textContent = '☁ Saving…'; btn.disabled = true;
+  gdriveGetToken(async token => {
+    try {
+      const json = JSON.stringify(state, null, 2);
+      const blob = new Blob([json], {type:'application/json'});
+      const fileId = await gdriveFindFile(token);
+      let url, method;
+      const meta = JSON.stringify({ name: GDRIVE_FILENAME, parents: fileId ? undefined : ['appDataFolder'] });
+
+      if(fileId){
+        url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
+        method = 'PATCH';
+      } else {
+        url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+        method = 'POST';
+      }
+      const form = new FormData();
+      form.append('metadata', new Blob([fileId ? '{}' : JSON.stringify({name:GDRIVE_FILENAME,parents:['appDataFolder']}), ], {type:'application/json'}));
+      form.append('file', blob);
+
+      const res = await fetch(url, { method, headers:{ Authorization:'Bearer '+token }, body: form });
+      if(res.ok){
+        showToast('Saved to Google Drive ✓');
+        localStorage.setItem('gdriveLastSync', new Date().toISOString());
+      } else {
+        const err = await res.json();
+        showToast('Drive save failed: ' + (err.error?.message||res.status));
+      }
+    } catch(e){ showToast('Drive error: ' + e.message); }
+    btn.textContent = '☁ Save to Google Drive'; btn.disabled = false;
+  });
+}
+
+async function gdriveLoad(){
+  const btn = document.getElementById('gdriveLoadBtn');
+  btn.textContent = '☁ Loading…'; btn.disabled = true;
+  gdriveGetToken(async token => {
+    try {
+      const fileId = await gdriveFindFile(token);
+      if(!fileId){ showToast('No backup found on Drive'); btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return; }
+      const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        { headers:{ Authorization:'Bearer '+token } }
+      );
+      if(!res.ok){ showToast('Drive load failed: ' + res.status); btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return; }
+      const data = await res.json();
+      if(!confirm('Load data from Google Drive? This will replace your current local data.'))
+        { btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return; }
+      state = data;
+      saveState();
+      location.reload();
+    } catch(e){ showToast('Drive error: ' + e.message); }
+    btn.textContent = '☁ Load from Google Drive'; btn.disabled = false;
+  });
+}
 loadState();
 renderSystemTiles();
 renderPlaylists();
