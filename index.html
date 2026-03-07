@@ -2292,6 +2292,7 @@ body.player-active .home-hamburger { bottom: 66px; }
         <div id="viewerArtist" class="viewer-artist"></div>
       </div>
       <div class="viewer-header-btns">
+        <a id="viewerYTBtn" href="#" target="_blank" rel="noopener" style="font-size:.72rem;padding:3px 8px;border-radius:7px;background:none;border:1px solid #444;color:#cc2200;text-decoration:none;display:inline-flex;align-items:center;gap:3px;" onclick="updateYTLink()">▶ YT</a>
         <button class="ghost" onclick="closeSongViewer()" style="font-size:.75rem;padding:3px 8px;">✕</button>
       </div>
     </div>
@@ -3634,6 +3635,14 @@ function openSongViewer(id){
 
   songViewer.classList.add('active');
   _updateViewerAudioBtns();
+  updateYTLink();
+}
+
+function updateYTLink(){
+  if(!activeSong) return;
+  const q = encodeURIComponent((activeSong.artist ? activeSong.artist + ' ' : '') + activeSong.title + ' audio');
+  const btn = document.getElementById('viewerYTBtn');
+  if(btn) btn.href = 'https://www.youtube.com/results?search_query=' + q;
 }
 
 function renderViewerMeta(){
