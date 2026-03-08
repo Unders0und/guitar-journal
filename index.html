@@ -1970,6 +1970,21 @@ body.player-active .app { padding-bottom: 68px; }
     <button class="sdn-btn" onclick="homeNavDate(1)">▶</button>
   </div>
 
+  <!-- Preset selector -->
+  <div style="margin-bottom:.5rem;">
+    <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem;">Session Preset</div>
+    <div style="display:flex;gap:5px;">
+      <button id="presetBtn-1" onclick="setHomePreset(1)" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">Auto</button>
+      <button id="presetBtn-2" onclick="setHomePreset(2)" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">Until…</button>
+      <button id="presetBtn-3" onclick="setHomePreset(3)" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">Manual</button>
+    </div>
+    <div id="preset2EndTimeRow" style="display:none;margin-top:.4rem;display:none;">
+      <input type="time" id="preset2EndTime" step="300"
+        style="width:100%;background:#1a1a1a;border:1px solid #333;color:#eee;border-radius:7px;padding:.3rem .5rem;font-size:.85rem;box-sizing:border-box;"
+        onchange="updatePreset2Countdown()" />
+    </div>
+  </div>
+
   <!-- Setup / Reset -->
   <div class="sidebar-actions">
     <button class="sidebar-btn setup" onclick="practiceSessionSetupHome()">⚡ セッション準備</button>
@@ -3146,31 +3161,91 @@ function _renderSvMeta(){
 
 function _renderSvSections(){
   const container = document.getElementById('svSections');
-  const src = document.getElementById('sections');
-  if(container && src) container.innerHTML = src.innerHTML;
-  // Re-attach click events by mirroring renderSections logic
   if(!activeSong || !container) return;
   container.innerHTML = '';
-  const sections = activeSong.sections || [];
+  const sections = (activeSong.notes && activeSong.notes.sections) || [];
   sections.forEach((sec, idx) => {
     const row = document.createElement('div');
-    row.className = 'section-row';
-    if(_activeSectionIdx === idx) row.classList.add('loop-active');
+    row.className = 'section-row' + (sectionEditMode ? ' edit-row' : '');
+
+    // name
+    let nameEl;
+    if(sectionEditMode){
+      nameEl = document.createElement('input');
+      nameEl.className = 'sec-name-input';
+      nameEl.value = sec.name || '';
+      nameEl.placeholder = 'Section name';
+      nameEl.oninput = () => { sec.name = nameEl.value; saveState(); };
+    } else {
+      nameEl = document.createElement('span');
+      nameEl.className = 'sec-name';
+      const hasNotes = sec.notes && sec.notes.trim().length > 0;
+      nameEl.innerHTML = (sec.name || `Section ${idx+1}`) +
+        (hasNotes ? ' <span style="font-size:.65rem;opacity:.7;">📄</span>' : '');
+    }
+
+    // from / sep / to
+    const fromEl = document.createElement('span');
+    fromEl.className = 'sec-time' + (sectionEditMode ? ' editable' : '');
+    fromEl.textContent = sec.from || '--:--';
+    if(sectionEditMode) fromEl.onclick = () => openWheelPicker('From', sec.from, v => { sec.from = v; fromEl.textContent = v; saveState(); renderSections(); });
+
+    const sepEl = document.createElement('span');
+    sepEl.className = 'sec-sep';
+    sepEl.textContent = '–';
+
+    const toEl = document.createElement('span');
+    toEl.className = 'sec-time' + (sectionEditMode ? ' editable' : '');
+    toEl.textContent = sec.to || '--:--';
+    if(sectionEditMode) toEl.onclick = () => openWheelPicker('To', sec.to, v => { sec.to = v; toEl.textContent = v; saveState(); renderSections(); });
+
+    // checkbox proxy
+    const proxy = document.createElement('span');
+    proxy.className = 'sec-check';
+    proxy.style.cssText = 'font-size:1rem;cursor:pointer;flex-shrink:0;justify-self:center;user-select:none;';
+    proxy.title = 'Double-tap to toggle';
+    const updateProxy = () => { proxy.textContent = sec.learned ? '☑' : '☐'; proxy.style.color = sec.learned ? 'var(--known)' : '#555'; };
+    updateProxy();
+    let lastTap = 0;
+    proxy.onclick = e => {
+      e.stopPropagation();
+      const now = Date.now();
+      if(now - lastTap < 400){ sec.learned = !sec.learned; updateProxy(); saveState(); renderProgressBar(); }
+      lastTap = now;
+    };
+
+    // delete
+    const del = document.createElement('button');
+    del.className = 'sec-delete';
+    del.textContent = '✕';
+    del.onclick = e => {
+      e.stopPropagation();
+      const name = sec.name || `Section ${idx+1}`;
+      if(!window.confirm(`Delete "${name}"?`)) return;
+      activeSong.notes.sections.splice(idx, 1);
+      saveState();
+      renderSections();
+      renderProgressBar();
+    };
+
+    row.appendChild(nameEl);
+    row.appendChild(fromEl);
+    row.appendChild(sepEl);
+    row.appendChild(toEl);
+    row.appendChild(proxy);
+    row.appendChild(del);
+
     if(!sectionEditMode){
-      row.innerHTML = `<span class="sec-time">${sec.start || '0:00'}</span><span class="sec-name">${escHtml(sec.name||'')}</span>`;
       row.onclick = () => {
         const audio = document.getElementById('playerAudio');
         if(!audio || !audio.src){ openSectionNotes(idx); return; }
         if(!_sectionLoopMode){ openSectionNotes(idx); return; }
         if(_activeSectionIdx === idx){ openSectionNotes(idx); return; }
-        setSectionAsLoop(sec.start, row);
+        setSectionAsLoop(sec.from, row);
       };
-    } else {
-      row.innerHTML = `
-        <span class="sec-time" onclick="openWheelPicker('Start',${JSON.stringify(sec.start||'0:00')},v=>{activeSong.sections[${idx}].start=v;saveState();renderSections();_renderSvSections();})" style="cursor:pointer;">${sec.start||'0:00'}</span>
-        <input class="sec-name-input" value="${escHtml(sec.name||'')}" oninput="activeSong.sections[${idx}].name=this.value;saveState();" />
-        <button class="sec-del-btn" onclick="activeSong.sections.splice(${idx},1);saveState();renderSections();_renderSvSections();">✕</button>`;
     }
+
+    if(_activeSectionIdx === idx) row.classList.add('loop-active');
     container.appendChild(row);
   });
 }
@@ -5519,13 +5594,19 @@ function importData(){
 
   i.onchange=e=>{
     const f=e.target.files[0];
-    if(!f)return;
+    if(!f) return;
 
     const r=new FileReader();
     r.onload=()=>{
-      state=JSON.parse(r.result);
-      saveState();
-      renderPlaylists();
+      try {
+        const imported = JSON.parse(r.result);
+        if(!confirm('Import this file? It will replace all your current data.')) return;
+        state = imported;
+        saveState();
+        location.reload();
+      } catch(err) {
+        showToast('Import failed: invalid JSON file');
+      }
     };
     r.readAsText(f);
   };
@@ -8339,6 +8420,7 @@ function updateGoalTimerDisplay(k){
   if(el) el.textContent=homeSecToDisplay(homeGoalTimers[k].remaining);
 }
 function updateHomeTotalDisplay(){
+  if(_homePreset === 2) return; // preset 2 controls display via countdown
   const dec=Number(document.getElementById('homeTotalVal').value)||0;
   const el=document.getElementById('homeTotalDisplay');
   if(el) el.textContent=homeSecToDisplay(Math.round(dec*3600));
@@ -8346,6 +8428,9 @@ function updateHomeTotalDisplay(){
 }
 
 function toggleGoalTimer(k){
+  // Green mode: clock is a display only, not a countdown
+  const data=(state.practiceLog||{})[homeViewDate];
+  if(data && data.finished) return;
   const t=homeGoalTimers[k];
   if(t.remaining===0){
     const dec=Number(document.getElementById(`goalVal-${k}`).value)||0;
@@ -8433,7 +8518,6 @@ function startGoalTimer(k){
   },1000);
   t.running=true;
   document.getElementById(`gcTimer-${k}`)?.classList.add('running');
-  savePracticeHome(true); // silent auto-save: persists goals, notes, allocations
   saveTimerState();
 }
 
@@ -8454,7 +8538,7 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){
     // Save right before Android might kill the tab
     if(['t1','t2','t3'].some(k => homeGoalTimers[k].running)){
-      savePracticeHome(true);
+      savePracticeHome(true); // silent = won't mark finished
       saveTimerState();
     }
   } else {
@@ -8493,9 +8577,21 @@ function goalTimerSetTime(k){
   picker.onchange=()=>{
     const dec=homeTimeToDecimal(picker.value);
     document.getElementById(`goalVal-${k}`).value=dec.toFixed(2);
-    homeGoalTimers[k].initial=homeDeclToSec(dec);
-    homeGoalTimers[k].remaining=homeGoalTimers[k].initial;
-    updateGoalTimerDisplay(k); homeValidate();
+    const sec=homeDeclToSec(dec);
+    const data=(state.practiceLog||{})[homeViewDate];
+    if(data && data.finished){
+      // Green mode: value IS the elapsed time — store directly, don't treat as countdown
+      const elapsedKey={t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+      data[elapsedKey]=sec;
+      // Recompute total elapsed
+      data.elapsedTotal=(data.elapsedT1||0)+(data.elapsedT2||0)+(data.elapsedT3||0);
+      updateFinishedTimerDisplay(data);
+      homeValidate();
+    } else {
+      homeGoalTimers[k].initial=sec;
+      homeGoalTimers[k].remaining=sec;
+      updateGoalTimerDisplay(k); homeValidate();
+    }
   };
 }
 function homeTotalSetTime(){
@@ -8523,6 +8619,7 @@ function homeValidate(){
   const v3=Number(document.getElementById('goalVal-t3').value)||0;
   const sum=v1+v2+v3;
   ['t1','t2','t3'].forEach(k=>{ const el=document.getElementById(`goalWarn-${k}`); if(el) el.textContent=''; });
+  if(_homePreset !== 1) return; // no ideal-split hints on presets 2/3
   if(sum>total+0.001){
     ['t1','t2','t3'].forEach(k=>{ const el=document.getElementById(`goalWarn-${k}`); if(el) el.textContent='Buckets exceed total'; });
   } else if(total>0){
@@ -8530,7 +8627,11 @@ function homeValidate(){
     const vals={t1:v1,t2:v2,t3:v3}, thresh={t1:0.3,t2:0.2,t3:0.2};
     ['t1','t2','t3'].forEach(k=>{
       const el=document.getElementById(`goalWarn-${k}`);
-      if(el&&Math.abs(vals[k]-ideals[k])>thresh[k]) el.textContent=`Ideal ≈ ${ideals[k].toFixed(1)}h`;
+      const sec = Math.round(ideals[k] * 3600);
+      const hh = Math.floor(sec / 3600);
+      const mm = Math.floor((sec % 3600) / 60);
+      const clock = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+      if(el&&Math.abs(vals[k]-ideals[k])>thresh[k]) el.textContent=`Ideal → ${clock}`;
     });
   }
 }
@@ -8601,12 +8702,19 @@ function homeLoadDay(date){
 function savePracticeHome(silent){
   if(!state.practiceLog) state.practiceLog={};
   const existing=state.practiceLog[homeViewDate]||{};
-  // Compute elapsed for each timer (initial - remaining)
-  const elapsed={};
-  ['t1','t2','t3'].forEach(k=>{
-    const t=homeGoalTimers[k];
-    elapsed[k]=Math.max(0, t.initial - t.remaining);
-  });
+  // If already finished and we're doing a manual re-save, use existing elapsed
+  // (user may have manually adjusted via 🕒 — those are stored directly in existing)
+  let elapsed={};
+  if(existing.finished && !silent){
+    // Preserve whatever elapsed values are already stored (possibly hand-edited)
+    elapsed={t1:existing.elapsedT1||0, t2:existing.elapsedT2||0, t3:existing.elapsedT3||0};
+  } else {
+    // Normal: compute from initial - remaining
+    ['t1','t2','t3'].forEach(k=>{
+      const t=homeGoalTimers[k];
+      elapsed[k]=Math.max(0, t.initial - t.remaining);
+    });
+  }
   const totalElapsed=elapsed.t1+elapsed.t2+elapsed.t3;
   state.practiceLog[homeViewDate]={
     total: document.getElementById('homeTotalVal').value,
@@ -8620,7 +8728,7 @@ function savePracticeHome(silent){
     notesM:  document.getElementById('goalNotes-t2').value,
     notesO:  document.getElementById('goalNotes-t3').value,
     linksW: existing.linksW||[], linksM: existing.linksM||[], linksO: existing.linksO||[],
-    finished: true,
+    finished: !silent,  // only mark finished on manual save
     elapsedT1: elapsed.t1,
     elapsedT2: elapsed.t2,
     elapsedT3: elapsed.t3,
@@ -8724,6 +8832,39 @@ function homeGetWeekNumber(){
 
 function practiceSessionSetupHome(){
   if(homeGoalTimers.t1.running||homeGoalTimers.t2.running||homeGoalTimers.t3.running) return;
+
+  if(_homePreset === 3){
+    // Manual: zero everything, reset goal selects to placeholder
+    document.getElementById('homeTotalVal').value = '0';
+    updateHomeTotalDisplay();
+    ['t1','t2','t3'].forEach(k=>{
+      document.getElementById(`goalVal-${k}`).value = '0';
+      homeGoalTimers[k].initial = 0;
+      homeGoalTimers[k].remaining = 0;
+      updateGoalTimerDisplay(k);
+      document.getElementById(`goalSelect-${k}`).value = '';
+    });
+    updateAllGoalLabels(); homeValidate();
+    return;
+  }
+
+  if(_homePreset === 2){
+    // Until preset: set header to countdown, leave timers for user to fill manually
+    const input = document.getElementById('preset2EndTime');
+    if(!input || !input.value){ showToast('Set an end time first'); return; }
+    updatePreset2Countdown();
+    // zero out goal timers so user fills manually
+    ['t1','t2','t3'].forEach(k=>{
+      document.getElementById(`goalVal-${k}`).value = '0';
+      homeGoalTimers[k].initial = 0;
+      homeGoalTimers[k].remaining = 0;
+      updateGoalTimerDisplay(k);
+    });
+    updateAllGoalLabels(); homeValidate();
+    return;
+  }
+
+  // Preset 1 (original): calculate time until 3am, auto-split 50/25/25
   const now=new Date(); let target=new Date(now);
   target.setHours(3,0,0,0);
   if(now>target) target.setDate(target.getDate()+1);
@@ -8756,6 +8897,89 @@ function practiceResetHome(){
   });
   document.getElementById('homeTotalVal').value='0'; updateHomeTotalDisplay();
 }
+
+// ── Presets ──────────────────────────────────────────────
+let _homePreset = 1; // 1=auto, 2=until, 3=manual
+let _preset2Interval = null;
+
+function setHomePreset(n){
+  _homePreset = n;
+  if(state) state.homePreset = n;
+  saveState();
+  _renderPresetUI();
+}
+
+function _renderPresetUI(){
+  [1,2,3].forEach(n => {
+    const btn = document.getElementById(`presetBtn-${n}`);
+    if(!btn) return;
+    const active = _homePreset === n;
+    btn.style.background  = active ? '#252540' : '#1a1a1a';
+    btn.style.borderColor = active ? 'var(--accent)' : '#333';
+    btn.style.color       = active ? 'var(--accent)' : '#aaa';
+  });
+  const row = document.getElementById('preset2EndTimeRow');
+  if(row) row.style.display = _homePreset === 2 ? 'block' : 'none';
+  // restart countdown if preset 2 active
+  if(_homePreset === 2){
+    _startPreset2Countdown();
+  } else {
+    _stopPreset2Countdown();
+  }
+  homeValidate();
+}
+
+function _stopPreset2Countdown(){
+  if(_preset2Interval){ clearInterval(_preset2Interval); _preset2Interval = null; }
+}
+
+function _startPreset2Countdown(){
+  _stopPreset2Countdown();
+  updatePreset2Countdown(); // immediate tick
+  _preset2Interval = setInterval(updatePreset2Countdown, 1000);
+}
+
+function updatePreset2Countdown(){
+  if(_homePreset !== 2) return;
+  const input = document.getElementById('preset2EndTime');
+  if(!input || !input.value) return;
+  const [hh, mm] = input.value.split(':').map(Number);
+  const now = new Date();
+  let end = new Date(now);
+  end.setHours(hh, mm, 0, 0);
+  if(end <= now) end.setDate(end.getDate() + 1); // next occurrence
+  const secsLeft = Math.max(0, Math.floor((end - now) / 1000));
+  const h = Math.floor(secsLeft / 3600);
+  const m = Math.floor((secsLeft % 3600) / 60);
+  const s = secsLeft % 60;
+  const display = document.getElementById('homeTotalDisplay');
+  if(display){
+    display.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    display.style.color = secsLeft < 1800 ? '#ff6b6b' : ''; // red if < 30min
+  }
+}
+
+function initHomePreset(){
+  _homePreset = (state && state.homePreset) || 1;
+  // restore preset 2 end time if saved
+  if(_homePreset === 2 && state && state.homePreset2EndTime){
+    const input = document.getElementById('preset2EndTime');
+    if(input) input.value = state.homePreset2EndTime;
+  }
+  _renderPresetUI();
+}
+
+// Save preset2 end time when changed
+document.addEventListener('DOMContentLoaded', () => {
+  const p2input = document.getElementById('preset2EndTime');
+  if(p2input){
+    p2input.addEventListener('change', () => {
+      if(state) state.homePreset2EndTime = p2input.value;
+      saveState();
+      _startPreset2Countdown();
+    });
+  }
+});
 
 function toggleSidebarYearCal(){
   const cal = document.getElementById('sidebarYearCal');
@@ -9187,8 +9411,19 @@ const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const GDRIVE_FILENAME = 'guitar-journal-data.json';
 let gdriveToken = null;
 
+function _gdriveTokenValid(){
+  const stored = localStorage.getItem('gdriveToken');
+  const expiry = parseInt(localStorage.getItem('gdriveTokenExpiry') || '0', 10);
+  if(stored && Date.now() < expiry - 60000){ // 1 min buffer
+    gdriveToken = stored;
+    return true;
+  }
+  gdriveToken = null;
+  return false;
+}
+
 function gdriveGetToken(callback){
-  if(gdriveToken){
+  if(_gdriveTokenValid()){
     callback(gdriveToken);
     return;
   }
@@ -9198,6 +9433,9 @@ function gdriveGetToken(callback){
     callback: (resp) => {
       if(resp.error){ showToast('Google sign-in failed'); return; }
       gdriveToken = resp.access_token;
+      // tokens last 3600s — store with expiry
+      localStorage.setItem('gdriveToken', gdriveToken);
+      localStorage.setItem('gdriveTokenExpiry', Date.now() + (resp.expires_in || 3600) * 1000);
       callback(gdriveToken);
     }
   });
@@ -9236,6 +9474,15 @@ async function gdriveSync(){
       form.append('file', blob);
 
       const res = await fetch(url, { method, headers:{ Authorization:'Bearer '+token }, body: form });
+      if(res.status === 401){
+        // Token expired — clear and retry once
+        localStorage.removeItem('gdriveToken');
+        localStorage.removeItem('gdriveTokenExpiry');
+        gdriveToken = null;
+        btn.textContent = '☁ Save to Google Drive'; btn.disabled = false;
+        showToast('Session expired — please try again');
+        return;
+      }
       if(res.ok){
         showToast('Saved to Google Drive ✓');
         localStorage.setItem('gdriveLastSync', new Date().toISOString());
@@ -9259,7 +9506,17 @@ async function gdriveLoad(){
         `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
         { headers:{ Authorization:'Bearer '+token } }
       );
-      if(!res.ok){ showToast('Drive load failed: ' + res.status); btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return; }
+      if(!res.ok){
+        if(res.status === 401){
+          localStorage.removeItem('gdriveToken');
+          localStorage.removeItem('gdriveTokenExpiry');
+          gdriveToken = null;
+          showToast('Session expired — please try again');
+        } else {
+          showToast('Drive load failed: ' + res.status);
+        }
+        btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return;
+      }
       const data = await res.json();
       if(!confirm('Load data from Google Drive? This will replace your current local data.'))
         { btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return; }
@@ -9274,6 +9531,7 @@ loadState();
 renderSystemTiles();
 renderPlaylists();
 initHomeGoalCards();
+initHomePreset();
 
 // ══ AUDIO PLAYER ══════════════════════════════════════════
 
