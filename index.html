@@ -367,6 +367,153 @@ h2{font-size:.85rem;color:var(--muted);margin:1.2rem 0 .5rem;text-transform:uppe
   .grid { grid-template-columns: repeat(6, 1fr); }
 }
 
+/* ── Tile carousel ─────────────────────────────────── */
+/* ── Tile carousel — mirrors goal-cards pattern exactly ── */
+.tile-cards-wrap {
+  position: relative;
+  margin: 0 -1rem;
+  overflow: hidden;
+}
+.tile-cards-scroll {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 0;
+  padding: 0;
+}
+.tile-cards-scroll::-webkit-scrollbar { display: none; }
+.tile-cards-page {
+  flex: 0 0 100%;
+  min-width: 100%;
+  scroll-snap-align: start;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+.tile-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: .5rem;
+}
+.tile-carousel-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #333;
+  cursor: pointer;
+  transition: background .2s;
+}
+.tile-carousel-dot.active { background: var(--accent); }
+
+/* ══ Split View ══════════════════════════════════════════ */
+#splitView {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 185; /* BELOW expanded player (190) and mini player (180) */
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform .3s ease;
+}
+#splitView.open {
+  transform: translateY(0);
+}
+#splitViewInner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.sv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .6rem 1rem .4rem;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
+}
+.sv-header-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sv-title-text {
+  font-size: .88rem;
+  font-weight: 700;
+  color: #eee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sv-artist-text {
+  font-size: .7rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.sv-close-btn {
+  background: none;
+  border: none;
+  color: #555;
+  font-size: .85rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  flex-shrink: 0;
+}
+/* Mobile: single-panel scroll-snap */
+.sv-track {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  min-height: 0;
+}
+.sv-track::-webkit-scrollbar { display: none; }
+.sv-panel {
+  flex: 0 0 100%;
+  min-width: 100%;
+  scroll-snap-align: start;
+  overflow-y: auto;
+  padding: .75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.sv-state-tags { cursor: pointer; }
+.sv-state-editor { margin-top: .3rem; }
+.sv-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: .4rem 0 .5rem;
+  flex-shrink: 0;
+}
+.sv-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #333;
+  cursor: pointer;
+  transition: background .2s;
+}
+.sv-dot.active { background: var(--accent); }
+
+/* Desktop: two columns side by side */
+@media (min-width: 700px) {
+  .sv-track {
+    overflow-x: hidden;
+    scroll-snap-type: none;
+  }
+  .sv-panel {
+    flex: 0 0 50%;
+    min-width: 0;
+  }
+  .sv-dots { display: none; }
+}
+
 .tile {
   aspect-ratio: 1/1;
   background: var(--card);
@@ -502,6 +649,8 @@ button.ghost{background:none;color:var(--muted)}
 .modal-content{background:var(--card);border-radius:16px;padding:1rem;width:90%;max-width:480px;max-height:85vh;overflow-y:auto}
 .modal-content label{display:block;font-size:.7rem;color:var(--muted);margin-top:.6rem}
 .modal-content input,.modal-content textarea{width:100%;padding:.4rem;border-radius:6px;border:none;background:#222;color:#fff;margin-top:.2rem;font-family:inherit}
+#splitView label{display:block;font-size:.7rem;color:var(--muted);margin-top:.6rem}
+#splitView input,#splitView textarea{width:100%;padding:.4rem;border-radius:6px;border:none;background:#222;color:#fff;margin-top:.2rem;font-family:inherit;box-sizing:border-box;}
 .modal-actions{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-top:1rem}
 .modal-actions-left{display:flex;gap:.5rem;}
 .modal-actions-right{display:flex;gap:.5rem;}
@@ -777,19 +926,27 @@ button.danger:hover{background:#a00000;}
 #clearFiltersBtn { font-size:.68rem; padding:3px 7px; }
 
 /* ── Section list ─────────────────────────────────── */
-.section-list { display:flex; flex-direction:column; margin-bottom:.4rem; overflow:hidden; }
+.section-list { display:flex; flex-direction:column; margin-bottom:.4rem; overflow:hidden; border:1px solid #1e1e1e; border-radius:8px; }
 
 .section-row {
   display:grid;
   grid-template-columns: 1fr 36px 4px 36px 18px;
   align-items:center; gap:4px;
-  padding:5px 2px; border-bottom:1px solid #1e1e1e;
+  padding:7px 10px;
+  border-bottom:1px solid #1e1e1e;
   min-width:0;
+  cursor:pointer;
+  transition:background .12s;
 }
+.section-row:hover { background:#1a1a1a; }
+.section-row:last-child { border-bottom:none; }
 .section-row.edit-row {
   grid-template-columns: 16px 1fr 36px 4px 36px 18px 22px;
+  cursor:default;
 }
-.section-row:last-child { border-bottom:none; }
+.section-row.edit-row:hover { background:none; }
+.section-row.loop-active { background:#1a1a2e; }
+.section-row.section-nav-focused { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 .sec-drag   { color:var(--muted); font-size:.9rem; cursor:grab; display:none; justify-self:center; }
 .sec-name   { font-size:.82rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
@@ -941,6 +1098,9 @@ button.danger:hover{background:#a00000;}
 }
 #songViewer .modal-content {
   padding: 1rem;
+  width: 90%;
+  max-width: 600px;
+  max-height: 92svh;
 }
 
 .viewer-header {
@@ -1048,11 +1208,12 @@ button.danger:hover{background:#a00000;}
 /* Danger/remove buttons in viewer footer */
 .viewer-footer {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 5px;
   margin-top: .75rem;
   padding-top: .5rem;
   border-top: 1px solid #222;
+  flex-wrap: wrap;
 }
 .viewer-footer-left   { display: flex; gap: 5px; flex: 1; }
 .viewer-footer-middle { display: flex; justify-content: center; flex: 1; }
@@ -1393,15 +1554,13 @@ button.danger:hover{background:#a00000;}
 /* ── Audio Player ────────────────────────────────────── */
 #miniPlayer{position:fixed;bottom:0;left:0;right:0;z-index:180;background:#111;border-top:1px solid #2a2a2a;transition:transform .25s ease;}
 #miniPlayer.hidden{transform:translateY(100%);}
-#miniPlayer.minimized .mp-main{display:none;}
-.mp-minimized-tab{display:none;align-items:center;justify-content:center;padding:5px;cursor:pointer;gap:8px;font-size:.7rem;color:var(--muted);}
-#miniPlayer.minimized .mp-minimized-tab{display:flex;}
 .mp-main{display:flex;align-items:center;gap:8px;padding:7px 12px;}
 .mp-song-info{flex:0 0 auto;max-width:110px;cursor:pointer;}
 .mp-title{font-size:.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e0e0e0;}
 .mp-speed-badge{font-size:.58rem;color:var(--accent);background:rgba(155,89,182,.15);border-radius:4px;padding:1px 5px;margin-top:1px;display:inline-block;}
 .mp-progress-wrap{flex:1;height:4px;background:#2a2a2a;border-radius:2px;cursor:pointer;position:relative;margin:0 4px;}
 .mp-progress-fill{height:100%;background:var(--accent);border-radius:2px;pointer-events:none;}
+.mp-time{font-size:.62rem;color:var(--muted);white-space:nowrap;flex-shrink:0;}
 .mp-play-btn{background:var(--accent);border:none;border-radius:50%;width:34px;height:34px;font-size:.95rem;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .mp-icon-btn{background:none;border:none;color:#666;font-size:.9rem;cursor:pointer;padding:4px;flex-shrink:0;}
 .mp-icon-btn:hover{color:#aaa;}
@@ -1412,12 +1571,13 @@ button.danger:hover{background:#a00000;}
 .ep-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.6rem;}
 .ep-title{font-size:.88rem;font-weight:700;color:#eee;}
 .ep-artist{font-size:.7rem;color:var(--muted);margin-top:2px;}
-.ep-filename{font-size:.62rem;color:#444;margin-top:2px;}
+.ep-time-display{font-size:.68rem;color:var(--muted);white-space:nowrap;flex-shrink:0;margin:0 8px;align-self:center;}
 .ep-close{background:none;border:none;color:#555;font-size:1rem;cursor:pointer;padding:4px;}
 
 .ep-waveform-wrap{position:relative;height:72px;background:#1a1a1a;border-radius:8px;overflow:hidden;cursor:crosshair;margin-bottom:.5rem;}
 #waveformCanvas{width:100%;height:100%;display:block;}
-.ep-playhead{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.8);pointer-events:none;}
+.ep-playhead{position:absolute;top:0;bottom:0;width:3px;background:rgba(255,255,255,.9);pointer-events:auto;cursor:ew-resize;transform:translateX(-50%);z-index:3;}
+.ep-playhead::before{content:'';position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:10px;height:10px;background:#fff;border-radius:50%;}
 .ep-loop-region{position:absolute;top:0;bottom:0;background:rgba(155,89,182,.2);pointer-events:none;}
 .ep-loop-handle{position:absolute;top:0;bottom:0;width:16px;cursor:ew-resize;display:flex;align-items:center;justify-content:center;z-index:2;}
 .ep-loop-handle::after{content:'';width:3px;height:70%;border-radius:2px;}
@@ -1452,6 +1612,7 @@ body.player-active .playlist-bottom-bar,
 body.player-active #techniquesBottomBar,
 body.player-active #practiceBottomBar { bottom: 52px; }
 body.player-active .home-hamburger { bottom: 66px; }
+body.player-active .app { padding-bottom: 68px; }
 
 /* ── Home keyboard navigation ───────────────────────── */
 .tile:focus, .square-playlist:focus {
@@ -1645,8 +1806,8 @@ body.player-active .home-hamburger { bottom: 66px; }
 <div id="home" class="view active">
 
   <!-- Top strip: total + hamburger -->
-  <div class="home-total-strip" onclick="toggleCardsExpanded()">
-    <div class="hts-label">Today's practice</div>
+  <div class="home-total-strip">
+    <div class="hts-label" id="htsPracticeLabel">今日の練習</div>
     <div class="hts-center-row">
       <button class="hts-btn" onclick="event.stopPropagation();homeTotalSetTime()">🕒</button>
       <input type="time" id="homeTotalPicker" step="300" style="display:none;">
@@ -1661,7 +1822,7 @@ body.player-active .home-hamburger { bottom: 66px; }
     <div class="goal-cards-scroll" id="goalCardsScroll">
 
       <!-- Card: Weekly -->
-      <div class="goal-card" id="goalCard-t1">
+      <div class="goal-card" id="goalCard-t1" onclick="onGoalCardTap(event,'t1')">
         <div class="gc-header">
           <span class="gc-title">今週の目標 <span style="color:#555;font-size:.6rem;">(2×)</span></span>
           <span class="gc-goal-label" id="gcGoalLabel-t1"></span>
@@ -1690,7 +1851,7 @@ body.player-active .home-hamburger { bottom: 66px; }
       </div>
 
       <!-- Card: Monthly -->
-      <div class="goal-card" id="goalCard-t2">
+      <div class="goal-card" id="goalCard-t2" onclick="onGoalCardTap(event,'t2')">
         <div class="gc-header">
           <span class="gc-title">今月の目標 <span style="color:#555;font-size:.6rem;">(1×)</span></span>
           <span class="gc-goal-label" id="gcGoalLabel-t2"></span>
@@ -1718,7 +1879,7 @@ body.player-active .home-hamburger { bottom: 66px; }
       </div>
 
       <!-- Card: Others -->
-      <div class="goal-card" id="goalCard-t3">
+      <div class="goal-card" id="goalCard-t3" onclick="onGoalCardTap(event,'t3')">
         <div class="gc-header">
           <span class="gc-title">その他 <span style="color:#555;font-size:.6rem;">(1×)</span></span>
           <span class="gc-goal-label" id="gcGoalLabel-t3"></span>
@@ -1762,9 +1923,22 @@ body.player-active .home-hamburger { bottom: 66px; }
     </div>
   </div>
 
-  <!-- System tiles (default) -->
+  <!-- System tiles carousel -->
   <div id="librarySystemSection">
-    <div class="grid" id="systemTiles"></div>
+    <div class="tile-cards-wrap">
+      <div class="tile-cards-scroll" id="tileCarouselTrack">
+        <div class="tile-cards-page">
+          <div class="grid" id="systemTiles"></div>
+        </div>
+        <div class="tile-cards-page">
+          <div class="grid" id="systemTiles2"></div>
+        </div>
+      </div>
+    </div>
+    <div class="tile-carousel-dots" id="tileCarouselDots">
+      <div class="tile-carousel-dot active" onclick="goTilePage(0)"></div>
+      <div class="tile-carousel-dot" onclick="goTilePage(1)"></div>
+    </div>
   </div>
 
   <!-- Personal playlists (shown when toggled) -->
@@ -1806,16 +1980,8 @@ body.player-active .home-hamburger { bottom: 66px; }
   <div style="height:.3rem;"></div>
   <button class="sidebar-btn save" onclick="savePracticeHome()" style="width:100%;">💾 Save session</button>
 
-  <!-- Month calendar (always visible) -->
-  <div style="margin-top:.6rem;">
-    <div class="practice-cal-header">
-      <button class="practice-cal-nav" onclick="homeCalNav(-1)">◀</button>
-      <span id="homeCalMonthYear" style="font-size:.8rem;color:var(--muted);"></span>
-      <button class="practice-cal-nav" onclick="homeCalNav(1)">▶</button>
-    </div>
-    <div class="prac-cal-grid" id="homeCalHeader"></div>
-    <div class="prac-cal-grid" id="homeCalGrid"></div>
-  </div>
+  <!-- Weekly counter strip -->
+  <div id="weeklyCounterStrip" style="margin-top:.6rem;"></div>
 
   <!-- Year overview (collapsed by default) -->
   <div style="margin-top:.75rem;">
@@ -1830,6 +1996,18 @@ body.player-active .home-hamburger { bottom: 66px; }
         <button class="practice-cal-nav" onclick="homeYearJumpToday()" style="font-size:.65rem;padding:2px 10px;border-radius:5px;">Today</button>
       </div>
     </div>
+  </div>
+
+  <!-- Month calendar (always visible) -->
+  <div style="margin-top:.6rem;">
+    <div id="monthlyGoalHeader" style="font-size:.62rem;color:#888;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:.3rem;padding-left:2px;"></div>
+    <div class="practice-cal-header">
+      <button class="practice-cal-nav" onclick="homeCalNav(-1)">◀</button>
+      <span id="homeCalMonthYear" style="font-size:.8rem;color:var(--muted);"></span>
+      <button class="practice-cal-nav" onclick="homeCalNav(1)">▶</button>
+    </div>
+    <div class="prac-cal-grid" id="homeCalHeader"></div>
+    <div class="prac-cal-grid" id="homeCalGrid"></div>
   </div>
 
   <div style="font-size:.65rem;color:#333;text-align:center;margin-top:.75rem;">
@@ -2258,6 +2436,7 @@ body.player-active .home-hamburger { bottom: 66px; }
       <button class="ghost" onclick="closeSongPicker()" style="font-size:.75rem;">✕</button>
     </div>
     <input id="songPickerSearch" placeholder="Search existing songs…" oninput="renderSongPickerList(this.value)"
+      onkeyup="if(event.key==='Enter'){if(this._ignoreEnter)return;event.preventDefault();const q=this.value.trim();closeSongPicker();openAddSongFromSearch(q);}"
       style="flex-shrink:0;background:#222;border:none;border-radius:6px;color:#fff;padding:.4rem;margin-bottom:.5rem;" />
     <div id="songPickerList" style="flex:1;overflow-y:auto;min-height:0;"></div>
   </div>
@@ -2292,7 +2471,6 @@ body.player-active .home-hamburger { bottom: 66px; }
         <div id="viewerArtist" class="viewer-artist"></div>
       </div>
       <div class="viewer-header-btns">
-        <a id="viewerYTBtn" href="#" target="_blank" rel="noopener" style="font-size:.72rem;padding:3px 8px;border-radius:7px;background:none;border:1px solid #444;color:#cc2200;text-decoration:none;display:inline-flex;align-items:center;gap:3px;" onclick="updateYTLink()">▶ YT</a>
         <button class="ghost" onclick="closeSongViewer()" style="font-size:.75rem;padding:3px 8px;">✕</button>
       </div>
     </div>
@@ -2342,7 +2520,8 @@ body.player-active .home-hamburger { bottom: 66px; }
         <div class="viewer-fields-grid">
           <div>
             <label>Key</label>
-            <input id="viewerKey" oninput="autoSaveField('key', this.value)" />
+            <input id="viewerKey" oninput="autoSaveField('key', this.value)" autocomplete="off" />
+            <div class="suggestions" id="keySuggestions"></div>
           </div>
           <div>
             <label>BPM</label>
@@ -2385,6 +2564,7 @@ body.player-active .home-hamburger { bottom: 66px; }
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin:.75rem 0 .4rem;">
           <span style="font-size:.75rem;color:var(--muted);">Sections<span id="sectionDurationChip" style="margin-left:6px;font-size:.65rem;background:#252525;color:var(--muted);border-radius:4px;padding:1px 6px;display:none;"></span></span>
+          <button id="sectionJumpLoopBtn" onclick="toggleSectionLoopMode()" style="font-size:.65rem;padding:3px 9px;border-radius:6px;background:none;border:1px solid #333;color:#555;cursor:default;" disabled title="Load audio to enable loop mode">⟳ Jump to loop</button>
           <button class="ghost" id="sectionEditToggleBtn" onclick="toggleSectionEdit()">Edit</button>
         </div>
         <div id="sections" class="section-list"></div>
@@ -2399,19 +2579,19 @@ body.player-active .home-hamburger { bottom: 66px; }
     </div>
 
     <!-- Footer -->
-    <div class="viewer-footer">
-      <div class="viewer-footer-left">
-        <button id="viewerRemoveBtn" style="display:none;background:#2a2a2a;border:1px solid #555;color:#ccc;font-size:.72rem;padding:3px 10px;border-radius:7px;">Remove</button>
+    <div class="viewer-footer" style="justify-content:space-between;">
+      <button id="viewerRemoveBtn" style="display:none;background:#2a2a2a;border:1px solid #555;color:#ccc;font-size:.72rem;padding:4px 10px;border-radius:7px;">Remove</button>
+      <div style="display:flex;gap:5px;justify-content:center;flex:1;">
+        <button id="viewerAddToTqBtn" onclick="openAddSongToTqModal()" style="font-size:.68rem;padding:4px 10px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">＋ Technique</button>
+        <button id="viewerViewTqBtn" onclick="viewSongTechniques()" style="font-size:.68rem;padding:4px 10px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">Technique 👁</button>
+        <button id="viewerBackToExerciseBtn" onclick="switchSongViewToExercise()" style="display:none;font-size:.68rem;padding:4px 10px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">⚡ Exercise View</button>
       </div>
-      <div class="viewer-footer-middle">
-        <button id="viewerBackToExerciseBtn" onclick="switchSongViewToExercise()" style="display:none;font-size:.68rem;padding:3px 10px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">⚡ Exercise View</button>
-        <button id="viewerAddToTqBtn" onclick="openAddSongToTqModal()" style="font-size:.68rem;padding:3px 10px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">＋ Technique</button>
-      </div>
-      <div class="viewer-footer-right">
-        <button id="viewerLinkAudioBtn" onclick="linkAudioFile()" style="font-size:.68rem;padding:3px 9px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">🎵 Link audio</button>
-        <button id="viewerLoadPlayerBtn" onclick="loadIntoPlayer()" style="display:none;font-size:.68rem;padding:3px 9px;border-radius:7px;background:rgba(155,89,182,.15);border:1px solid var(--accent);color:var(--accent);">▶ Load</button>
-        <button class="danger" onclick="deleteSong()" style="font-size:.72rem;padding:3px 10px;border-radius:7px;">Delete</button>
-      </div>
+      <button class="danger" onclick="deleteSong()" style="font-size:.72rem;padding:4px 10px;border-radius:7px;">Delete</button>
+    </div>
+    <div style="display:flex;gap:5px;margin-top:.5rem;">
+      <button id="viewerYTBtn" onclick="openDeezerBot()" style="flex:1;font-size:.72rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:#00c300;cursor:pointer;">🎵 Deezer</button>
+      <button id="viewerLinkAudioBtn" onclick="linkOrLoadAudio()" style="flex:6;font-size:.75rem;padding:7px 9px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">🎵 Link audio</button>
+      <button onclick="openSplitView()" title="Split view" style="flex:1;font-size:.8rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);cursor:pointer;">⊞</button>
     </div>
 
   </div>
@@ -2421,23 +2601,17 @@ body.player-active .home-hamburger { bottom: 66px; }
 
 <!-- Mini-player -->
 <div id="miniPlayer" class="hidden">
-  <div class="mp-minimized-tab" onclick="unminimizePlayer()">
-    <span>▶</span>
-    <span id="mpMinTitle" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
-    <span id="mpMinSpeed" style="color:var(--accent);font-size:.62rem;"></span>
-    <span>↑</span>
-  </div>
   <div class="mp-main">
     <div class="mp-song-info" onclick="openExpandedPlayer()">
       <div class="mp-title" id="mpTitle">—</div>
       <span class="mp-speed-badge" id="mpSpeedBadge">1.0×</span>
     </div>
+    <span class="mp-time" id="mpTimeCur">0:00</span>
     <div class="mp-progress-wrap" id="mpProgressWrap" onclick="seekFromMiniBar(event)">
       <div class="mp-progress-fill" id="mpProgressFill" style="width:0%"></div>
     </div>
+    <span class="mp-time" id="mpTimeDur">0:00</span>
     <button class="mp-play-btn" id="mpPlayBtn" onclick="togglePlayerPlay()">▶</button>
-    <button class="mp-icon-btn" onclick="openExpandedPlayer()" title="Expand">∧</button>
-    <button class="mp-icon-btn" onclick="minimizePlayer()" title="Minimize">∨</button>
   </div>
 </div>
 
@@ -2448,8 +2622,9 @@ body.player-active .home-hamburger { bottom: 66px; }
     <div style="min-width:0;flex:1;">
       <div class="ep-title" id="epTitle">—</div>
       <div class="ep-artist" id="epArtist"></div>
-      <div class="ep-filename" id="epFilename"></div>
     </div>
+    <span class="ep-time-display" id="epTimeDisplay">0:00 / 0:00</span>
+    <button class="ep-close" onclick="openSplitView()" title="Split view" style="margin-right:2px;font-size:.78rem;">⊞</button>
     <button class="ep-close" onclick="closeExpandedPlayer()">∨</button>
   </div>
   <div class="ep-waveform-wrap" id="epWaveformWrap">
@@ -2478,10 +2653,6 @@ body.player-active .home-hamburger { bottom: 66px; }
     <input type="range" class="ep-speed-slider" id="epSpeedSlider" min="0.5" max="2.0" step="0.1" value="1.0" oninput="setPlayerSpeed(parseFloat(this.value))">
     <button class="ep-transport-btn" style="padding:3px 8px;font-size:.75rem;" onclick="changeSpeed(0.1)">+</button>
     <span class="ep-speed-val" id="epSpeedVal">1.0×</span>
-  </div>
-  <div class="ep-relink" onclick="relinkAudio()">
-    <span class="ep-relink-label" id="epRelinkLabel">No file linked</span>
-    <button class="ep-relink-btn">📂 Pick file</button>
   </div>
   <div style="height:max(.5rem, env(safe-area-inset-bottom));"></div>
 </div>
@@ -2694,6 +2865,9 @@ function loadState(){
 }
 
 function getSongCountForPlaylist(playlist){
+  if((playlist.name || playlist) === 'techniques'){
+    return (state.techniquePlaylists||[]).reduce((sum, tq) => sum + (tq.entries||[]).length, 0);
+  }
   return state.songs.filter(s => {
     if(!s) return false;
     switch(playlist.name || playlist){
@@ -2702,7 +2876,6 @@ function getSongCountForPlaylist(playlist){
       case 'ear-progress':return s.ear === 'learning';
       case 'solo':        return s.solo === 'learning' || s.solo === 'learned';
       case 'want':        return s.want === true;
-      case 'techniques':  return (state.techniquePlaylists||[]).some(tq => (s.playlists||[]).includes(tq.name));
       default:
         const id = playlist.id || playlist;
         return (s.playlists||[]).includes(playlist.name) ||
@@ -2713,12 +2886,43 @@ function getSongCountForPlaylist(playlist){
 
 const SYSTEM_TILES = [
   { id:'all',          icon:'🎸', label:'All Songs',   cls:'known'   },
-  { id:'ear',          icon:'👂', label:'耳コピー',     cls:'known'   },
-  { id:'ear-progress', icon:'⏳', label:'耳コピー中',   cls:'known'   },
+  { id:'ear',          icon:'✅👂', label:'耳コピー完了', cls:'known'   },
+  { id:'ear-progress', icon:'🔜👂', label:'耳コピー中',   cls:'known'   },
   { id:'techniques',   icon:'🧠', label:'Techniques',  cls:'unknown', action: 'openTechniquesView' },
   { id:'solo',         icon:'🎶', label:'Solo',         cls:'unknown' },
   { id:'want',         icon:'⭐', label:'Want',         cls:'unknown' },
 ];
+
+const SYSTEM_TILES_2 = [
+  { id:'creation',     icon:'✍️',  label:'Creation',      cls:'unknown', action:'openCreationNotes'   },
+  { id:'chordlib',     icon:'𝄖',   label:'Chord Library', cls:'known',   action:'openChordPicker'     },
+  { id:'tone',         icon:'🎛',  label:'Tone',           cls:'known',   action:'openToneNotes'       },
+  { id:'fretboard',    icon:'🎯',  label:'Fretboard',     cls:'unknown', action:'openFretboardNotes'  },
+];
+
+let _tilePageIdx = 0;
+
+function goTilePage(idx){
+  _tilePageIdx = idx;
+  const track = document.getElementById('tileCarouselTrack');
+  if(track) track.scrollTo({ left: idx * track.offsetWidth, behavior: 'smooth' });
+  _updateTileDots(idx);
+}
+
+function _updateTileDots(idx){
+  document.querySelectorAll('.tile-carousel-dot').forEach((d,i) =>
+    d.classList.toggle('active', i === idx));
+}
+
+// Update dots on native scroll — mirrors initGoalCardDots exactly
+document.addEventListener('DOMContentLoaded', () => {
+  const track = document.getElementById('tileCarouselTrack');
+  if(!track) return;
+  track.addEventListener('scroll', () => {
+    const idx = Math.round(track.scrollLeft / track.offsetWidth);
+    if(idx !== _tilePageIdx){ _tilePageIdx = idx; _updateTileDots(idx); }
+  }, { passive: true });
+});
 
 function renderSystemTiles(){
   const grid = document.getElementById('systemTiles');
@@ -2740,10 +2944,262 @@ function renderSystemTiles(){
       </div>`;
     grid.appendChild(tile);
   });
+  renderSystemTiles2();
 }
 
+function renderSystemTiles2(){
+  const grid = document.getElementById('systemTiles2');
+  if(!grid) return;
+  grid.innerHTML = '';
+  SYSTEM_TILES_2.forEach((t, i) => {
+    const tile = document.createElement('div');
+    tile.className = `tile ${t.cls}`;
+    tile.dataset.navGroup = 'system2';
+    tile.dataset.navIdx   = i;
+    tile.tabIndex = 0;
+    tile.onclick = () => t.action ? window[t.action]() : null;
+    tile.innerHTML = `
+      <div class="icon">${t.icon}</div>
+      <div class="tile-bottom">
+        <div class="label">${t.label}</div>
+        <div class="tile-count"></div>
+      </div>`;
+    grid.appendChild(tile);
+  });
+}
+
+// ── Global notepads (Creation & Fretboard) ────────────
+function openCreationNotes(){
+  if(!state.creationNotes) state.creationNotes = '';
+  document.getElementById('creationNotesText').value = state.creationNotes;
+  openModal('creationNotesModal');
+}
+function saveCreationNotes(){
+  state.creationNotes = document.getElementById('creationNotesText').value;
+  saveState();
+  document.getElementById('creationNotesModal').classList.remove('active');
+}
+function openFretboardNotes(){
+  if(!state.fretboardNotes) state.fretboardNotes = '';
+  document.getElementById('fretboardNotesText').value = state.fretboardNotes;
+  openModal('fretboardNotesModal');
+}
+function saveFretboardNotes(){
+  state.fretboardNotes = document.getElementById('fretboardNotesText').value;
+  saveState();
+  document.getElementById('fretboardNotesModal').classList.remove('active');
+}
+function openToneNotes(){
+  if(!state.toneNotes) state.toneNotes = '';
+  document.getElementById('globalToneNotesText').value = state.toneNotes;
+  openModal('globalToneNotesModal');
+}
+function saveGlobalToneNotes(){
+  state.toneNotes = document.getElementById('globalToneNotesText').value;
+  saveState();
+  document.getElementById('globalToneNotesModal').classList.remove('active');
+}
+function closeCreationNotes(){ document.getElementById('creationNotesModal').classList.remove('active'); }
+function closeFretboardNotes(){ document.getElementById('fretboardNotesModal').classList.remove('active'); }
+function closeGlobalToneNotes(){ document.getElementById('globalToneNotesModal').classList.remove('active'); }
+
+// ══ Split View ════════════════════════════════════════════
+let _splitViewOpen = false;
+let _svCurrentTab  = 'notes';
+
+function openSplitView(){
+  if(!activeSong) return;
+
+  // Force expanded player open — it will sit on top (z-index 190 > split view 185)
+  openExpandedPlayer();
+
+  // Set split view bottom to clear the expanded player
+  _updateSplitViewBottom();
+
+  // Populate header
+  document.getElementById('svTitle').textContent  = activeSong.title  || '—';
+  document.getElementById('svArtist').textContent = activeSong.artist || '';
+
+  // Populate left panel
+  _renderSvStateTags();
+  _renderSvProgress();
+  _renderSvMeta();
+  _syncSvTab(_svCurrentTab);
+
+  // Notes
+  document.getElementById('svPersonalNotesDisplay').innerHTML =
+    (activeSong.notes && activeSong.notes.personal)
+      ? escHtml(activeSong.notes.personal).replace(/\n/g,'<br>')
+      : '<span style="color:var(--muted);font-size:.8rem;">No notes</span>';
+
+  // Tone
+  const svTone = document.getElementById('svToneNotes');
+  if(svTone) svTone.value = (activeSong.notes && activeSong.notes.tone) || '';
+
+  // Fields
+  const svKey = document.getElementById('svViewerKey');
+  if(svKey) svKey.value = activeSong.key || '';
+  const svBpm = document.getElementById('svViewerBpm');
+  if(svBpm) svBpm.value = activeSong.bpm || '';
+  const svTuning = document.getElementById('svViewerTuning');
+  if(svTuning) svTuning.value = activeSong.tuning || '';
+  updateSvTuningClearBtn();
+  const svDur = document.getElementById('svViewerDurationText');
+  if(svDur){ const v=activeSong.duration||''; svDur.textContent=v||'—'; svDur.style.color=v?'#ccc':'var(--muted)'; }
+  initSvGenreChips();
+
+  // Populate right panel — sections
+  _renderSvSections();
+  _syncSvLoopBtn();
+
+  // Update YT link
+  const svYT = document.getElementById('svYTBtn');
+  if(svYT) svYT.href = activeSong.youtubeUrl || '#';
+
+  // Show
+  document.getElementById('splitView').classList.add('open');
+  history.pushState({ nav: 'splitview' }, '');
+  _splitViewOpen = true;
+
+  // Re-measure after player animation completes
+  setTimeout(_updateSplitViewBottom, 350);
+
+  // Start dot sync
+  const track = document.getElementById('svTrack');
+  if(track) track.addEventListener('scroll', _onSvTrackScroll, { passive: true });
+}
+
+function closeSplitView(){
+  const sv = document.getElementById('splitView');
+  sv.classList.remove('open');
+  sv.style.bottom = ''; // reset so translateY(100%) fully hides it
+  _splitViewOpen = false;
+  const track = document.getElementById('svTrack');
+  if(track) track.removeEventListener('scroll', _onSvTrackScroll);
+  // Song viewer was only open to support split view — close it too
+  closeSongViewer();
+}
+
+function _updateSplitViewBottom(){
+  const ep = document.getElementById('expandedPlayer');
+  const sv = document.getElementById('splitView');
+  if(!sv) return;
+  const epH = (ep && ep.classList.contains('open')) ? ep.offsetHeight : 0;
+  sv.style.bottom = epH + 'px';
+}
+
+// Keep bottom in sync when expanded player opens/closes
+function _syncSplitViewToPlayer(){
+  if(_splitViewOpen) _updateSplitViewBottom();
+}
+
+function _onSvTrackScroll(){
+  const track = document.getElementById('svTrack');
+  if(!track) return;
+  const idx = Math.round(track.scrollLeft / track.offsetWidth);
+  document.querySelectorAll('.sv-dot').forEach((d,i) => d.classList.toggle('active', i === idx));
+}
+
+function goSvPage(idx){
+  const track = document.getElementById('svTrack');
+  if(track) track.scrollTo({ left: idx * track.offsetWidth, behavior: 'smooth' });
+}
+
+function switchSvTab(tab){
+  _svCurrentTab = tab;
+  _syncSvTab(tab);
+}
+
+function _syncSvTab(tab){
+  ['notes','tone','fields'].forEach(t => {
+    const panel = document.getElementById('svtab-' + t);
+    if(panel) panel.classList.toggle('active', t === tab);
+  });
+  document.querySelectorAll('#splitView .viewer-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('onclick').includes("'" + tab + "'"));
+  });
+}
+
+function _renderSvStateTags(){
+  const row = document.getElementById('svStateTagsRow');
+  if(!row || !activeSong) return;
+  // Reuse same tag rendering as main viewer — mirror stateTagsRow content
+  const src = document.getElementById('stateTagsRow');
+  row.innerHTML = src ? src.innerHTML : '';
+  row.onclick = () => {
+    const ed = document.getElementById('svStateEditor');
+    if(ed) ed.style.display = ed.style.display === 'none' ? '' : 'none';
+  };
+}
+
+function _renderSvProgress(){
+  const bar = document.getElementById('svProgressBarTop');
+  const src = document.getElementById('progressBarTop');
+  if(bar && src) bar.innerHTML = src.innerHTML;
+}
+
+function _renderSvMeta(){
+  const row = document.getElementById('svMetaRow');
+  const src = document.getElementById('viewerMetaRow');
+  if(row && src) row.innerHTML = src.innerHTML;
+}
+
+function _renderSvSections(){
+  const container = document.getElementById('svSections');
+  const src = document.getElementById('sections');
+  if(container && src) container.innerHTML = src.innerHTML;
+  // Re-attach click events by mirroring renderSections logic
+  if(!activeSong || !container) return;
+  container.innerHTML = '';
+  const sections = activeSong.sections || [];
+  sections.forEach((sec, idx) => {
+    const row = document.createElement('div');
+    row.className = 'section-row';
+    if(_activeSectionIdx === idx) row.classList.add('loop-active');
+    if(!sectionEditMode){
+      row.innerHTML = `<span class="sec-time">${sec.start || '0:00'}</span><span class="sec-name">${escHtml(sec.name||'')}</span>`;
+      row.onclick = () => {
+        const audio = document.getElementById('playerAudio');
+        if(!audio || !audio.src){ openSectionNotes(idx); return; }
+        if(!_sectionLoopMode){ openSectionNotes(idx); return; }
+        if(_activeSectionIdx === idx){ openSectionNotes(idx); return; }
+        setSectionAsLoop(sec.start, row);
+      };
+    } else {
+      row.innerHTML = `
+        <span class="sec-time" onclick="openWheelPicker('Start',${JSON.stringify(sec.start||'0:00')},v=>{activeSong.sections[${idx}].start=v;saveState();renderSections();_renderSvSections();})" style="cursor:pointer;">${sec.start||'0:00'}</span>
+        <input class="sec-name-input" value="${escHtml(sec.name||'')}" oninput="activeSong.sections[${idx}].name=this.value;saveState();" />
+        <button class="sec-del-btn" onclick="activeSong.sections.splice(${idx},1);saveState();renderSections();_renderSvSections();">✕</button>`;
+    }
+    container.appendChild(row);
+  });
+}
+
+function _syncSvLoopBtn(){
+  const btn = document.getElementById('svSectionJumpLoopBtn');
+  if(!btn) return;
+  const audio = document.getElementById('playerAudio');
+  const hasAudio = audio && audio.src && audio.readyState > 0;
+  btn.disabled = !hasAudio;
+  btn.style.cursor = hasAudio ? 'pointer' : 'default';
+  btn.style.color = _sectionLoopMode ? 'var(--accent)' : (hasAudio ? '#888' : '#555');
+  btn.style.borderColor = _sectionLoopMode ? 'var(--accent)' : '#333';
+}
+
+// Hook renderSections to also update split view sections when open
+const _origRenderSections = typeof renderSections === 'function' ? renderSections : null;
+
+// Patch: after renderSections runs, mirror to split view
+document.addEventListener('DOMContentLoaded', () => {
+  // Observe mutations on #sections to mirror into #svSections
+  const src = document.getElementById('sections');
+  if(!src) return;
+  new MutationObserver(() => {
+    if(_splitViewOpen) _renderSvSections();
+  }).observe(src, { childList: true, subtree: true });
+});
+
 function renderPlaylists(){
-  pp.innerHTML='';
   state.personalPlaylists.forEach((p, i)=>{
     const count = getSongCountForPlaylist(p);
     const el=document.createElement('div');
@@ -2939,8 +3395,68 @@ let songDragSrcId = null;
 // title/artist display order toggle
 let titleFirst = true;
 
+// ── Playlist keyboard navigation ─────────────────────
+let playlistNavIdx = -1;
+
+function playlistNavItems(){
+  return [...document.querySelectorAll('#songList .song[data-id]')];
+}
+
+function playlistNavSetFocus(idx){
+  const items = playlistNavItems();
+  if(!items.length) return;
+  playlistNavIdx = Math.max(0, Math.min(idx, items.length - 1));
+  items.forEach((el, i) => el.classList.toggle('nav-focused', i === playlistNavIdx));
+  items[playlistNavIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function playlistNavClear(){
+  playlistNavIdx = -1;
+  playlistNavItems().forEach(el => el.classList.remove('nav-focused'));
+}
+
+document.addEventListener('keydown', e => {
+  const pv = document.getElementById('playlistView');
+  if(!pv || !pv.classList.contains('active')) return;
+  if(document.querySelector('.modal.active')) return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    playlistNavSetFocus(playlistNavIdx < 0 ? 0 : playlistNavIdx + 1);
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    if(playlistNavIdx <= 0) playlistNavClear();
+    else playlistNavSetFocus(playlistNavIdx - 1);
+  } else if(e.key === 'Enter' && playlistNavIdx >= 0){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const items = playlistNavItems();
+    const focused = items[playlistNavIdx];
+    if(focused && focused.dataset.id){
+      const id = isNaN(focused.dataset.id) ? focused.dataset.id : Number(focused.dataset.id);
+      openSongViewer(id);
+    }
+  } else if(e.key === 'Delete' && playlistNavIdx >= 0){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const items = playlistNavItems();
+    const focused = items[playlistNavIdx];
+    if(!focused || !focused.dataset.id) return;
+    const id = isNaN(focused.dataset.id) ? focused.dataset.id : Number(focused.dataset.id);
+    if(e.ctrlKey || e.metaKey){
+      deleteSongCompletely(id);
+    } else {
+      removeSongFromActivePlaylist(id);
+    }
+  } else if(e.key === 'Escape'){
+    if(playlistNavIdx >= 0){ e.stopImmediatePropagation(); playlistNavClear(); }
+  }
+});
+
 function renderSongs(){
   songList.innerHTML = '';
+  playlistNavClear();
 
   const raw      = getPlaylistSongs();
   const filtered = applyFilters(raw);
@@ -3209,11 +3725,25 @@ function openSongModal(){
   openSongPicker();
 }
 
+function openAddSongFromSearch(prefill){
+  // Clear inputs
+  document.getElementById('artistInput').value = '';
+  document.getElementById('titleInput').value = prefill || '';
+  document.getElementById('keyInput').value = '';
+  document.getElementById('bpmInput').value = '';
+  document.getElementById('durationInput').value = '';
+  openModal('songModal');
+  setTimeout(() => document.getElementById('artistInput').focus(), 80);
+}
+
 function openSongPicker(){
   document.getElementById('songPickerSearch').value = '';
   renderSongPickerList('');
-  document.getElementById('songPickerModal').classList.add('active');
-  setTimeout(() => document.getElementById('songPickerSearch').focus(), 60);
+  openModal('songPickerModal');
+  // Small delay before allowing Enter to prevent the opening keystroke from immediately triggering add
+  const search = document.getElementById('songPickerSearch');
+  search._ignoreEnter = true;
+  setTimeout(() => { search._ignoreEnter = false; search.focus(); }, 300);
 }
 
 function closeSongPicker(){
@@ -3232,7 +3762,7 @@ function renderSongPickerList(query){
   newRow.onclick = () => {
     closeSongPicker();
     // Open the create form directly
-    songModal.classList.add('active');
+    openModal('songModal');
     setTimeout(() => document.getElementById('artistInput').focus(), 50);
   };
   list.appendChild(newRow);
@@ -3593,6 +4123,8 @@ function openSongViewer(id){
   renderViewerMeta();
   renderNotesDisplay();
   setTimeout(initGenreChips, 0);
+  setTimeout(initTuningAutocomplete, 0);
+  setTimeout(initKeyAutocomplete, 0);
 
   // Remove button
   const removeBtn = document.getElementById('viewerRemoveBtn');
@@ -3635,14 +4167,85 @@ function openSongViewer(id){
 
   songViewer.classList.add('active');
   _updateViewerAudioBtns();
-  updateYTLink();
+  updateViewerTqBtn();
+  updateSectionJumpBtn();
 }
 
-function updateYTLink(){
+function openDeezerBot(){
   if(!activeSong) return;
-  const q = encodeURIComponent((activeSong.artist ? activeSong.artist + ' ' : '') + activeSong.title + ' audio');
-  const btn = document.getElementById('viewerYTBtn');
-  if(btn) btn.href = 'https://www.youtube.com/results?search_query=' + q;
+  const text = encodeURIComponent((activeSong.artist ? activeSong.artist + ' - ' : '') + activeSong.title);
+  window.open('https://t.me/DeezerMusicBot?text=' + text, '_blank');
+}
+
+function updateViewerTqBtn(){
+  const btn = document.getElementById('viewerViewTqBtn');
+  if(!btn || !activeSong) return;
+  // Hide 👁 when opened from within a technique playlist (Exercise View is shown instead)
+  if(activeTechniquePlaylist){
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = 'inline-block';
+  const tqs = (state.techniquePlaylists||[]).filter(tq =>
+    (tq.entries||[]).some(e => e.type==='song' && e.songId===activeSong.id)
+  );
+  btn._tqs = tqs;
+  btn.style.opacity = tqs.length ? '1' : '0.35';
+  btn.title = tqs.length ? tqs.map(t=>t.name).join(', ') : 'Not in any technique';
+}
+
+function viewSongTechniques(){
+  if(!activeSong) return;
+  // Gather all entries across all technique playlists referencing this song
+  const matches = [];
+  (state.techniquePlaylists||[]).forEach(tq => {
+    (tq.entries||[]).forEach((e, idx) => {
+      if(e.type === 'song' && e.songId === activeSong.id){
+        matches.push({ tq, entry: e, idx });
+      }
+    });
+  });
+  if(!matches.length){
+    showToast('Not in any technique playlist yet');
+    return;
+  }
+  // Build a quick modal
+  let existing = document.getElementById('songTqListModal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'songTqListModal';
+  modal.className = 'modal active';
+  modal.style.cssText = 'z-index:900;';
+  const inner = document.createElement('div');
+  inner.className = 'modal-content';
+  inner.style.cssText = 'max-width:420px;width:92vw;padding:1rem;';
+  inner.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+      <strong style="font-size:.9rem;">In Technique Playlists</strong>
+      <button class="ghost" onclick="document.getElementById('songTqListModal').remove()" style="font-size:.8rem;padding:2px 8px;">✕</button>
+    </div>
+    <div id="songTqListRows"></div>`;
+  modal.appendChild(inner);
+  document.body.appendChild(modal);
+  const rows = document.getElementById('songTqListRows');
+  matches.forEach(({ tq, entry, idx }) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:.5rem .6rem;border:1px solid #2a2a2a;border-radius:8px;margin-bottom:.4rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;';
+    row.innerHTML = `
+      <div>
+        <div style="font-size:.82rem;font-weight:600;color:#eee;">${escHtml(tq.name)}</div>
+        ${entry.nickname ? `<div style="font-size:.68rem;color:var(--muted);">${escHtml(entry.nickname)}</div>` : ''}
+        ${entry.bpmCurrent ? `<div style="font-size:.65rem;color:var(--accent);">${entry.bpmCurrent} bpm${entry.bpmGoal ? ' → '+entry.bpmGoal : ''}</div>` : ''}
+      </div>
+      <span style="font-size:.75rem;color:var(--muted);">⚡ Open</span>`;
+    row.onclick = () => {
+      document.getElementById('songTqListModal').remove();
+      activeTechniquePlaylist = tq;
+      _tqEntryFromEye = true;
+      openTqEntryViewer(entry, idx);
+    };
+    rows.appendChild(row);
+  });
 }
 
 function renderViewerMeta(){
@@ -3771,13 +4374,22 @@ function autoSaveNotes(){
 }
 
 function closeSongViewer(){
-  songViewer.classList.remove('active');
+  const sv = document.getElementById('songViewer');
+  sv.classList.remove('active');
+  sv.style.display = '';  // clear any inline display override
   document.getElementById('viewerRemoveBtn').style.display = 'none';
   sectionEditMode = false;
   viewerEditMode  = false;
-  if(activeTechniquePlaylist){
+  _activeSectionIdx = null;
+  _sectionNavIdx = -1;
+  _sectionLoopMode = false;
+  if(activeTechniquePlaylist && !_tqEntryFromEye){
     renderTechniqueEntries();
   } else {
+    if(_tqEntryFromEye){
+      _tqEntryFromEye = false;
+      activeTechniquePlaylist = null;
+    }
     renderSongs();
   }
 }
@@ -3848,15 +4460,84 @@ function confirmWheelPicker(){
   if(cb) cb(val);
 }
 
+function _timeStrToSec(str){
+  if(!str) return null;
+  const parts = str.split(':').map(Number);
+  if(parts.length === 2) return parts[0]*60 + parts[1];
+  if(parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+  return null;
+}
+
+let _activeSectionIdx = null;
+let _sectionNavIdx = -1;
+let _sectionLoopMode = false; // true = clicking sections seeks/sets loop
+
+function setSectionAsLoop(sec, row){
+  if(!_audio || !_audio.src) return;
+  const a = _timeStrToSec(sec.from);
+  const b = _timeStrToSec(sec.to);
+  if(a == null) return;
+  if(_playerSong){
+    _playerSong.loopA = a;
+    _playerSong.loopB = b != null ? b : null;
+    saveState();
+    _updateLoopUI();
+    _renderWaveform();
+    _audio.currentTime = a;
+  }
+  const rows = document.querySelectorAll('.section-row');
+  rows.forEach((r, idx) => {
+    r.classList.remove('loop-active');
+    if(r === row){ _activeSectionIdx = idx; r.classList.add('loop-active'); }
+  });
+}
+
+function toggleSectionLoopMode(){
+  const hasAudio = _audio && _audio.src;
+  if(!hasAudio) return;
+  _sectionLoopMode = !_sectionLoopMode;
+  _activeSectionIdx = null;
+  document.querySelectorAll('.section-row').forEach(r => r.classList.remove('loop-active'));
+  updateSectionJumpBtn();
+}
+
+function updateSectionJumpBtn(){
+  const btn = document.getElementById('sectionJumpLoopBtn');
+  if(!btn) return;
+  const hasAudio = _audio && _audio.src;
+  btn.disabled = !hasAudio;
+  if(!hasAudio){
+    btn.style.color = '#555';
+    btn.style.borderColor = '#333';
+    btn.style.background = 'none';
+    btn.style.cursor = 'default';
+    _sectionLoopMode = false;
+  } else if(_sectionLoopMode){
+    btn.style.color = 'var(--accent)';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.background = 'rgba(155,89,182,.15)';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.style.color = '#888';
+    btn.style.borderColor = '#444';
+    btn.style.background = 'none';
+    btn.style.cursor = 'pointer';
+  }
+}
+
 function toggleSectionEdit(){
   sectionEditMode = !sectionEditMode;
-  document.getElementById('sectionEditToggleBtn').textContent = sectionEditMode ? 'Done' : 'Edit';
+  const label = sectionEditMode ? 'Done' : 'Edit';
+  document.getElementById('sectionEditToggleBtn').textContent = label;
+  const svBtn = document.getElementById('svSectionEditToggleBtn');
+  if(svBtn) svBtn.textContent = label;
   renderSections();
 }
 
 function renderSections(){
   const list = document.getElementById('sections');
   list.innerHTML = '';
+  // preserve nav focus index — re-apply after render
   const secs = activeSong.notes.sections;
 
   document.getElementById('progressEmpty').style.display = secs.length ? 'none' : 'block';
@@ -3882,14 +4563,20 @@ function renderSections(){
         sec.name = nameEl.value;
         saveState();
       };
+      nameEl.onkeydown = e => {
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          toggleSectionEdit();
+        }
+      };
     } else {
       nameEl = document.createElement('span');
       nameEl.className = 'sec-name';
       const hasNotes = sec.notes && sec.notes.trim().length > 0;
       nameEl.innerHTML = (sec.name || `Section ${i+1}`) +
         (hasNotes ? ' <span style="font-size:.65rem;opacity:.7;" title="Has notes">📄</span>' : '');
-      nameEl.title = 'Tap for notes';
-      nameEl.onclick = () => openSectionNotes(i);
+      nameEl.title = '';
     }
 
     // ── times (separate from / to) ──────
@@ -3991,10 +4678,39 @@ function renderSections(){
 
     if(sectionEditMode) setupSectionDrag(row, i);
 
+    // Click row (non-edit):
+    // - if audio loaded: first click → seek/set loop; second click on same section → open notes
+    // - if no audio: always open notes
+    if(!sectionEditMode){
+      row.onclick = e => {
+        if(e.target.closest('.sec-check, .sec-delete, .sec-drag')) return;
+        const hasAudio = _audio && _audio.src;
+        if(!hasAudio || !_sectionLoopMode){
+          openSectionNotes(i);
+          return;
+        }
+        if(_activeSectionIdx === i){
+          openSectionNotes(i);
+        } else {
+          setSectionAsLoop(sec, row);
+        }
+      };
+    }
+
     list.appendChild(row);
   });
 
   renderProgressBar();
+  // Re-apply keyboard nav highlight if still valid
+  if(_sectionNavIdx >= 0){
+    const navRows = list.querySelectorAll('.section-row');
+    if(_sectionNavIdx < navRows.length)
+      navRows[_sectionNavIdx].classList.add('section-nav-focused');
+    else
+      _sectionNavIdx = -1;
+  }
+  // Mirror to split view if open
+  if(typeof _splitViewOpen !== 'undefined' && _splitViewOpen) _renderSvSections();
 }
 
 function setupSectionDrag(row, index){
@@ -4034,7 +4750,7 @@ function setupSectionDrag(row, index){
 function openSectionNotes(index){
   activeSectionIndex = index;
   _loadSectionNotes(index);
-  document.getElementById('sectionNotesModal').classList.add('active');
+  openModal('sectionNotesModal');
 }
 
 function _loadSectionNotes(index){
@@ -4220,7 +4936,7 @@ function emptyChord(){
 function openChordPicker(){
   document.getElementById('chordPickerSearch').value='';
   renderChordPickerList();
-  document.getElementById('chordPickerModal').classList.add('active');
+  openModal('chordPickerModal');
 }
 function closeChordPicker(){
   document.getElementById('chordPickerModal').classList.remove('active');
@@ -4306,7 +5022,7 @@ function openChordEditorUI(){
   document.getElementById('chordStartFretInput').value=chordEditorData.startFret||1;
   if(!chordEditorData.barres) chordEditorData.barres=[];
   renderChordEditorGrid();
-  document.getElementById('chordEditorModal').classList.add('active');
+  openModal('chordEditorModal');
 }
 
 function closeChordEditor(){
@@ -4606,7 +5322,7 @@ function openLickEditorUI(){
   if(sel.value === 'custom') document.getElementById('lickTuningCustom').value = tuning;
   renderLickGrid();
   renderLickPreview();
-  document.getElementById('lickEditorModal').classList.add('active');
+  openModal('lickEditorModal');
 }
 
 function closeLickEditor(){
@@ -5113,37 +5829,122 @@ function deleteSong(){
   renderSongs();
 }
 
+// ── Modal focus system ────────────────────────────────
+// Maps modal id → close function name (string, called via window[fn]())
+const MODAL_CLOSE_FNS = {
+  'goalNotesModal':       'closeGoalNotesModal',
+  'practiceLinkModal':    'closePracticeLinkModal',
+  'practiceTextModal':    'closePracticeTextModal',
+  'tqSongPickerModal':    'closeExerciseModal',
+  'bpmHistoryModal':      'closeBpmHistory',
+  'tqEntryViewer':        'closeTqEntryViewer',
+  'exerciseModal':        'closeExerciseModal',
+  'songPickerModal':      'closeSongPicker',
+  'songModal':            'closeSongModal',
+  'sectionNotesModal':    'closeSectionNotes',
+  'lickEditorModal':      'closeLickEditor',
+  'tuningsModal':         'closeTuningsModal',
+  'placementPickerModal': 'closePlacementPicker',
+  'manageTqModal':        'closeManageTechniques',
+  'managePlModal':        'closeManagePlaylists',
+  'notesEditModal':       'closeNotesModal',
+  'chordPickerModal':     'closeChordPicker',
+  'chordEditorModal':     'closeChordEditor',
+  'creationNotesModal':   'closeCreationNotes',
+  'fretboardNotesModal':  'closeFretboardNotes',
+  'globalToneNotesModal': 'closeGlobalToneNotes',
+};
+
+// Which modals should auto-focus a specific child on open
+const MODAL_FOCUS_SELECTOR = {
+  'songPickerModal':      '#songPickerSearch',
+  'tqSongPickerModal':    '#tqSongPickerSearch',
+  'exerciseModal':        '#exerciseName',
+  'songModal':            '#artistInput',
+  'bpmHistoryModal':      '#bpmHistoryCurInput',
+  'notesEditModal':       '#notesEditModalText',
+  'goalNotesModal':       '#goalNotesModalArea',
+  'creationNotesModal':   '#creationNotesText',
+  'fretboardNotesModal':  '#fretboardNotesText',
+  'globalToneNotesModal': '#globalToneNotesText',
+};
+
+function openModal(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.add('active');
+  el.setAttribute('tabindex', '-1');
+  history.pushState({ nav: 'modal', id }, '');
+  const focusSel = MODAL_FOCUS_SELECTOR[id];
+  if(focusSel){
+    const inner = el.querySelector(focusSel);
+    if(inner) setTimeout(() => inner.focus(), 80);
+  } else {
+    setTimeout(() => el.focus(), 50);
+  }
+}
+
+// Tab trap: when a modal is open, Tab cycles only within it
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Tab') return;
+  const active = [...document.querySelectorAll('.modal.active')];
+  if(!active.length) return;
+  const modal = active[active.length - 1];
+  const focusable = [...modal.querySelectorAll(
+    'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+  )].filter(el => el.offsetParent !== null);
+  if(!focusable.length){ e.preventDefault(); return; }
+  const first = focusable[0];
+  const last  = focusable[focusable.length - 1];
+  if(e.shiftKey){
+    if(document.activeElement === first || !modal.contains(document.activeElement)){
+      e.preventDefault(); last.focus();
+    }
+  } else {
+    if(document.activeElement === last || !modal.contains(document.activeElement)){
+      e.preventDefault(); first.focus();
+    }
+  }
+}, true); // capture phase so it runs before other handlers
+
+function closeTopmostModal(){
+  // Find all active modals, close the last one opened (last in DOM order = topmost)
+  const active = [...document.querySelectorAll('.modal.active')];
+  if(!active.length) return false;
+  const top = active[active.length - 1];
+  const closeFn = MODAL_CLOSE_FNS[top.id];
+  if(closeFn && typeof window[closeFn] === 'function'){
+    window[closeFn]();
+  } else {
+    top.classList.remove('active');
+  }
+  return true;
+}
+
 document.addEventListener("keydown", function(e){
-
   if(e.key === "Escape"){
-    // 0. Close lick editor first if open
-    const lickModal = document.getElementById('lickEditorModal');
-    if(lickModal && lickModal.classList.contains('active')){ closeLickEditor(); return; }
-
-    // 1. Close any other open modal first
-    const modal = document.querySelector(".modal.active");
-    if(modal){ modal.classList.remove("active"); return; }
-
-    // 2. Close song viewer
+    // Split view closes first
+    if(_splitViewOpen){ closeSplitView(); return; }
+    // Close topmost modal via registry
+    if(closeTopmostModal()) return;
+    // Close song viewer
     const viewer = document.getElementById("songViewer");
     if(viewer && viewer.classList.contains("active")){ closeSongViewer(); return; }
 
-    // 4. Close practice view
+    // Close practice view
     const practiceView = document.getElementById("practiceView");
     if(practiceView && practiceView.classList.contains("active")){ closePracticeView(); return; }
 
-    // 5. Close techniques list
+    // Close techniques list
     const tqView = document.getElementById("techniquesView");
     if(tqView && tqView.classList.contains("active")){ closeTechniquesView(); return; }
 
-    // 3. In playlist view — dismiss active controls before exiting
+    // In playlist view — dismiss active controls before exiting
     const playlistView = document.getElementById("playlistView");
     if(playlistView && playlistView.classList.contains("active")){
-      // Close sort popover
       const pop = document.getElementById("sortPopover");
       if(pop && pop.classList.contains("open")){ pop.classList.remove("open"); return; }
 
-      // Close filter bar
       const fb = document.getElementById("filterBar");
       if(fb && fb.classList.contains("open")){
         fb.classList.remove("open");
@@ -5151,7 +5952,6 @@ document.addEventListener("keydown", function(e){
         return;
       }
 
-      // Exit edit mode
       if(isEditingPlaylist){
         isEditingPlaylist = false;
         document.getElementById("editPlaylistBtn").textContent = "Edit";
@@ -5161,7 +5961,6 @@ document.addEventListener("keydown", function(e){
         return;
       }
 
-      // Exit playlist — go back to techniques list if came from there
       if(activeTechniquePlaylist) backFromTechniquePlaylist();
       else goHome();
       return;
@@ -5171,16 +5970,11 @@ document.addEventListener("keydown", function(e){
   if(e.key === "Enter"){
     if(document.activeElement.tagName === "TEXTAREA") return;
 
-    // Save add-song modal
+    // Save add-song modal — only if focus is inside the modal
     if(document.getElementById("songModal").classList.contains("active")){
-      saveSong();
-      return;
-    }
-
-    // Close song viewer (already auto-saved)
-    const viewer = document.getElementById("songViewer");
-    if(viewer && viewer.classList.contains("active")){
-      closeSongViewer();
+      if(document.getElementById("songModal").contains(document.activeElement)){
+        saveSong();
+      }
       return;
     }
 
@@ -5188,12 +5982,113 @@ document.addEventListener("keydown", function(e){
     const playlistView = document.getElementById("playlistView");
     const tag = document.activeElement.tagName;
     if(playlistView && playlistView.classList.contains("active")){
+      if(playlistNavIdx >= 0){
+        const items = playlistNavItems();
+        const focused = items[playlistNavIdx];
+        if(focused && focused.dataset.id){ openSongViewer(focused.dataset.id); return; }
+      }
       if(tag === "BODY" || tag === "DIV"){
         openSongModal();
       }
     }
   }
 
+  if(e.key === "Delete"){
+    if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+
+    // Song viewer: Del = remove from playlist, Ctrl+Del = delete song
+    const songViewer = document.getElementById("songViewer");
+    if(songViewer && songViewer.classList.contains("active")){
+      if(e.ctrlKey || e.metaKey){
+        e.preventDefault();
+        deleteSong();
+      } else {
+        const removeBtn = document.getElementById("viewerRemoveBtn");
+        if(removeBtn && removeBtn.style.display !== 'none'){
+          e.preventDefault();
+          removeFromCurrentPlaylist();
+        }
+      }
+      return;
+    }
+
+    // Exercise viewer: Del = remove entry from technique playlist
+    const tqViewer = document.getElementById("tqEntryViewer");
+    if(tqViewer && tqViewer.classList.contains("active")){
+      e.preventDefault();
+      deleteTqEntry();
+      return;
+    }
+  }
+
+  // 'o' → open file picker for current song (song viewer open)
+  if(e.key === 'o' || e.key === 'O'){
+    const songViewer = document.getElementById("songViewer");
+    if(songViewer && songViewer.classList.contains("active") &&
+       !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){
+      e.preventDefault();
+      relinkAudio();
+      return;
+    }
+  }
+
+  // 'a' → add section, 'e' → toggle section edit mode (song viewer open)
+  if(e.key === 'a' || e.key === 'A' || e.key === 'e' || e.key === 'E'){
+    const songViewer = document.getElementById("songViewer");
+    if(songViewer && songViewer.classList.contains("active") &&
+       !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){
+      e.preventDefault();
+      if(e.key === 'a' || e.key === 'A') addSection();
+      else toggleSectionEdit();
+      return;
+    }
+  }
+
+  // ' (apostrophe) → toggle sidebar on homescreen
+  if(e.key === "'"){
+    const homeScreen = document.getElementById("homeScreen");
+    if(homeScreen && homeScreen.classList.contains("active") &&
+       !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName) &&
+       !document.querySelector('.modal.active')){
+      e.preventDefault();
+      const sidebar = document.getElementById('homeSidebar');
+      if(sidebar && sidebar.classList.contains('open')) closeHomeSidebar();
+      else openHomeSidebar();
+      return;
+    }
+  }
+
+});
+
+// ── Section keyboard navigation (separate listener so it runs after openSongViewer) ──
+document.addEventListener('keydown', e => {
+  if(e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && e.key !== 'Enter') return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+
+  const songViewer = document.getElementById('songViewer');
+  if(!songViewer || !songViewer.classList.contains('active')) return;
+  if(sectionEditMode) return;
+
+  const rows = [...document.querySelectorAll('#sections .section-row')];
+  if(!rows.length) return;
+
+  e.preventDefault();
+  e.stopImmediatePropagation();
+
+  if(e.key === 'Enter'){
+    if(_sectionNavIdx >= 0 && _sectionNavIdx < rows.length){
+      const idx = _sectionNavIdx;
+      setTimeout(() => openSectionNotes(idx), 0);
+    }
+    return;
+  }
+
+  const dir = e.key === 'ArrowDown' ? 1 : -1;
+  _sectionNavIdx = Math.max(0, Math.min(rows.length - 1,
+    _sectionNavIdx === -1 ? (dir === 1 ? 0 : rows.length - 1) : _sectionNavIdx + dir
+  ));
+  rows.forEach((r, i) => r.classList.toggle('section-nav-focused', i === _sectionNavIdx));
+  rows[_sectionNavIdx].scrollIntoView({ block: 'nearest' });
 });
 
 function generateId() {
@@ -5215,7 +6110,7 @@ function openNotesModal(){
   document.getElementById('notesEditModalText').value = txt;
   const sections = activeSong?.notes?.sections || [];
   document.getElementById('pnNextBtn').style.opacity = sections.length ? '1' : '.2';
-  document.getElementById('notesEditModal').classList.add('active');
+  openModal('notesEditModal');
 }
 
 function closeNotesModal(){
@@ -5406,6 +6301,7 @@ function openTechniquePlaylist(tq){
 
 // ── Technique entries ─────────────────────────────────
 let activeTqEntry = null;
+let _tqEntryFromEye = false; // opened via 👁 outside technique playlist
 let tqDragSrcIdx  = null;
 
 function renderTechniqueHeader(){ /* no-op: no header bar needed */ }
@@ -5521,7 +6417,7 @@ function openSongPickerForTechnique(){
   const q = document.getElementById('tqSongPickerSearch');
   if(q) q.value = '';
   renderTqSongPicker('');
-  document.getElementById('tqSongPickerModal').classList.add('active');
+  openModal('tqSongPickerModal');
   setTimeout(() => q && q.focus(), 60);
 }
 
@@ -5544,7 +6440,7 @@ function renderTqSongPicker(query){
     document.getElementById('tqSongPickerModal').classList.remove('active');
     pendingTqSongAdd = true;
     // Open normal song modal (bypassing the technique redirect)
-    songModal.classList.add('active');
+    openModal('songModal');
     setTimeout(() => document.getElementById('artistInput').focus(), 50);
   };
   list.appendChild(newRow);
@@ -5578,7 +6474,7 @@ function addSongToTechnique(songId){
 // ── Add exercise ──────────────────────────────────────
 function openExerciseModal(){
   document.getElementById('exerciseName').value = '';
-  document.getElementById('exerciseModal').classList.add('active');
+  openModal('exerciseModal');
   setTimeout(() => document.getElementById('exerciseName').focus(), 50);
 }
 function closeExerciseModal(){
@@ -5598,6 +6494,7 @@ function saveExercise(){
 
 // ── Entry viewer ──────────────────────────────────────
 function openTqEntryViewer(entry, index){
+  if(!_tqEntryFromEye) _tqEntryFromEye = false; // already false for normal calls
   activeTqEntry = { entry, index };
   const tq = activeTechniquePlaylist;
   let title, subtitle;
@@ -5635,7 +6532,7 @@ function openTqEntryViewer(entry, index){
   if(isSong) document.getElementById('tqEntryNickname').value = entry.nickname || '';
   // Show "Switch to Song View" only for song entries
   document.getElementById('tqEntrySongViewRow').style.display = isSong ? 'block' : 'none';
-  document.getElementById('tqEntryViewer').classList.add('active');
+  openModal('tqEntryViewer');
 }
 
 function switchTqEntryToSongView(){
@@ -5643,9 +6540,15 @@ function switchTqEntryToSongView(){
   const song = state.songs.find(s => s.id === activeTqEntry.entry.songId);
   if(!song) return;
   document.getElementById('tqEntryViewer').classList.remove('active');
+  // If opened via 👁 (outside technique context), temporarily clear so song viewer
+  // doesn't think we're inside a technique playlist
+  const savedTq = _tqEntryFromEye ? activeTechniquePlaylist : null;
+  if(_tqEntryFromEye) activeTechniquePlaylist = null;
   openSongViewer(song.id);
-  // Show the back-to-exercise button
+  if(_tqEntryFromEye) activeTechniquePlaylist = savedTq;
+  // Show Exercise View button so user can flip back
   document.getElementById('viewerBackToExerciseBtn').style.display = 'inline-block';
+  document.getElementById('viewerViewTqBtn').style.display = 'none';
 }
 
 function switchSongViewToExercise(){
@@ -5660,7 +6563,12 @@ function switchSongViewToExercise(){
 function closeTqEntryViewer(){
   document.getElementById('tqEntryViewer').classList.remove('active');
   activeTqEntry = null;
-  renderTechniqueEntries();
+  if(_tqEntryFromEye){
+    _tqEntryFromEye = false;
+    activeTechniquePlaylist = null;
+  } else if(activeTechniquePlaylist){
+    renderTechniqueEntries();
+  }
 }
 
 function saveTqEntry(field, value){
@@ -5671,7 +6579,11 @@ function saveTqEntry(field, value){
 
 function saveTqEntryDirect(){
   if(!activeTqEntry) return;
-  activeTechniquePlaylist.entries[activeTqEntry.index] = activeTqEntry.entry;
+  // Find the owning playlist if activeTechniquePlaylist is not set
+  const tq = activeTechniquePlaylist || (state.techniquePlaylists||[]).find(t =>
+    (t.entries||[]).some(e => e === activeTqEntry.entry)
+  );
+  if(tq) tq.entries[activeTqEntry.index] = activeTqEntry.entry;
   saveState();
 }
 
@@ -5713,7 +6625,7 @@ let placementPickerSelected = new Set(); // 'ear-learning' | 'solo-learning' | '
 function openPlacementPicker(){
   placementPickerSelected.clear();
   renderPlacementPickerList();
-  document.getElementById('placementPickerModal').classList.add('active');
+  openModal('placementPickerModal');
 }
 
 function closePlacementPicker(){
@@ -5826,10 +6738,11 @@ function confirmPlacement(){
 let homeNavFocus = null; // { group: 'system'|'personal', idx: 0 }
 
 function homeNavItems(){
-  // Returns flat list of all navigable items in order
-  const system   = [...document.querySelectorAll('#systemTiles [data-nav-group="system"]')];
+  // Returns flat list of all navigable items in order — both tile pages + personal
+  const sys1    = [...document.querySelectorAll('#systemTiles [data-nav-group="system"]')];
+  const sys2    = [...document.querySelectorAll('#systemTiles2 [data-nav-group="system2"]')];
   const personal = [...document.querySelectorAll('#personalPlaylists [data-nav-group="personal"]')];
-  return [...system, ...personal];
+  return [...sys1, ...sys2, ...personal];
 }
 
 function homeNavGetFocused(){
@@ -5842,6 +6755,11 @@ function homeNavSetFocus(el){
   el.classList.add('nav-focused');
   el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   homeNavFocus = { group: el.dataset.navGroup, idx: +el.dataset.navIdx };
+  // If el is on page 2, switch carousel to page 2; if page 1, switch to page 1
+  const onPage2 = !!el.closest('#systemTiles2');
+  const onPage1 = !!el.closest('#systemTiles');
+  if(onPage2 && _tilePageIdx !== 1) goTilePage(1);
+  else if(onPage1 && _tilePageIdx !== 0) goTilePage(0);
 }
 
 function homeNavActivate(el){
@@ -5849,24 +6767,72 @@ function homeNavActivate(el){
   el.click();
 }
 
+// Goal card keyboard focus (0=t1, 1=t2, 2=t3, null=none)
+let goalCardFocusIdx = null;
+const GOAL_CARD_KEYS = ['t1','t2','t3'];
+
+function goalCardSetFocus(idx){
+  GOAL_CARD_KEYS.forEach((k,i) => {
+    const c = document.getElementById(`goalCard-${k}`);
+    if(c) c.classList.toggle('nav-focused', i === idx);
+  });
+  goalCardFocusIdx = idx;
+  if(idx !== null){
+    const card = document.getElementById(`goalCard-${GOAL_CARD_KEYS[idx]}`);
+    if(card) card.scrollIntoView({block:'nearest', inline:'center', behavior:'smooth'});
+    // Clear tile focus
+    homeNavItems().forEach(e => e.classList.remove('nav-focused'));
+    homeNavFocus = null;
+  }
+}
+
+function goalCardClearFocus(){
+  GOAL_CARD_KEYS.forEach(k => {
+    const c = document.getElementById(`goalCard-${k}`);
+    if(c) c.classList.remove('nav-focused');
+  });
+  goalCardFocusIdx = null;
+}
+
 document.addEventListener('keydown', e => {
   const homeEl = document.getElementById('home');
   if(!homeEl || !homeEl.classList.contains('active')) return;
-  // Skip if any modal is open or an input is focused
   if(document.querySelector('.modal.active')) return;
   if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+
+  // --- Goal card focus mode ---
+  if(goalCardFocusIdx !== null){
+    if(e.key === 'ArrowLeft'){
+      e.preventDefault();
+      goalCardSetFocus(Math.max(0, goalCardFocusIdx - 1));
+    } else if(e.key === 'ArrowRight'){
+      e.preventDefault();
+      goalCardSetFocus(Math.min(GOAL_CARD_KEYS.length - 1, goalCardFocusIdx + 1));
+    } else if(e.key === 'ArrowDown' || e.key === 'Escape'){
+      e.preventDefault();
+      goalCardClearFocus();
+      // Restore tile focus on first tile
+      const items = homeNavItems();
+      if(items.length) homeNavSetFocus(items[0]);
+    } else if(e.key === 'Enter'){
+      e.preventDefault();
+      const card = document.getElementById(`goalCard-${GOAL_CARD_KEYS[goalCardFocusIdx]}`);
+      if(card) card.click();
+    }
+    return;
+  }
 
   const items = homeNavItems();
   if(!items.length) return;
 
-  const sysCount = SYSTEM_TILES.length;
-  // Detect grid columns from CSS (3 mobile, 6 desktop)
-  const sysCols = window.innerWidth >= 700 ? 6 : 3;
-  // Personal row is horizontal scroll — treat as 1 row
-  const curEl  = homeNavGetFocused();
-  const curIdx = curEl ? items.indexOf(curEl) : -1;
+  const sys1Count = SYSTEM_TILES.length;
+  const sys2Count = SYSTEM_TILES_2.length;
+  const sysCount  = sys1Count + sys2Count;
+  const sysCols   = window.innerWidth >= 700 ? 6 : 3;
+  const curEl     = homeNavGetFocused();
+  const curIdx    = curEl ? items.indexOf(curEl) : -1;
 
-  const isSys  = curEl && curEl.dataset.navGroup === 'system';
+  const isSys  = curEl && (curEl.dataset.navGroup === 'system' || curEl.dataset.navGroup === 'system2');
   const isPers = curEl && curEl.dataset.navGroup === 'personal';
 
   let next = null;
@@ -5883,30 +6849,42 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     if(curIdx === -1){ next = items[0]; }
     else if(isSys){
-      const sysIdx = +curEl.dataset.navIdx;
-      const belowSys = sysIdx + sysCols;
-      if(belowSys < sysCount){
-        next = items.find(el => el.dataset.navGroup==='system' && +el.dataset.navIdx===belowSys);
+      // next row down within the flat sys+sys2 items list
+      const sysItems = items.filter(el => el.dataset.navGroup==='system' || el.dataset.navGroup==='system2');
+      const sysPos = sysItems.indexOf(curEl);
+      const belowPos = sysPos + sysCols;
+      if(belowPos < sysItems.length){
+        next = sysItems[belowPos];
       } else {
-        // Move to personal row
         next = items.find(el => el.dataset.navGroup==='personal' && +el.dataset.navIdx===0);
       }
     }
-    // Already in personal: no down
   } else if(e.key === 'ArrowUp'){
     e.preventDefault();
-    if(curIdx === -1){ next = items[0]; }
-    else if(isSys){
-      const sysIdx = +curEl.dataset.navIdx;
-      const aboveSys = sysIdx - sysCols;
-      if(aboveSys >= 0){
-        next = items.find(el => el.dataset.navGroup==='system' && +el.dataset.navIdx===aboveSys);
+    const sysItems = items.filter(el => el.dataset.navGroup==='system' || el.dataset.navGroup==='system2');
+    if(!isSys && !isPers){ goalCardSetFocus(0); return; }
+    if(isSys){
+      // Position within this tile's own page (sys1 or sys2)
+      const onPage2 = !!curEl.closest('#systemTiles2');
+      const pageItems = onPage2
+        ? sysItems.filter(el => el.dataset.navGroup==='system2')
+        : sysItems.filter(el => el.dataset.navGroup==='system');
+      const posInPage = pageItems.indexOf(curEl);
+      if(posInPage < sysCols){
+        // Top row of this page → go to goal cards
+        goalCardSetFocus(0);
+        return;
+      } else {
+        next = pageItems[posInPage - sysCols];
       }
     } else if(isPers){
-      // Go back up to last row of system grid
-      const lastRowStart = Math.floor((sysCount - 1) / sysCols) * sysCols;
-      next = items.find(el => el.dataset.navGroup==='system' && +el.dataset.navIdx===lastRowStart);
+      const lastRowStart = Math.max(0, sysItems.length - sysCols);
+      next = sysItems[lastRowStart];
     }
+  } else if(e.key === 'Escape'){
+    e.preventDefault();
+    homeNavItems().forEach(e => e.classList.remove('nav-focused'));
+    homeNavFocus = null;
   } else if(e.key === 'Enter'){
     e.preventDefault();
     homeNavActivate(curEl || items[0]);
@@ -5926,6 +6904,15 @@ navStyle.textContent = `
     outline: 2px solid var(--accent) !important;
     outline-offset: 2px;
   }
+  .goal-card.nav-focused {
+    outline: 2px solid var(--accent) !important;
+    outline-offset: 2px;
+  }
+  .song.nav-focused {
+    outline: 2px solid var(--accent) !important;
+    outline-offset: -2px;
+    background: #1a1a2a !important;
+  }
 `;
 document.head.appendChild(navStyle);
 
@@ -5933,9 +6920,11 @@ document.head.appendChild(navStyle);
 function resetHomeNavFocus(){
   homeNavFocus = null;
   homeNavItems().forEach(e => e.classList.remove('nav-focused'));
+  goalCardClearFocus();
 }
 
-// ── BPM History ───────────────────────────────────────
+
+
 function openBpmHistory(){
   if(!activeTqEntry) return;
   const entry = activeTqEntry.entry;
@@ -5944,7 +6933,7 @@ function openBpmHistory(){
   document.getElementById('tqEntryViewer').classList.remove('active');
   document.getElementById('bpmHistoryCurInput').value = entry.bpmCurrent || '';
   renderBpmHistoryList();
-  document.getElementById('bpmHistoryModal').classList.add('active');
+  openModal('bpmHistoryModal');
   setTimeout(() => document.getElementById('bpmHistoryCurInput').select(), 60);
 }
 
@@ -5953,7 +6942,7 @@ function closeBpmHistory(){
   // Sync current BPM back to entry viewer input and reopen it
   const entry = activeTqEntry?.entry;
   if(entry) document.getElementById('tqEntryBpmCur').value = entry.bpmCurrent || '';
-  document.getElementById('tqEntryViewer').classList.add('active');
+  openModal('tqEntryViewer');
 }
 
 function updateBpmFromHistory(val){
@@ -6022,7 +7011,7 @@ function openManageTechniques(){
   ensureTechniquePlaylists();
   tqMgmtSelected.clear();
   renderTqMgmtList();
-  document.getElementById('manageTqModal').classList.add('active');
+  openModal('manageTqModal');
 }
 
 function closeManageTechniques(){
@@ -6179,7 +7168,7 @@ let mplDragSrc = null;
 function openManagePlaylists(){
   mplSelected.clear();
   renderMplList();
-  document.getElementById('managePlModal').classList.add('active');
+  openModal('managePlModal');
 }
 
 function closeManagePlaylists(){
@@ -6412,6 +7401,7 @@ function renderGenreChips(){
     chip.innerHTML = `${escHtml(g)}<button class="genre-chip-remove" onclick="removeGenreChip(${i})">×</button>`;
     container.appendChild(chip);
   });
+  renderSvGenreChips();
 }
 
 function removeGenreChip(i){
@@ -6462,7 +7452,7 @@ function pickGenreSuggestion(tag){
 let tuningsModalInitialized = false;
 function openTuningsModal(){
   renderTuningsList();
-  document.getElementById('tuningsModal').classList.add('active');
+  openModal('tuningsModal');
   if(!tuningsModalInitialized){
     document.getElementById('newTuningInput').addEventListener('keydown', e => {
       if(e.key === 'Enter'){ e.preventDefault(); addTuning(); }
@@ -6531,10 +7521,17 @@ function openDurationPicker(){
 
 function updateDurationDisplay(){
   const el = document.getElementById('viewerDurationText');
-  if(!el) return;
-  const val = activeSong?.duration || '';
-  el.textContent = val || '—';
-  el.style.color = val ? '#ccc' : 'var(--muted)';
+  if(el){
+    const val = activeSong?.duration || '';
+    el.textContent = val || '—';
+    el.style.color = val ? '#ccc' : 'var(--muted)';
+  }
+  const svEl = document.getElementById('svViewerDurationText');
+  if(svEl){
+    const val = activeSong?.duration || '';
+    svEl.textContent = val || '—';
+    svEl.style.color = val ? '#ccc' : 'var(--muted)';
+  }
 }
 
 function clearTuning(){
@@ -6551,6 +7548,85 @@ function updateTuningClearBtn(){
   const input = document.getElementById('viewerTuning');
   if(!btn || !input) return;
   btn.style.display = input.value.trim() ? 'block' : 'none';
+}
+
+function clearSvTuning(){
+  if(!activeSong) return;
+  activeSong.tuning = '';
+  const inp = document.getElementById('svViewerTuning');
+  if(inp) inp.value = '';
+  const orig = document.getElementById('viewerTuning');
+  if(orig) orig.value = '';
+  updateSvTuningClearBtn();
+  updateTuningClearBtn();
+  saveState();
+  renderViewerMeta();
+}
+
+function updateSvTuningClearBtn(){
+  const btn = document.getElementById('svTuningClearBtn');
+  const input = document.getElementById('svViewerTuning');
+  if(!btn || !input) return;
+  btn.style.display = input.value.trim() ? 'block' : 'none';
+}
+
+function initSvGenreChips(){
+  const input = document.getElementById('svGenreInput');
+  if(!input) return;
+  // Reuse shared genreChips array — already loaded by initGenreChips
+  renderSvGenreChips();
+  input.oninput = () => {
+    const val = input.value;
+    if(val.endsWith(';')){
+      const tag = val.slice(0,-1).trim();
+      if(tag && !genreChips.includes(tag)){
+        genreChips.push(tag);
+        saveGenreChips();
+        renderGenreChips();
+        renderSvGenreChips();
+      }
+      input.value = '';
+      return;
+    }
+  };
+  input.onkeydown = e => {
+    if(e.key === 'Backspace' && input.value === '' && genreChips.length){
+      genreChips.pop();
+      saveGenreChips();
+      renderGenreChips();
+      renderSvGenreChips();
+    }
+    if(e.key === 'Enter' && input.value.trim()){
+      e.preventDefault();
+      const tag = input.value.trim();
+      if(!genreChips.includes(tag)){
+        genreChips.push(tag);
+        saveGenreChips();
+        renderGenreChips();
+        renderSvGenreChips();
+      }
+      input.value = '';
+    }
+  };
+}
+
+function renderSvGenreChips(){
+  const container = document.getElementById('svGenreChips');
+  if(!container) return;
+  container.innerHTML = '';
+  genreChips.forEach((g, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'genre-chip';
+    chip.innerHTML = `${escHtml(g)}<button class="genre-chip-remove" onclick="removeSvGenreChip(${i})">×</button>`;
+    container.appendChild(chip);
+  });
+}
+
+function removeSvGenreChip(i){
+  genreChips.splice(i, 1);
+  saveGenreChips();
+  renderGenreChips();
+  renderSvGenreChips();
 }
 
 function addTuning(){
@@ -6576,29 +7652,61 @@ function initTuningAutocomplete(){
   const box   = document.getElementById('tuningSuggestions');
   if(!input || !box) return;
 
-  input.addEventListener('input', () => {
-    const val = input.value.trim().toLowerCase();
+  function showSuggestions(){
+    const saved = state.tunings || [];
+    if(!saved.length){ box.style.display = 'none'; return; }
     box.innerHTML = '';
-    if(!val){ box.style.display = 'none'; return; }
-    const matches = (state.tunings || []).filter(t => t.toLowerCase().includes(val));
-    if(!matches.length){ box.style.display = 'none'; return; }
-    matches.forEach(t => {
+    saved.forEach(t => {
       const div = document.createElement('div');
       div.textContent = t;
-      div.onmousedown = (e) => {
-        // use mousedown instead of click so it fires before blur hides the box
+      div.onmousedown = e => {
         e.preventDefault();
         input.value = t;
+        autoSaveField('tuning', t);
+        updateTuningClearBtn();
         box.style.display = 'none';
       };
       box.appendChild(div);
     });
     box.style.display = 'block';
-  });
+  }
 
-  input.addEventListener('blur', () => {
-    setTimeout(() => { box.style.display = 'none'; }, 150);
-  });
+  input.addEventListener('focus', showSuggestions);
+  input.addEventListener('input', () => { box.style.display = 'none'; });
+  input.addEventListener('blur',  () => { setTimeout(() => { box.style.display = 'none'; }, 150); });
+}
+
+function initKeyAutocomplete(){
+  const input = document.getElementById('viewerKey');
+  const box   = document.getElementById('keySuggestions');
+  if(!input || !box) return;
+
+  // Remove old listeners by cloning
+  const newInput = input.cloneNode(true);
+  input.parentNode.replaceChild(newInput, input);
+  newInput.addEventListener('input', () => autoSaveField('key', newInput.value));
+
+  function showSuggestions(){
+    const allKeys = [...new Set(state.songs.map(s => s.key).filter(Boolean))];
+    if(!allKeys.length){ box.style.display = 'none'; return; }
+    box.innerHTML = '';
+    allKeys.forEach(k => {
+      const div = document.createElement('div');
+      div.textContent = k;
+      div.onmousedown = e => {
+        e.preventDefault();
+        newInput.value = k;
+        autoSaveField('key', k);
+        box.style.display = 'none';
+      };
+      box.appendChild(div);
+    });
+    box.style.display = 'block';
+  }
+
+  newInput.addEventListener('focus', showSuggestions);
+  newInput.addEventListener('input', () => { box.style.display = 'none'; });
+  newInput.addEventListener('blur',  () => { setTimeout(() => { box.style.display = 'none'; }, 150); });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -7035,7 +8143,7 @@ function openPracticeTextModal(targetId){
   activePracticeTextTarget = ta;
   document.getElementById('practiceTextModalTitle').textContent = ta.placeholder || 'Notes';
   document.getElementById('practiceTextModalArea').value = ta.value;
-  document.getElementById('practiceTextModal').classList.add('active');
+  openModal('practiceTextModal');
   setTimeout(() => document.getElementById('practiceTextModalArea').focus(), 60);
 }
 
@@ -7054,7 +8162,7 @@ function openPracticeLinkPicker(bucket){
   document.getElementById('practiceLinkSearch').value = '';
   document.querySelectorAll('.plm-tab').forEach((t,i) => t.classList.toggle('active', i===0));
   renderPracticeLinkList();
-  document.getElementById('practiceLinkModal').classList.add('active');
+  openModal('practiceLinkModal');
   setTimeout(() => document.getElementById('practiceLinkSearch').focus(), 60);
 }
 
@@ -7368,6 +8476,8 @@ function initHomeGoalCards(){
   homeLoadDay(homeViewDate);
   initGoalCardDots();
   resumeTimersIfNeeded();
+  renderWeeklyCounter();
+  updateMonthlyGoalHeader();
 }
 function resetGoalTimer(k){
   stopGoalTimer(k);
@@ -7437,9 +8547,19 @@ function updateHomeLeftInfo(){
 
 function homeLoadDay(date){
   const data=(state.practiceLog||{})[date]||null;
-  const isToday=date===new Date().toISOString().split('T')[0];
+  const todayStr=new Date().toISOString().split('T')[0];
+  const isToday=date===todayStr;
   const lbl=document.getElementById('sidebarDateLabel');
   if(lbl) lbl.textContent=isToday?'Today':date;
+  // Update hts-label
+  const htslbl=document.getElementById('htsPracticeLabel');
+  if(htslbl){
+    if(isToday) htslbl.textContent='今日の練習';
+    else{
+      const d=new Date(date+'T12:00:00');
+      htslbl.textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+    }
+  }
   ['t1','t2','t3'].forEach(k=>stopGoalTimer(k));
   if(data){
     document.getElementById('homeTotalVal').value=data.total||'0';
@@ -7470,11 +8590,24 @@ function homeLoadDay(date){
   const linksMap={t1:'linksW',t2:'linksM',t3:'linksO'};
   ['t1','t2','t3'].forEach(k=>renderGoalLinks(k,(data&&data[linksMap[k]])||[]));
   homeValidate();
+  // Finished state
+  updateFinishedTimerDisplay(data);
+  // Monthly goal header
+  updateMonthlyGoalHeader();
+  // Weekly counter
+  renderWeeklyCounter();
 }
 
 function savePracticeHome(silent){
   if(!state.practiceLog) state.practiceLog={};
   const existing=state.practiceLog[homeViewDate]||{};
+  // Compute elapsed for each timer (initial - remaining)
+  const elapsed={};
+  ['t1','t2','t3'].forEach(k=>{
+    const t=homeGoalTimers[k];
+    elapsed[k]=Math.max(0, t.initial - t.remaining);
+  });
+  const totalElapsed=elapsed.t1+elapsed.t2+elapsed.t3;
   state.practiceLog[homeViewDate]={
     total: document.getElementById('homeTotalVal').value,
     t1:    document.getElementById('goalVal-t1').value,
@@ -7487,10 +8620,98 @@ function savePracticeHome(silent){
     notesM:  document.getElementById('goalNotes-t2').value,
     notesO:  document.getElementById('goalNotes-t3').value,
     linksW: existing.linksW||[], linksM: existing.linksM||[], linksO: existing.linksO||[],
+    finished: true,
+    elapsedT1: elapsed.t1,
+    elapsedT2: elapsed.t2,
+    elapsedT3: elapsed.t3,
+    elapsedTotal: totalElapsed,
     savedAt: new Date().toISOString()
   };
-  saveState(); renderHomeCalendar();
+  saveState(); renderHomeCalendar(); renderWeeklyCounter();
+  updateFinishedTimerDisplay(state.practiceLog[homeViewDate]);
   if(!silent) showToast(`${homeViewDate} saved ✓`);
+}
+
+function updateFinishedTimerDisplay(data){
+  const finished = data && data.finished;
+  ['t1','t2','t3'].forEach(k=>{
+    const timerEl=document.getElementById(`gcTimer-${k}`);
+    const card=document.getElementById(`goalCard-${k}`);
+    if(!timerEl) return;
+    if(finished){
+      const elapsedKey={t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+      const sec=data[elapsedKey]||0;
+      timerEl.textContent=homeSecToDisplay(sec);
+      timerEl.style.color='#4caf50';
+      if(card) card.style.borderColor='#1a3a1a';
+    } else {
+      timerEl.style.color='';
+      if(card) card.style.borderColor='';
+    }
+  });
+  // Header timer: show total elapsed if finished
+  const htsDisplay=document.getElementById('homeTotalDisplay');
+  if(htsDisplay){
+    if(finished && data.elapsedTotal!=null){
+      htsDisplay.textContent=homeSecToDisplay(data.elapsedTotal);
+      htsDisplay.style.color='#4caf50';
+    } else {
+      htsDisplay.style.color='';
+    }
+  }
+}
+
+function updateMonthlyGoalHeader(){
+  const el=document.getElementById('monthlyGoalHeader');
+  if(!el) return;
+  const monthGoal=HOME_MONTHLY_CYCLE[new Date().getMonth()%HOME_MONTHLY_CYCLE.length];
+  el.textContent=`今月の目標: ${monthGoal}`;
+}
+
+function renderWeeklyCounter(){
+  const el=document.getElementById('weeklyCounterStrip');
+  if(!el) return;
+  // Current weekly goal
+  const weekGoal=HOME_WEEKLY_CYCLE[(homeGetWeekNumber()-1)%HOME_WEEKLY_CYCLE.length];
+  // Find Monday of current week
+  const now=new Date();
+  const day=now.getDay(); // 0=Sun
+  const mondayOffset=day===0?-6:1-day;
+  const monday=new Date(now);
+  monday.setDate(now.getDate()+mondayOffset);
+  monday.setHours(0,0,0,0);
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);
+    d.setDate(monday.getDate()+i);
+    days.push(d);
+  }
+  const dayNames=['月','火','水','木','金','土','日'];
+  const log=state.practiceLog||{};
+  el.innerHTML=`<div style="font-size:.6rem;color:#666;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:.3rem;">今週 — ${weekGoal}</div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">
+  ${days.map((d,i)=>{
+    const ds=d.toISOString().split('T')[0];
+    const entry=log[ds];
+    let color='#1a1a1a';
+    if(entry && entry.savedAt){
+      if(entry.weekly===weekGoal) color='#1a4a1a'; // green
+      else color='#2a1a4a'; // purple
+    }
+    const isToday=ds===new Date().toISOString().split('T')[0];
+    return `<div style="text-align:center;">
+      <div style="font-size:.55rem;color:#555;margin-bottom:2px;">${dayNames[i]}</div>
+      <div style="width:100%;aspect-ratio:1;border-radius:4px;background:${color};border:${isToday?'1px solid #555':'1px solid transparent'};"></div>
+    </div>`;
+  }).join('')}
+  </div>`;
+}
+
+function onGoalCardTap(e, k){
+  // Don't expand if tapping interactive elements
+  const tag=e.target.tagName;
+  if(['BUTTON','SELECT','TEXTAREA','INPUT','A'].includes(tag)) return;
+  toggleCardsExpanded();
 }
 
 const HOME_WEEKLY_CYCLE  = ["REI","JACK WHITE","RHYTHM HEAVY","SPEED","TAPPING","IMPROVISATION","CREATION","FRETBOARD"];
@@ -7692,7 +8913,7 @@ function openGoalNotesModal(k){
   const titles={t1:'今週の目標 — Notes',t2:'今月の目標 — Notes',t3:'その他 — Notes'};
   document.getElementById('goalNotesModalTitle').textContent=titles[k]||'Notes';
   document.getElementById('goalNotesModalArea').value=ta?ta.value:'';
-  document.getElementById('goalNotesModal').classList.add('active');
+  openModal('goalNotesModal');
   setTimeout(()=>document.getElementById('goalNotesModalArea').focus(),60);
 }
 function closeGoalNotesModal(){
@@ -7710,7 +8931,7 @@ function openGoalLinkPicker(k){
   practiceLinkTab='songs';
   document.querySelectorAll('.plm-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
   renderGoalLinkList();
-  document.getElementById('practiceLinkModal').classList.add('active');
+  openModal('practiceLinkModal');
   setTimeout(()=>document.getElementById('practiceLinkSearch').focus(),60);
 }
 function renderGoalLinkList(){
@@ -7855,7 +9076,7 @@ function openAddSongToTqModal(){
   document.getElementById('practiceLinkTabs').style.display='none';
   const list=document.getElementById('practiceLinkList');
   list.innerHTML=html;
-  document.getElementById('practiceLinkModal').classList.add('active');
+  openModal('practiceLinkModal');
   document.getElementById('practiceLinkModal').dataset.mode='addToTq';
 }
 function addSongToTqAndClose(tqIdx){
@@ -7866,6 +9087,7 @@ function addSongToTqAndClose(tqIdx){
   saveState();
   closePracticeLinkModal();
   showToast(`Added to ${tq.name} ✓`);
+  updateViewerTqBtn();
 }
 function createTqAndAddSong(){
   const name=prompt('New technique playlist name:');
@@ -7899,7 +9121,7 @@ function openCreateExerciseForLink(bucket){
   document.getElementById('practiceLinkTabs').style.display='none';
   const list=document.getElementById('practiceLinkList');
   list.innerHTML=html;
-  document.getElementById('practiceLinkModal').classList.add('active');
+  openModal('practiceLinkModal');
   document.getElementById('practiceLinkModal').dataset.mode='createExercise';
 }
 function createExerciseInTqForLink(tqIdx,bucket){
@@ -8062,7 +9284,6 @@ let _playerSong   = null;   // song obj currently loaded
 let _playerLoop   = false;
 let _waveData     = null;   // Float32Array peaks
 let _waveAnimId   = null;
-let _epDragging   = null;   // 'a' | 'b' | null
 let _blobUrl      = null;   // current object URL
 
 function _fmt(s){ s=Math.max(0,s||0); return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
@@ -8070,40 +9291,43 @@ function _loopA(){ return (_playerSong&&_playerSong.loopA!=null)?_playerSong.loo
 function _loopB(){ return (_playerSong&&_playerSong.loopB!=null)?_playerSong.loopB:(_audio.duration||0); }
 
 // ── Link audio file ───────────────────────────────────────
-function linkAudioFile(){
+let _lastTapTime = 0;
+function linkOrLoadAudio(){
   if(!activeSong) return;
-  _filePicker.value='';
-  _filePicker.onchange = () => {
-    const file = _filePicker.files[0];
-    if(!file) return;
-    activeSong.audioFilename = file.name;
-    activeSong._audioFile    = file;   // session-only File ref
-    saveState();
-    _updateViewerAudioBtns();
-    showToast('Linked: ' + file.name);
-  };
-  _filePicker.click();
+  // Always open file picker — pick & load regardless of existing file
+  _pickFile(activeSong, file => {
+    _playerSong = activeSong;
+    _loadFileIntoAudio(file);
+  });
 }
 
 function relinkAudio(){
-  // Pick file for already-loaded song (from expanded player)
-  _filePicker.value='';
+  const song = activeSong || _playerSong;
+  if(!song) return;
+  _pickFile(song, file => {
+    _playerSong = song;
+    _loadFileIntoAudio(file);
+    _updateViewerAudioBtns();
+  });
+}
+
+function _pickFile(song, cb){
+  _filePicker.value = '';
   _filePicker.onchange = () => {
     const file = _filePicker.files[0];
     if(!file) return;
-    if(_playerSong){ _playerSong.audioFilename = file.name; _playerSong._audioFile = file; saveState(); }
-    _loadFileIntoAudio(file);
-    showToast('Relinked: ' + file.name);
+    song.audioFilename = file.name;
+    song._audioFile    = file;
+    saveState();
+    _updateViewerAudioBtns();
+    showToast('Linked: ' + file.name);
+    cb(file);
   };
   _filePicker.click();
 }
 
 function loadIntoPlayer(){
-  if(!activeSong) return;
-  const file = activeSong._audioFile;
-  if(!file){ showToast('Pick the audio file first'); linkAudioFile(); return; }
-  _playerSong = activeSong;
-  _loadFileIntoAudio(file);
+  linkOrLoadAudio();
 }
 
 function _loadFileIntoAudio(file){
@@ -8115,6 +9339,7 @@ function _loadFileIntoAudio(file){
   _waveData = null;
   _audio.oncanplay = () => {
     _showMiniPlayer();
+  updateSectionJumpBtn();
     _updatePlayerUI();
     _decodeWaveform(file);
     _audio.oncanplay = null;
@@ -8123,30 +9348,27 @@ function _loadFileIntoAudio(file){
 
 // ── Viewer buttons ────────────────────────────────────────
 function _updateViewerAudioBtns(){
-  const linkBtn = document.getElementById('viewerLinkAudioBtn');
-  const loadBtn = document.getElementById('viewerLoadPlayerBtn');
-  if(!activeSong||!linkBtn) return;
-  if(activeSong.audioFilename){
-    linkBtn.textContent = '🎵 ' + activeSong.audioFilename.replace(/\.[^.]+$/,'').slice(0,20);
-    if(loadBtn) loadBtn.style.display = 'inline-block';
+  const btn = document.getElementById('viewerLinkAudioBtn');
+  if(!btn) return;
+  if(activeSong && activeSong.audioFilename){
+    btn.textContent = '▶ ' + activeSong.audioFilename.replace(/\.[^.]+$/,'').slice(0,18);
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    btn.style.background = 'rgba(155,89,182,.1)';
+    btn.title = 'Tap to load · Double-tap to change file';
   } else {
-    linkBtn.textContent = '🎵 Link audio';
-    if(loadBtn) loadBtn.style.display = 'none';
+    btn.textContent = '🎵 Link audio';
+    btn.style.borderColor = '#444';
+    btn.style.color = 'var(--muted)';
+    btn.style.background = 'none';
+    btn.title = '';
   }
 }
 
 // ── Mini-player ───────────────────────────────────────────
 function _showMiniPlayer(){
-  document.getElementById('miniPlayer').classList.remove('hidden','minimized');
+  document.getElementById('miniPlayer').classList.remove('hidden');
   document.body.classList.add('player-active');
-}
-function minimizePlayer(){
-  document.getElementById('miniPlayer').classList.add('minimized');
-  document.getElementById('mpMinTitle').textContent  = _playerSong ? _playerSong.title : '';
-  document.getElementById('mpMinSpeed').textContent  = (_audio.playbackRate||1).toFixed(1)+'×';
-}
-function unminimizePlayer(){
-  document.getElementById('miniPlayer').classList.remove('minimized');
 }
 function seekFromMiniBar(e){
   if(!_audio.duration) return;
@@ -8156,12 +9378,65 @@ function seekFromMiniBar(e){
 
 // ── Expanded player ───────────────────────────────────────
 function openExpandedPlayer(){
+  history.pushState({ nav: 'player' }, '');
   document.getElementById('expandedPlayer').classList.add('open');
   _renderWaveform();
+  // Focus playhead so arrow keys can seek
+  const ph = document.getElementById('epPlayhead');
+  if(ph){ ph.setAttribute('tabindex','0'); setTimeout(() => ph.focus(), 100); }
+  // Keep split view bottom in sync
+  setTimeout(_syncSplitViewToPlayer, 50);
 }
 function closeExpandedPlayer(){
   document.getElementById('expandedPlayer').classList.remove('open');
+  if(_splitViewOpen) setTimeout(_updateSplitViewBottom, 50);
 }
+
+// ── Player keyboard shortcuts ─────────────────────────
+document.addEventListener('keydown', e => {
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+
+  const miniVisible = !document.getElementById('miniPlayer').classList.contains('hidden');
+  const expanded = document.getElementById('expandedPlayer').classList.contains('open');
+
+  // Spacebar: player-only, bypasses modals and everything else
+  if(e.key === ' ' || e.code === 'Space'){
+    if(miniVisible){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if(expanded) togglePlayerPlay();
+      else openExpandedPlayer();
+    }
+    return;
+  }
+
+  // Expanded player has top priority — captures all its shortcuts exclusively
+  if(expanded){
+    if(e.key === 'Escape'){
+      e.preventDefault();
+      closeExpandedPlayer();
+    } else if(_audio.src){
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); seekRelative(e.shiftKey ? -1 : -5); }
+      else if(e.key === 'ArrowRight'){ e.preventDefault(); seekRelative(e.shiftKey ? 1 : 5); }
+      else if(e.key === 'a' || e.key === 'A'){ e.preventDefault(); setLoopPoint('a'); }
+      else if(e.key === 'b' || e.key === 'B'){ e.preventDefault(); setLoopPoint('b'); }
+      else if(e.key === 'l' || e.key === 'L'){ e.preventDefault(); toggleLoop(); }
+      else if(e.key === 'c' || e.key === 'C'){ e.preventDefault(); clearLoopPoints(); }
+      else if(e.key === '-' || e.key === '_'){ e.preventDefault(); changeSpeed(-0.1); }
+      else if(e.key === '+' || e.key === '='){ e.preventDefault(); changeSpeed(0.1); }
+    }
+    e.stopImmediatePropagation();
+    return;
+  }
+
+  // Outside expanded player: spacebar opens it (if mini visible)
+  if(document.querySelector('.modal.active')) return;
+
+  if((e.key === ' ' || e.code === 'Space') && miniVisible){
+    e.preventDefault();
+    openExpandedPlayer();
+  }
+}, true); // capture phase — runs before other handlers so expanded player gets priority
 
 // ── Playback ──────────────────────────────────────────────
 function togglePlayerPlay(){
@@ -8198,6 +9473,14 @@ function _updateProgress(){
   if(fill) fill.style.width = pct+'%';
   const ph = document.getElementById('epPlayhead');
   if(ph) ph.style.left = pct+'%';
+  const cur = _fmt(_audio.currentTime);
+  const dur = _fmt(_audio.duration);
+  const mpTimeCur = document.getElementById('mpTimeCur');
+  if(mpTimeCur) mpTimeCur.textContent = cur;
+  const mpTimeDur = document.getElementById('mpTimeDur');
+  if(mpTimeDur) mpTimeDur.textContent = dur;
+  const epTime = document.getElementById('epTimeDisplay');
+  if(epTime) epTime.textContent = cur + ' / ' + dur;
 }
 function _updatePlayerUI(){
   if(!_playerSong) return;
@@ -8206,8 +9489,6 @@ function _updatePlayerUI(){
   document.getElementById('mpSpeedBadge').textContent = spd.toFixed(1)+'×';
   document.getElementById('epTitle').textContent      = _playerSong.title||'';
   document.getElementById('epArtist').textContent     = _playerSong.artist||'';
-  document.getElementById('epFilename').textContent   = _playerSong.audioFilename||'';
-  document.getElementById('epRelinkLabel').textContent= _playerSong.audioFilename||'No file linked';
   document.getElementById('epSpeedVal').textContent   = spd.toFixed(1)+'×';
   document.getElementById('epSpeedSlider').value      = spd;
   _updateLoopUI();
@@ -8221,7 +9502,6 @@ function setPlayerSpeed(v){
   document.getElementById('epSpeedVal').textContent   = v.toFixed(1)+'×';
   document.getElementById('mpSpeedBadge').textContent = v.toFixed(1)+'×';
   document.getElementById('epSpeedSlider').value      = v;
-  document.getElementById('mpMinSpeed').textContent   = v.toFixed(1)+'×';
 }
 function changeSpeed(d){ setPlayerSpeed((_audio.playbackRate||1)+d); }
 
@@ -8271,29 +9551,60 @@ function _updateLoopUI(){
 window.addEventListener('load', function initWaveformInteraction(){
   const wrap = document.getElementById('epWaveformWrap');
   if(!wrap) return;
+
   function posToTime(cx){
     const r=wrap.getBoundingClientRect();
     return Math.max(0,Math.min(1,(cx-r.left)/r.width))*(_audio.duration||0);
   }
-  wrap.addEventListener('click', e=>{ if(!_epDragging) _audio.currentTime=posToTime(e.clientX); });
-  function onMove(e){
-    if(!_epDragging) return;
-    const cx = e.touches?e.touches[0].clientX:e.clientX;
-    const t  = posToTime(cx);
-    if(_playerSong){
-      if(_epDragging==='a') _playerSong.loopA=t;
-      else _playerSong.loopB=t;
+
+  let _dragging = false; // 'seek' | 'a' | 'b'
+
+  function getClientX(e){ return e.touches ? e.touches[0].clientX : e.clientX; }
+
+  // Any touch/mousedown on the waveform = start seeking immediately
+  function onWrapDown(e){
+    const cx = getClientX(e);
+    // Check if near a loop handle first
+    const hA = document.getElementById('epHandleA');
+    const hB = document.getElementById('epHandleB');
+    const r = wrap.getBoundingClientRect();
+    if(hA && hA.style.display !== 'none'){
+      const hAx = r.left + (parseFloat(hA.style.left)/100)*r.width;
+      if(Math.abs(cx - hAx) < 20){ _dragging='a'; return; }
     }
-    saveState(); _updateLoopUI();
+    if(hB && hB.style.display !== 'none'){
+      const hBx = r.left + (parseFloat(hB.style.left)/100)*r.width;
+      if(Math.abs(cx - hBx) < 20){ _dragging='b'; return; }
+    }
+    // Otherwise seek
+    _dragging = 'seek';
+    _audio.currentTime = posToTime(cx);
+    _renderWaveform();
   }
-  function onUp(){ if(_epDragging){ _epDragging=null; _renderWaveform(); } }
+
+  wrap.addEventListener('mousedown',  onWrapDown);
+  wrap.addEventListener('touchstart', onWrapDown, {passive:true});
+
+  function onMove(e){
+    if(!_dragging) return;
+    const cx = getClientX(e);
+    const t  = posToTime(cx);
+    if(_dragging === 'seek'){
+      _audio.currentTime = t;
+    } else if(_playerSong){
+      if(_dragging==='a') _playerSong.loopA=t;
+      else _playerSong.loopB=t;
+      saveState(); _updateLoopUI();
+    }
+  }
+  function onUp(){
+    if(_dragging){ _dragging=null; _renderWaveform(); }
+  }
+
   document.addEventListener('mousemove', onMove);
   document.addEventListener('touchmove', onMove, {passive:true});
   document.addEventListener('mouseup',   onUp);
   document.addEventListener('touchend',  onUp);
-  const hA=document.getElementById('epHandleA'), hB=document.getElementById('epHandleB');
-  if(hA){ hA.addEventListener('mousedown', e=>{ e.stopPropagation(); _epDragging='a'; }); hA.addEventListener('touchstart', e=>{ e.stopPropagation(); _epDragging='a'; },{passive:true}); }
-  if(hB){ hB.addEventListener('mousedown', e=>{ e.stopPropagation(); _epDragging='b'; }); hB.addEventListener('touchstart', e=>{ e.stopPropagation(); _epDragging='b'; },{passive:true}); }
 });
 
 // ── Waveform render ───────────────────────────────────────
@@ -8339,6 +9650,16 @@ _audio.addEventListener('seeked',()=> _renderWaveform());
 
 // ── Android back button / browser back ───────────────
 window.addEventListener('popstate', () => {
+  // Expanded player open → close it first
+  const expanded = document.getElementById('expandedPlayer');
+  if(expanded && expanded.classList.contains('open')){ closeExpandedPlayer(); return; }
+
+  // Any modal open → close topmost
+  if(closeTopmostModal()) return;
+
+  // Split view open → close it
+  if(_splitViewOpen){ closeSplitView(); return; }
+
   // Song viewer open → close it
   const viewer = document.getElementById('songViewer');
   if(viewer && viewer.classList.contains('active')){
@@ -8640,6 +9961,183 @@ window.addEventListener('popstate', () => {
 </div>
 
 <div id="toast"></div>
+
+<!-- ══ SPLIT VIEW ════════════════════════════════════════ -->
+<div id="splitView">
+  <div id="splitViewInner">
+
+    <!-- Header bar -->
+    <div class="sv-header">
+      <div class="sv-header-title">
+        <span id="svTitle" class="sv-title-text"></span>
+        <span id="svArtist" class="sv-artist-text"></span>
+      </div>
+      <button class="sv-close-btn" onclick="closeSplitView()">✕</button>
+    </div>
+
+    <!-- Scroll-snap track: left panel + right panel -->
+    <div class="sv-track" id="svTrack">
+
+      <!-- LEFT: song card content (no sections) -->
+      <div class="sv-panel sv-left">
+        <div id="svStateTagsRow" class="sv-state-tags"></div>
+        <div id="svStateEditor" class="sv-state-editor" style="display:none;">
+          <div class="state-axis-row">
+            <span class="axis-label">General</span>
+            <button class="axis-btn" onclick="setSongState('general-learning')">Learning</button>
+            <button class="axis-btn" onclick="setSongState('general-learned')">Learned</button>
+          </div>
+          <div class="state-axis-row">
+            <span class="axis-label">Ear</span>
+            <button class="axis-btn" onclick="setSongState('ear-learning')">Learning</button>
+            <button class="axis-btn" onclick="setSongState('ear-learned')">Learned</button>
+          </div>
+          <div class="state-axis-row">
+            <span class="axis-label">Solo</span>
+            <button class="axis-btn" onclick="setSongState('solo-learning')">Learning</button>
+            <button class="axis-btn" onclick="setSongState('solo-learned')">Learned</button>
+          </div>
+          <div class="state-axis-row" style="margin-top:8px;">
+            <span class="axis-label"></span>
+            <button class="axis-btn" onclick="setSongState('want')">⭐ Want</button>
+          </div>
+        </div>
+        <div id="svProgressTop" style="margin:.4rem 0 .1rem;">
+          <div id="svProgressBarTop" style="display:flex;gap:2px;height:8px;"></div>
+        </div>
+        <div id="svMetaRow" class="viewer-meta-row"></div>
+
+        <!-- Tabs: Notes / Tone / Fields -->
+        <div class="viewer-tabs" style="margin-top:.6rem;">
+          <button class="viewer-tab active" onclick="switchSvTab('notes')">Notes</button>
+          <button class="viewer-tab" onclick="switchSvTab('tone')">Tone</button>
+          <button class="viewer-tab" onclick="switchSvTab('fields')">Fields</button>
+        </div>
+
+        <!-- Notes panel -->
+        <div id="svtab-notes" class="viewer-panel active">
+          <label>Personal Notes</label>
+          <div id="svPersonalNotesDisplay" class="notes-display" onclick="openNotesModal()"></div>
+        </div>
+
+        <!-- Tone panel -->
+        <div id="svtab-tone" class="viewer-panel">
+          <label>Tone Notes</label>
+          <textarea id="svToneNotes" rows="6" oninput="if(activeSong){activeSong.notes.tone=this.value;var t=document.getElementById('toneNotes');if(t)t.value=this.value;saveState();}"></textarea>
+        </div>
+
+        <!-- Fields panel -->
+        <div id="svtab-fields" class="viewer-panel">
+          <div class="viewer-fields-grid">
+            <div>
+              <label>Key</label>
+              <input id="svViewerKey" oninput="autoSaveField('key',this.value);var k=document.getElementById('viewerKey');if(k)k.value=this.value;" />
+            </div>
+            <div>
+              <label>BPM</label>
+              <input id="svViewerBpm" type="number" oninput="autoSaveField('bpm',this.value);var b=document.getElementById('viewerBpm');if(b)b.value=this.value;" />
+            </div>
+            <div>
+              <label>Duration</label>
+              <div onclick="openDurationPicker()"
+                style="background:#222;border-radius:6px;padding:.4rem .5rem;font-size:.85rem;cursor:pointer;min-height:32px;display:flex;align-items:center;color:#ccc;border:1px solid transparent;transition:border-color .15s;"
+                onmouseover="this.style.borderColor='#555'" onmouseout="this.style.borderColor='transparent'">
+                <span id="svViewerDurationText" style="color:var(--muted);">—</span>
+              </div>
+            </div>
+            <div>
+              <label>Tuning</label>
+              <div style="display:flex;gap:4px;align-items:center;">
+                <input id="svViewerTuning" placeholder="EADGBE" autocomplete="off" style="flex:1;"
+                  oninput="autoSaveField('tuning',this.value);var t=document.getElementById('viewerTuning');if(t)t.value=this.value;updateSvTuningClearBtn();" />
+                <button id="svTuningClearBtn" onclick="clearSvTuning()" title="Clear tuning" style="background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:0 2px;line-height:1;display:none;">✕</button>
+              </div>
+            </div>
+            <div class="full-width">
+              <label>Genre <span style="font-size:.6rem;color:var(--muted);">separate with ;</span></label>
+              <div id="svGenreChipBox" class="chip-box" onclick="document.getElementById('svGenreInput').focus()">
+                <div id="svGenreChips"></div>
+                <input id="svGenreInput" class="chip-input" placeholder="Add genre…" autocomplete="off" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer links -->
+        <div style="display:flex;gap:5px;margin-top:auto;padding-top:.75rem;">
+          <button id="svYTBtn" onclick="openDeezerBot()" style="flex:1;font-size:.72rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:#00c300;cursor:pointer;">🎵 Deezer</button>
+          <button id="svLinkAudioBtn" onclick="linkOrLoadAudio()" style="flex:6;font-size:.75rem;padding:7px 9px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">🎵 Link audio</button>
+        </div>
+      </div>
+
+      <!-- RIGHT: sections -->
+      <div class="sv-panel sv-right">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+          <span style="font-size:.78rem;font-weight:600;color:#ccc;">Sections<span id="svSectionDurationChip" style="margin-left:6px;font-size:.65rem;background:#252525;color:var(--muted);border-radius:4px;padding:1px 6px;display:none;"></span></span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="svSectionJumpLoopBtn" onclick="toggleSectionLoopMode()" style="font-size:.65rem;padding:3px 9px;border-radius:6px;background:none;border:1px solid #333;color:#555;cursor:default;" disabled>⟳ Loop</button>
+            <button class="ghost" id="svSectionEditToggleBtn" onclick="toggleSectionEdit()">Edit</button>
+          </div>
+        </div>
+        <div id="svSections" class="section-list"></div>
+        <button class="ghost" onclick="addSection()" style="font-size:.7rem;margin-top:.3rem;">＋ Add Section</button>
+      </div>
+
+    </div><!-- /sv-track -->
+
+    <!-- Dots -->
+    <div class="sv-dots" id="svDots">
+      <div class="sv-dot active" onclick="goSvPage(0)"></div>
+      <div class="sv-dot" onclick="goSvPage(1)"></div>
+    </div>
+
+  </div><!-- /splitViewInner -->
+</div><!-- /splitView -->
+
+<!-- Creation Notes Modal -->
+<div class="modal" id="creationNotesModal">
+  <div class="modal-content" style="max-width:560px;width:95vw;display:flex;flex-direction:column;height:80vh;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-shrink:0;">
+      <h4 style="margin:0;font-size:.85rem;">✍️ Creation</h4>
+      <button class="ghost" onclick="closeCreationNotes()" style="font-size:.75rem;">✕</button>
+    </div>
+    <textarea id="creationNotesText" style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#eee;padding:.6rem;font-size:.82rem;resize:none;font-family:inherit;" placeholder="Song ideas, lyrics, riffs, concepts…"></textarea>
+    <div class="modal-actions" style="flex-shrink:0;margin-top:.5rem;">
+      <button class="ghost" onclick="closeCreationNotes()">Cancel</button>
+      <button onclick="saveCreationNotes()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fretboard Notes Modal -->
+<div class="modal" id="fretboardNotesModal">
+  <div class="modal-content" style="max-width:560px;width:95vw;display:flex;flex-direction:column;height:80vh;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-shrink:0;">
+      <h4 style="margin:0;font-size:.85rem;">🎯 Fretboard Mastery</h4>
+      <button class="ghost" onclick="closeFretboardNotes()" style="font-size:.75rem;">✕</button>
+    </div>
+    <textarea id="fretboardNotesText" style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#eee;padding:.6rem;font-size:.82rem;resize:none;font-family:inherit;" placeholder="Scale patterns, positions, notes to memorize…"></textarea>
+    <div class="modal-actions" style="flex-shrink:0;margin-top:.5rem;">
+      <button class="ghost" onclick="closeFretboardNotes()">Cancel</button>
+      <button onclick="saveFretboardNotes()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Global Tone Notes Modal -->
+<div class="modal" id="globalToneNotesModal">
+  <div class="modal-content" style="max-width:560px;width:95vw;display:flex;flex-direction:column;height:80vh;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-shrink:0;">
+      <h4 style="margin:0;font-size:.85rem;">🎛 Tone Notes</h4>
+      <button class="ghost" onclick="closeGlobalToneNotes()" style="font-size:.75rem;">✕</button>
+    </div>
+    <textarea id="globalToneNotesText" style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#eee;padding:.6rem;font-size:.82rem;resize:none;font-family:inherit;" placeholder="Amp settings, pedal chains, tone recipes…"></textarea>
+    <div class="modal-actions" style="flex-shrink:0;margin-top:.5rem;">
+      <button class="ghost" onclick="closeGlobalToneNotes()">Cancel</button>
+      <button onclick="saveGlobalToneNotes()">Save</button>
+    </div>
+  </div>
+</div>
 
 <script>
 if('serviceWorker' in navigator){
