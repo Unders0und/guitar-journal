@@ -70,25 +70,62 @@ h2{font-size:.85rem;color:var(--muted);margin:1.2rem 0 .5rem;text-transform:uppe
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
+}
+.gc-timer-row-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 118px;
+}
+.gc-timer-row-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 118px;
+  justify-content: flex-start;
 }
 .gc-timer {
   font-size: 1.55rem;
   font-weight: 900;
-  color: var(--accent);
-  background: rgba(155,89,182,.09);
+  color: #444;
+  background: rgba(255,255,255,.03);
   padding: .15rem .55rem;
   border-radius: 8px;
-  border: 1.5px solid rgba(155,89,182,.25);
+  border: 1.5px solid #2a2a2a;
   cursor: pointer;
   min-width: 108px;
   text-align: center;
-  transition: box-shadow .15s, border-color .15s;
+  transition: box-shadow .15s, border-color .15s, color .15s, background .15s;
   user-select: none;
 }
 .gc-timer.running {
-  box-shadow: 0 0 10px rgba(155,89,182,.55);
+  color: var(--accent);
+  background: rgba(155,89,182,.09);
   border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(155,89,182,.55);
+}
+.gc-timer.state-red {
+  color: #ff6b6b;
+  background: rgba(255,107,107,.08);
+  border-color: rgba(255,107,107,.35);
+}
+.gc-timer.state-green {
+  color: #4caf50;
+  background: rgba(76,175,80,.08);
+  border-color: rgba(76,175,80,.35);
+  cursor: pointer;
+}
+/* Head clock states */
+.hts-display.state-purple {
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(155,89,182,.6);
+}
+.hts-display.state-red {
+  color: #ff6b6b;
+}
+.hts-display.state-green {
+  color: #4caf50;
 }
 .gc-timer-reset {
   background: none;
@@ -102,6 +139,18 @@ h2{font-size:.85rem;color:var(--muted);margin:1.2rem 0 .5rem;text-transform:uppe
   text-align: center;
 }
 .gc-timer-reset:hover { border-color: #666; color: #ccc; }
+.gc-timer-resume {
+  background: none;
+  border: 1px solid rgba(155,89,182,.4);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: .82rem;
+  cursor: pointer;
+  min-width: 36px;
+  text-align: center;
+}
+.gc-timer-resume:hover { border-color: var(--accent); }
 .gc-set-time {
   background: none;
   border: 1px solid #333;
@@ -154,6 +203,48 @@ h2{font-size:.85rem;color:var(--muted);margin:1.2rem 0 .5rem;text-transform:uppe
   font-size: .68rem;
   color: #ff4d4d;
   min-height: .8rem;
+}
+.goals-section-title {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  margin: 0 0 .5rem;
+}
+.goals-section-date {
+  font-size: .7rem;
+  color: #555;
+  margin-left: .4rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.goals-list { margin: 0 0 1.2rem; padding: 0; list-style: none; }
+.goals-list li {
+  padding: .45rem .7rem;
+  border-radius: 7px;
+  font-size: .82rem;
+  color: #666;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.goals-list li.current {
+  background: rgba(155,89,182,.15);
+  border: 1px solid rgba(155,89,182,.4);
+  color: #eee;
+  font-weight: 700;
+}
+.goals-list li.current::before {
+  content: '▶';
+  font-size: .6rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.goals-list li:not(.current)::before {
+  content: '';
+  width: .6rem;
+  flex-shrink: 0;
 }
 
 /* linked chips inside cards */
@@ -208,12 +299,33 @@ h2{font-size:.85rem;color:var(--muted);margin:1.2rem 0 .5rem;text-transform:uppe
   user-select: none;
 }
 .hts-label { font-size: .68rem; color: var(--muted); text-align: center; }
+.hts-status-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  margin-left: 4px;
+  vertical-align: middle;
+  transition: background .3s, box-shadow .3s;
+}
+.hts-status-dot.dot-green {
+  background: #4caf50;
+  box-shadow: 0 0 5px rgba(76,175,80,.8);
+}
+.hts-status-dot.dot-red {
+  background: #ff6b6b;
+  box-shadow: 0 0 5px rgba(255,107,107,.8);
+}
 .hts-display {
   font-size: 1.05rem; font-weight: 900;
   color: var(--accent);
-  /* timer is the centering anchor */
   position: relative;
   z-index: 1;
+  padding: .15rem .55rem;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  min-width: 108px;
+  text-align: center;
 }
 /* set-time btn floats left of center without affecting timer alignment */
 .hts-center-row {
@@ -227,12 +339,17 @@ h2{font-size:.85rem;color:var(--muted);margin:1.2rem 0 .5rem;text-transform:uppe
   background: none; border: 1px solid #2a2a2a;
   color: #666; border-radius: 6px;
   padding: 2px 8px; font-size: .68rem; cursor: pointer;
-  position: absolute;
-  left: calc(50% - 80px); /* sits left of the timer */
-  transform: translateX(-100%);
 }
 .hts-btn:hover { border-color: #555; color: #ccc; }
 .hts-btn.accent { border-color: var(--accent); color: var(--accent); }
+.hts-center-row-left {
+  display: flex; align-items: center; justify-content: flex-end;
+  width: 118px;
+}
+.hts-center-row-right {
+  display: flex; align-items: center; justify-content: flex-start;
+  width: 118px;
+}
 
 /* ── Expanded (vertical) goal card mode ─────────────── */
 .goal-cards-wrap.expanded {
@@ -349,6 +466,24 @@ h2{font-size:.85rem;color:var(--muted);margin:1.2rem 0 .5rem;text-transform:uppe
   box-shadow: 0 4px 12px rgba(0,0,0,.4);
 }
 .home-hamburger:hover { color: #fff; border-color: #555; }
+
+.home-mode-toggle {
+  position: absolute;
+  left: .75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  z-index: 2;
+  transition: color .2s;
+}
+.home-mode-toggle:hover { color: #fff; }
+.home-mode-toggle.posterior { color: var(--accent); }
 
 .home-header {
   display: flex;
@@ -482,6 +617,9 @@ h2{font-size:.85rem;color:var(--muted);margin:1.2rem 0 .5rem;text-transform:uppe
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+.sv-right {
+  overflow-y: hidden; /* section-list scrolls internally */
 }
 .sv-state-tags { cursor: pointer; }
 .sv-state-editor { margin-top: .3rem; }
@@ -686,13 +824,17 @@ button.danger:hover{background:#a00000;}
 }
 
 .suggestions {
-  position: relative;
-  background: #111;
-  border: 1px solid #333;
+  position: absolute;
+  bottom: 100%;
+  left: 0; right: 0;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 6px 6px 0 0;
   max-height: 150px;
   overflow-y: auto;
   display: none;
   z-index: 1000;
+  margin-bottom: 2px;
 }
 
 .suggestions div {
@@ -926,7 +1068,7 @@ button.danger:hover{background:#a00000;}
 #clearFiltersBtn { font-size:.68rem; padding:3px 7px; }
 
 /* ── Section list ─────────────────────────────────── */
-.section-list { display:flex; flex-direction:column; margin-bottom:.4rem; overflow:hidden; border:1px solid #1e1e1e; border-radius:8px; }
+.section-list { display:flex; flex-direction:column; margin-bottom:.4rem; overflow-y:auto; max-height:220px; border:1px solid #1e1e1e; border-radius:8px; }
 
 .section-row {
   display:grid;
@@ -1101,7 +1243,47 @@ button.danger:hover{background:#a00000;}
   width: 90%;
   max-width: 600px;
   max-height: 92svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+/* Scrollable body inside viewer */
+#songViewer .viewer-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#viewerEditArea {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Tab panels */
+.viewer-panel { display: none; }
+.viewer-panel.active { display: block; }
+#vtab-notes.active {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+#vtab-notes .section-list {
+  flex: 1;
+  min-height: 0;
+  max-height: none; /* let flex handle it */
+}
+/* Footer always pinned at bottom */
+#songViewer .viewer-footer-wrap {
+  flex-shrink: 0;
+}
+.section-list::-webkit-scrollbar { width: 3px; }
+.section-list::-webkit-scrollbar-track { background: transparent; }
+.section-list::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+.section-list::-webkit-scrollbar-thumb:hover { background: #555; }
+.section-list { scrollbar-width: thin; scrollbar-color: #333 transparent; }
 
 .viewer-header {
   display: flex;
@@ -1179,9 +1361,6 @@ button.danger:hover{background:#a00000;}
 .viewer-tab:hover { color: #fff; }
 .viewer-tab.active { color: #fff; border-bottom-color: var(--accent); }
 
-/* Tab panels */
-.viewer-panel { display: none; }
-.viewer-panel.active { display: block; }
 
 /* Field grid inside Fields tab */
 .viewer-fields-grid {
@@ -1189,6 +1368,7 @@ button.danger:hover{background:#a00000;}
   grid-template-columns: 1fr 1fr;
   gap: 8px 12px;
 }
+.viewer-fields-grid > div { position: relative; }
 .viewer-fields-grid .full-width { grid-column: 1 / -1; }
 
 /* Edit toggle button */
@@ -1495,6 +1675,7 @@ button.danger:hover{background:#a00000;}
 .prac-day-sq.level-3 { background:#2ecc71; }
 .prac-day-sq.level-4 { background:#58d68d; }
 .prac-day-sq.selected { outline:2px solid var(--accent); }
+.prac-day-sq.unsaved { background:#7b1a1a; color:#ff6b6b; font-weight:700; }
 .prac-day-sq:hover { transform:scale(1.08); }
 
 .practice-proportions {
@@ -1807,12 +1988,18 @@ body.player-active .app { padding-bottom: 68px; }
 
   <!-- Top strip: total + hamburger -->
   <div class="home-total-strip">
-    <div class="hts-label" id="htsPracticeLabel">今日の練習</div>
+    <button class="home-mode-toggle" id="homeModeToggle" onclick="event.stopPropagation();setPosteriorMode(!_posteriorMode)" title="Toggle Normal / Posterior mode">🎸</button>
+    <div class="hts-label" id="htsPracticeLabel">今日の練習 <span id="htsStatusDot" class="hts-status-dot"></span></div>
     <div class="hts-center-row">
-      <button class="hts-btn" onclick="event.stopPropagation();homeTotalSetTime()">🕒</button>
-      <input type="time" id="homeTotalPicker" step="300" style="display:none;">
-      <input type="hidden" id="homeTotalVal" value="0">
+      <div class="hts-center-row-left">
+        <button class="hts-btn" onclick="event.stopPropagation();homeTotalSetTime()">🕒</button>
+        <input type="time" id="homeTotalPicker" step="300" style="display:none;">
+        <input type="hidden" id="homeTotalVal" value="0">
+      </div>
       <span class="hts-display" id="homeTotalDisplay">00:00:00</span>
+      <div class="hts-center-row-right">
+        <button class="hts-btn" id="htsSaveBtn" onclick="event.stopPropagation();savePracticeHome()" title="Save session">💾</button>
+      </div>
     </div>
   </div>
   <button class="home-hamburger" onclick="openHomeSidebar()">☰</button>
@@ -1828,11 +2015,16 @@ body.player-active .app { padding-bottom: 68px; }
           <span class="gc-goal-label" id="gcGoalLabel-t1"></span>
         </div>
         <div class="gc-timer-row">
-          <button class="gc-set-time" onclick="goalTimerSetTime('t1')">🕒</button>
-          <input type="time" id="goalPicker-t1" step="300" style="display:none;">
-          <input type="hidden" id="goalVal-t1" value="0">
-          <div class="gc-timer" id="gcTimer-t1" onclick="toggleGoalTimer('t1')">00:00:00</div>
-          <button class="gc-timer-reset" onclick="resetGoalTimer('t1')">⏹</button>
+          <div class="gc-timer-row-left">
+            <button class="gc-set-time" onclick="event.stopPropagation();goalTimerSetTime('t1')">🕒</button>
+            <input type="time" id="goalPicker-t1" step="300" style="display:none;">
+            <input type="hidden" id="goalVal-t1" value="0">
+          </div>
+          <div class="gc-timer" id="gcTimer-t1" onclick="event.stopPropagation();toggleGoalTimer('t1')">00:00:00</div>
+          <div class="gc-timer-row-right">
+            <button class="gc-timer-reset" onclick="event.stopPropagation();resetGoalTimer('t1')">⏹</button>
+            <button class="gc-timer-resume" id="gcResume-t1" onclick="event.stopPropagation();resumeGoalTimer('t1')" style="visibility:hidden;">▶</button>
+          </div>
         </div>
         <select class="gc-select" id="goalSelect-t1" onchange="updateGoalLabel('t1')">
           <option value="">— weekly goal —</option>
@@ -1857,11 +2049,16 @@ body.player-active .app { padding-bottom: 68px; }
           <span class="gc-goal-label" id="gcGoalLabel-t2"></span>
         </div>
         <div class="gc-timer-row">
-          <button class="gc-set-time" onclick="goalTimerSetTime('t2')">🕒</button>
-          <input type="time" id="goalPicker-t2" step="300" style="display:none;">
-          <input type="hidden" id="goalVal-t2" value="0">
-          <div class="gc-timer" id="gcTimer-t2" onclick="toggleGoalTimer('t2')">00:00:00</div>
-          <button class="gc-timer-reset" onclick="resetGoalTimer('t2')">⏹</button>
+          <div class="gc-timer-row-left">
+            <button class="gc-set-time" onclick="event.stopPropagation();goalTimerSetTime('t2')">🕒</button>
+            <input type="time" id="goalPicker-t2" step="300" style="display:none;">
+            <input type="hidden" id="goalVal-t2" value="0">
+          </div>
+          <div class="gc-timer" id="gcTimer-t2" onclick="event.stopPropagation();toggleGoalTimer('t2')">00:00:00</div>
+          <div class="gc-timer-row-right">
+            <button class="gc-timer-reset" onclick="event.stopPropagation();resetGoalTimer('t2')">⏹</button>
+            <button class="gc-timer-resume" id="gcResume-t2" onclick="event.stopPropagation();resumeGoalTimer('t2')" style="visibility:hidden;">▶</button>
+          </div>
         </div>
         <select class="gc-select" id="goalSelect-t2" onchange="updateGoalLabel('t2')">
           <option value="">— monthly goal —</option>
@@ -1885,11 +2082,16 @@ body.player-active .app { padding-bottom: 68px; }
           <span class="gc-goal-label" id="gcGoalLabel-t3"></span>
         </div>
         <div class="gc-timer-row">
-          <button class="gc-set-time" onclick="goalTimerSetTime('t3')">🕒</button>
-          <input type="time" id="goalPicker-t3" step="300" style="display:none;">
-          <input type="hidden" id="goalVal-t3" value="0">
-          <div class="gc-timer" id="gcTimer-t3" onclick="toggleGoalTimer('t3')">00:00:00</div>
-          <button class="gc-timer-reset" onclick="resetGoalTimer('t3')">⏹</button>
+          <div class="gc-timer-row-left">
+            <button class="gc-set-time" onclick="event.stopPropagation();goalTimerSetTime('t3')">🕒</button>
+            <input type="time" id="goalPicker-t3" step="300" style="display:none;">
+            <input type="hidden" id="goalVal-t3" value="0">
+          </div>
+          <div class="gc-timer" id="gcTimer-t3" onclick="event.stopPropagation();toggleGoalTimer('t3')">00:00:00</div>
+          <div class="gc-timer-row-right">
+            <button class="gc-timer-reset" onclick="event.stopPropagation();resetGoalTimer('t3')">⏹</button>
+            <button class="gc-timer-resume" id="gcResume-t3" onclick="event.stopPropagation();resumeGoalTimer('t3')" style="visibility:hidden;">▶</button>
+          </div>
         </div>
         <select class="gc-select" id="goalSelect-t3" onchange="updateGoalLabel('t3')">
           <option value="">— category —</option>
@@ -1985,10 +2187,37 @@ body.player-active .app { padding-bottom: 68px; }
     </div>
   </div>
 
+  <!-- Time split selector -->
+  <div style="margin-bottom:.5rem;">
+    <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem;">Time Split</div>
+    <div style="display:flex;gap:5px;">
+      <button id="splitBtn-2:1:1" onclick="setTimeSplit('2:1:1')" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">2:1:1</button>
+      <button id="splitBtn-1:2:1" onclick="setTimeSplit('1:2:1')" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">1:2:1</button>
+      <button id="splitBtn-1:1:1" onclick="setTimeSplit('1:1:1')" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">1:1:1</button>
+      <button id="splitBtn-1:1:2" onclick="setTimeSplit('1:1:2')" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">1:1:2</button>
+    </div>
+    <div style="text-align:right;margin-top:.3rem;">
+      <button onclick="saveDefaultTimeSplit()" style="background:none;border:none;color:var(--muted);font-size:.62rem;cursor:pointer;text-decoration:underline;">Save as default</button>
+    </div>
+  </div>
+
+  <!-- Session mode -->
+  <div style="margin-bottom:.5rem;">
+    <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem;">Session Mode</div>
+    <div style="display:flex;gap:5px;">
+      <button id="modeBtn-normal" onclick="setPosteriorMode(false)" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">▶ Normal</button>
+      <button id="modeBtn-posterior" onclick="setPosteriorMode(true)" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">↩ Posterior</button>
+    </div>
+  </div>
+
   <!-- Setup / Reset -->
   <div class="sidebar-actions">
     <button class="sidebar-btn setup" onclick="practiceSessionSetupHome()">⚡ セッション準備</button>
-    <button class="sidebar-btn reset" onclick="practiceResetHome()">↺ Reset</button>
+    <div style="display:flex;gap:.5rem;">
+      <button class="sidebar-btn reset" onclick="practiceResetHome()" style="flex:1;">↺ Reset</button>
+      <button class="sidebar-btn setup" onclick="setCurrentGoals()" style="flex:1;">🎯 SET</button>
+    </div>
+    <button class="sidebar-btn export" onclick="openCurrentGoalsModal()" style="width:100%;">📋 View Goals</button>
   </div>
 
   <!-- Save session -->
@@ -2329,7 +2558,7 @@ body.player-active .app { padding-bottom: 68px; }
   <div class="modal-content" style="max-height:80vh;display:flex;flex-direction:column;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;flex-shrink:0;">
       <h3 style="margin:0;font-size:.95rem;">Add Song</h3>
-      <button class="ghost" onclick="document.getElementById('tqSongPickerModal').classList.remove('active')" style="font-size:.75rem;">✕</button>
+      <button class="ghost" onclick="closeTqSongPicker()" style="font-size:.75rem;">✕</button>
     </div>
     <input id="tqSongPickerSearch" placeholder="Search songs…" oninput="renderTqSongPicker(this.value)"
       style="flex-shrink:0;background:#222;border:none;border-radius:6px;color:#fff;padding:.4rem;margin-bottom:.5rem;" />
@@ -2491,6 +2720,8 @@ body.player-active .app { padding-bottom: 68px; }
     </div>
 
     <!-- State tags (always visible) -->
+    <div class="viewer-body">
+
     <div id="stateTagsRow" onclick="toggleStateEditor()"></div>
     <div id="stateEditor">
       <div class="state-axis-row">
@@ -2555,8 +2786,8 @@ body.player-active .app { padding-bottom: 68px; }
             <div style="display:flex;gap:4px;align-items:center;position:relative;">
               <input id="viewerTuning" placeholder="EADGBE" autocomplete="off" oninput="autoSaveField('tuning', this.value); updateTuningClearBtn();" style="flex:1;" />
               <button id="tuningClearBtn" onclick="clearTuning()" title="Clear tuning" style="background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:0 2px;line-height:1;display:none;">✕</button>
+              <div class="suggestions" id="tuningSuggestions"></div>
             </div>
-            <div class="suggestions" id="tuningSuggestions"></div>
           </div>
           <div class="full-width">
             <label>Genre <span style="font-size:.6rem;color:var(--muted);">separate with ;</span></label>
@@ -2573,17 +2804,17 @@ body.player-active .app { padding-bottom: 68px; }
       <div id="vtab-notes" class="viewer-panel active">
         <label>Personal Notes</label>
         <div id="personalNotesDisplay" class="notes-display" onclick="openNotesModal()"></div>
-        <div id="progressContainer" style="margin:.6rem 0 .25rem;">
+        <div id="progressContainer" style="margin:.6rem 0 .25rem;flex-shrink:0;">
           <div id="progressEmpty" style="font-size:.7rem;color:var(--muted);display:none;">No sections yet</div>
           <div id="progressBar" style="display:flex;gap:2px;height:8px;"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin:.75rem 0 .4rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:.75rem 0 .4rem;flex-shrink:0;">
           <span style="font-size:.75rem;color:var(--muted);">Sections<span id="sectionDurationChip" style="margin-left:6px;font-size:.65rem;background:#252525;color:var(--muted);border-radius:4px;padding:1px 6px;display:none;"></span></span>
           <button id="sectionJumpLoopBtn" onclick="toggleSectionLoopMode()" style="font-size:.65rem;padding:3px 9px;border-radius:6px;background:none;border:1px solid #333;color:#555;cursor:default;" disabled title="Load audio to enable loop mode">⟳ Jump to loop</button>
           <button class="ghost" id="sectionEditToggleBtn" onclick="toggleSectionEdit()">Edit</button>
         </div>
         <div id="sections" class="section-list"></div>
-        <button class="ghost" onclick="addSection()" style="font-size:.7rem;margin-top:.3rem;">＋ Add Section</button>
+        <button class="ghost" onclick="addSection()" style="font-size:.7rem;margin-top:.3rem;flex-shrink:0;">＋ Add Section</button>
       </div>
 
       <!-- Tone tab -->
@@ -2593,6 +2824,10 @@ body.player-active .app { padding-bottom: 68px; }
       </div>
     </div>
 
+    </div><!-- /viewer-body -->
+
+    <!-- Footer pinned -->
+    <div class="viewer-footer-wrap">
     <!-- Footer -->
     <div class="viewer-footer" style="justify-content:space-between;">
       <button id="viewerRemoveBtn" style="display:none;background:#2a2a2a;border:1px solid #555;color:#ccc;font-size:.72rem;padding:4px 10px;border-radius:7px;">Remove</button>
@@ -2608,6 +2843,7 @@ body.player-active .app { padding-bottom: 68px; }
       <button id="viewerLinkAudioBtn" onclick="linkOrLoadAudio()" style="flex:6;font-size:.75rem;padding:7px 9px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">🎵 Link audio</button>
       <button onclick="openSplitView()" title="Split view" style="flex:1;font-size:.8rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);cursor:pointer;">⊞</button>
     </div>
+    </div><!-- /viewer-footer-wrap -->
 
   </div>
 </div>
@@ -3026,7 +3262,7 @@ function openSplitView(){
   if(!activeSong) return;
 
   // Force expanded player open — it will sit on top (z-index 190 > split view 185)
-  openExpandedPlayer();
+  openExpandedPlayer(true);
 
   // Set split view bottom to clear the expanded player
   _updateSplitViewBottom();
@@ -3084,15 +3320,17 @@ function openSplitView(){
   if(track) track.addEventListener('scroll', _onSvTrackScroll, { passive: true });
 }
 
-function closeSplitView(){
+function closeSplitView(closeViewer){
   const sv = document.getElementById('splitView');
   sv.classList.remove('open');
-  sv.style.bottom = ''; // reset so translateY(100%) fully hides it
+  sv.style.bottom = '';
   _splitViewOpen = false;
   const track = document.getElementById('svTrack');
   if(track) track.removeEventListener('scroll', _onSvTrackScroll);
-  // Song viewer was only open to support split view — close it too
-  closeSongViewer();
+  // When closed via ✕ button, also close the viewer.
+  // When closed via back button, leave viewer open — the {nav:'viewer'} entry
+  // below splitview in history will fire popstate and close it naturally.
+  if(closeViewer) closeSongViewer();
 }
 
 function _updateSplitViewBottom(){
@@ -3432,7 +3670,8 @@ function clearFilters(){
 }
 
 function toggleSortPopover(){
-  document.getElementById('sortPopover').classList.toggle('open');
+  const pop = document.getElementById('sortPopover');
+  pop.classList.toggle('open');
 }
 
 function setSortField(field){
@@ -4180,7 +4419,7 @@ function openSongViewer(id){
   // Always open in notes tab, edit area always visible
   viewerEditMode = true;
   activeViewerTab = 'notes';
-  document.getElementById('viewerEditArea').style.display = 'block';
+  document.getElementById('viewerEditArea').style.display = 'flex';
   switchViewerTab('notes');
 
   // State
@@ -4403,7 +4642,7 @@ function toggleViewerEdit(forceOpen){
   viewerEditMode = forceOpen !== undefined ? forceOpen : !viewerEditMode;
   document.getElementById('viewerEditBtn').textContent = viewerEditMode ? 'Done' : 'Edit';
   document.getElementById('viewerEditBtn').classList.toggle('active', viewerEditMode);
-  document.getElementById('viewerEditArea').style.display = viewerEditMode ? 'block' : 'none';
+  document.getElementById('viewerEditArea').style.display = viewerEditMode ? 'flex' : 'none';
   if(viewerEditMode){
     switchViewerTab('notes');
   } else {
@@ -5583,7 +5822,8 @@ function exportData(){
   );
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='guitar-practice.json';
+  const now = new Date();
+  a.download=`G(${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')})__[${String(now.getHours()).padStart(2,'0')}_${String(now.getMinutes()).padStart(2,'0')}].json`;
   a.click();
 }
 
@@ -5916,7 +6156,7 @@ const MODAL_CLOSE_FNS = {
   'goalNotesModal':       'closeGoalNotesModal',
   'practiceLinkModal':    'closePracticeLinkModal',
   'practiceTextModal':    'closePracticeTextModal',
-  'tqSongPickerModal':    'closeExerciseModal',
+  'tqSongPickerModal':    'closeTqSongPicker',
   'bpmHistoryModal':      'closeBpmHistory',
   'tqEntryViewer':        'closeTqEntryViewer',
   'exerciseModal':        'closeExerciseModal',
@@ -5934,6 +6174,9 @@ const MODAL_CLOSE_FNS = {
   'creationNotesModal':   'closeCreationNotes',
   'fretboardNotesModal':  'closeFretboardNotes',
   'globalToneNotesModal': 'closeGlobalToneNotes',
+  'currentGoalsModal':    'closeCurrentGoalsModal',
+  'homeUnsavedModal':     '_unsavedCancel',
+  'songViewer':           'closeSongViewer',
 };
 
 // Which modals should auto-focus a specific child on open
@@ -5989,7 +6232,6 @@ document.addEventListener('keydown', e => {
 }, true); // capture phase so it runs before other handlers
 
 function closeTopmostModal(){
-  // Find all active modals, close the last one opened (last in DOM order = topmost)
   const active = [...document.querySelectorAll('.modal.active')];
   if(!active.length) return false;
   const top = active[active.length - 1];
@@ -5999,13 +6241,42 @@ function closeTopmostModal(){
   } else {
     top.classList.remove('active');
   }
+  const stillActive = [...document.querySelectorAll('.modal.active')];
+  if(stillActive.length > 0){
+    history.pushState({ nav: 'modal', id: stillActive[stillActive.length-1].id }, '');
+  } else {
+    _pushUnderlyingState();
+  }
   return true;
 }
 
+function _pushUnderlyingState(){
+  // Use replaceState, not pushState — popstate already consumed one entry,
+  // so we replace the now-current position instead of stacking a new entry.
+  if(_splitViewOpen){
+    history.replaceState({ nav: 'splitview' }, '');
+  } else if(document.getElementById('playlistView')?.classList.contains('active')){
+    history.replaceState({ nav: 'playlist' }, '');
+  } else if(document.getElementById('techniquesView')?.classList.contains('active')){
+    history.replaceState({ nav: 'techniques' }, '');
+  } else if(document.getElementById('songViewer')?.classList.contains('active')){
+    history.replaceState({ nav: 'viewer' }, '');
+  } else if(document.getElementById('expandedPlayer')?.classList.contains('open')){
+    history.replaceState({ nav: 'expanded' }, '');
+  } else if(document.getElementById('homeSidebar')?.classList.contains('open')){
+    history.replaceState({ nav: 'sidebar' }, '');
+  }
+  // home: sentinel re-pushed at bottom of popstate handler
+}
+
+
 document.addEventListener("keydown", function(e){
   if(e.key === "Escape"){
+    // Sidebar open → close it first
+    const sidebar = document.getElementById('homeSidebar');
+    if(sidebar && sidebar.classList.contains('open')){ closeHomeSidebar(); return; }
     // Split view closes first
-    if(_splitViewOpen){ closeSplitView(); return; }
+    if(_splitViewOpen){ closeSplitView(true); return; }
     // Close topmost modal via registry
     if(closeTopmostModal()) return;
     // Close song viewer
@@ -6127,8 +6398,8 @@ document.addEventListener("keydown", function(e){
 
   // ' (apostrophe) → toggle sidebar on homescreen
   if(e.key === "'"){
-    const homeScreen = document.getElementById("homeScreen");
-    if(homeScreen && homeScreen.classList.contains("active") &&
+    const homeEl = document.getElementById("home");
+    if(homeEl && homeEl.classList.contains("active") &&
        !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName) &&
        !document.querySelector('.modal.active')){
       e.preventDefault();
@@ -6500,6 +6771,10 @@ function openSongPickerForTechnique(){
   renderTqSongPicker('');
   openModal('tqSongPickerModal');
   setTimeout(() => q && q.focus(), 60);
+}
+
+function closeTqSongPicker(){
+  document.getElementById('tqSongPickerModal').classList.remove('active');
 }
 
 function renderTqSongPicker(query){
@@ -8415,9 +8690,105 @@ function homeTimeToDecimal(str){
   return (h||0)+(m||0)/60;
 }
 
+// ── Clock state machine ───────────────────────────────
+// States: 'white' | 'red' | 'purple' | 'green'
+const _clockState = { t1:'white', t2:'white', t3:'white' };
+
+function _setClockState(k, st){
+  _clockState[k] = st;
+  const el = document.getElementById(`gcTimer-${k}`);
+  const resumeBtn = document.getElementById(`gcResume-${k}`);
+  const setBtn = document.querySelector(`#goalCard-${k} .gc-set-time`);
+  if(!el) return;
+  el.classList.remove('state-red','state-green','running');
+  if(st === 'red')    el.classList.add('state-red');
+  if(st === 'green')  el.classList.add('state-green');
+  if(st === 'purple') el.classList.add('running');
+  // Dim 🕒 when running
+  if(setBtn){
+    setBtn.disabled = (st === 'purple');
+    setBtn.style.opacity = (st === 'purple') ? '0.3' : '';
+    setBtn.style.cursor = (st === 'purple') ? 'default' : '';
+  }
+  // Resume button: only visible when red AND session is finished
+  if(resumeBtn){
+    const data = (state.practiceLog||{})[homeViewDate];
+    const hasRemaining = homeGoalTimers[k].remaining > 0;
+    if(st === 'red' && data && data.finished){
+      resumeBtn.style.visibility = '';
+      resumeBtn.disabled = !hasRemaining;
+      resumeBtn.style.opacity = hasRemaining ? '1' : '0.3';
+      resumeBtn.style.cursor = hasRemaining ? 'pointer' : 'default';
+    } else {
+      resumeBtn.style.visibility = 'hidden';
+    }
+  }
+}
+
 function updateGoalTimerDisplay(k){
-  const el=document.getElementById(`gcTimer-${k}`);
-  if(el) el.textContent=homeSecToDisplay(homeGoalTimers[k].remaining);
+  const el = document.getElementById(`gcTimer-${k}`);
+  if(!el) return;
+  const st = _clockState[k];
+  if(st === 'green'){
+    // show elapsed from saved log
+    const data = (state.practiceLog||{})[homeViewDate];
+    const elapsedKey = {t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+    el.textContent = homeSecToDisplay(data ? (data[elapsedKey]||0) : 0);
+  } else {
+    el.textContent = homeSecToDisplay(homeGoalTimers[k].remaining);
+  }
+}
+
+function toggleGoalTimer(k){
+  const data = (state.practiceLog||{})[homeViewDate];
+  const st = _clockState[k];
+
+  // GREEN: tap → red (show remaining) — blocked in posterior mode
+  if(st === 'green'){
+    if(_posteriorMode) return;
+    _setClockState(k, 'red');
+    updateGoalTimerDisplay(k);
+    return;
+  }
+
+  // POSTERIOR MODE: block starting/resuming timers
+  if(_posteriorMode){
+    showToast('Switch to Normal mode to run timers');
+    return;
+  }
+
+  // RED when finished: tap → back to green
+  if(st === 'red' && data && data.finished){
+    _setClockState(k, 'green');
+    updateGoalTimerDisplay(k);
+    return;
+  }
+
+  // RED (normal): tap → start purple
+  if(st === 'red'){
+    startGoalTimer(k);
+    return;
+  }
+
+  // PURPLE: tap → pause → red
+  if(st === 'purple'){
+    stopGoalTimer(k);
+    updateGoalTimerDisplay(k);
+    return;
+  }
+  // WHITE: do nothing
+}
+
+function resumeGoalTimer(k){
+  const data = (state.practiceLog||{})[homeViewDate];
+  if(!data || !data.finished) return;
+  if(!confirm('Resume practice session?')) return;
+  const elKey = {t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+  homeGoalTimers[k]._baseElapsed = data[elKey] || 0;
+  // Reset initial to remaining so new elapsed = initial - remaining starts at 0
+  homeGoalTimers[k].initial = homeGoalTimers[k].remaining;
+  data.finished = false;
+  startGoalTimer(k);
 }
 function updateHomeTotalDisplay(){
   if(_homePreset === 2) return; // preset 2 controls display via countdown
@@ -8427,17 +8798,6 @@ function updateHomeTotalDisplay(){
   homeValidate();
 }
 
-function toggleGoalTimer(k){
-  // Green mode: clock is a display only, not a countdown
-  const data=(state.practiceLog||{})[homeViewDate];
-  if(data && data.finished) return;
-  const t=homeGoalTimers[k];
-  if(t.remaining===0){
-    const dec=Number(document.getElementById(`goalVal-${k}`).value)||0;
-    t.initial=homeDeclToSec(dec); t.remaining=t.initial;
-  }
-  if(!t.running) startGoalTimer(k); else stopGoalTimer(k);
-}
 const TIMER_PERSIST_KEY = 'guitarTimerState';
 
 function saveTimerState(){
@@ -8499,7 +8859,7 @@ function resumeTimersIfNeeded(){
         if(t.remaining <= 0){ stopGoalTimer(k); clearTimerState(); showToast('Session complete 🔥'); }
       }, 1000);
       t.running = true;
-      document.getElementById(`gcTimer-${k}`)?.classList.add('running');
+      _setClockState(k,'purple');
       saveTimerState();
     });
   } else {
@@ -8514,18 +8874,22 @@ function startGoalTimer(k){
   t.interval=setInterval(()=>{
     t.remaining=Math.max(0,Math.floor((t.endTime-Date.now())/1000));
     updateGoalTimerDisplay(k);
-    if(t.remaining<=0){ stopGoalTimer(k); clearTimerState(); showToast('Session complete 🔥'); }
+    if(t.remaining<=0){ stopGoalTimer(k); _setClockState(k,'green'); clearTimerState(); showToast('Session complete 🔥'); }
   },1000);
   t.running=true;
-  document.getElementById(`gcTimer-${k}`)?.classList.add('running');
+  _setClockState(k,'purple');
   saveTimerState();
+  renderHomeCalendar();
+  updateHeadClockState();
 }
 
 function stopGoalTimer(k){
   const t=homeGoalTimers[k];
   clearInterval(t.interval); t.interval=null; t.running=false; t.endTime=null;
-  document.getElementById(`gcTimer-${k}`)?.classList.remove('running');
+  if(_clockState[k]==='purple') _setClockState(k,'red');
   saveTimerState();
+  renderHomeCalendar();
+  updateHeadClockState();
 }
 
 // Auto-save timer state every 30s
@@ -8571,6 +8935,11 @@ function resetGoalTimer(k){
   updateGoalTimerDisplay(k);
 }
 function goalTimerSetTime(k){
+  // Block when running — pause first
+  if(_clockState[k] === 'purple'){
+    showToast('Pause the timer first');
+    return;
+  }
   const picker=document.getElementById(`goalPicker-${k}`);
   if(!picker) return;
   picker.showPicker?.(); picker.focus(); picker.click();
@@ -8578,30 +8947,94 @@ function goalTimerSetTime(k){
     const dec=homeTimeToDecimal(picker.value);
     document.getElementById(`goalVal-${k}`).value=dec.toFixed(2);
     const sec=homeDeclToSec(dec);
-    const data=(state.practiceLog||{})[homeViewDate];
-    if(data && data.finished){
-      // Green mode: value IS the elapsed time — store directly, don't treat as countdown
-      const elapsedKey={t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+    const elapsedKey={t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+    if(_posteriorMode || _clockState[k] === 'green'){
+      // Posterior mode OR already green: set elapsed directly
+      if(!state.practiceLog) state.practiceLog = {};
+      if(!state.practiceLog[homeViewDate]) state.practiceLog[homeViewDate] = {};
+      const data = state.practiceLog[homeViewDate];
       data[elapsedKey]=sec;
-      // Recompute total elapsed
       data.elapsedTotal=(data.elapsedT1||0)+(data.elapsedT2||0)+(data.elapsedT3||0);
-      updateFinishedTimerDisplay(data);
+      // Mark as unsaved since elapsed changed
+      if(data.finished) data.finished = false;
+      homeGoalTimers[k].initial=sec;
+      homeGoalTimers[k].remaining=0;
+      _setClockState(k,'green');
+      updateGoalTimerDisplay(k);
+      updateHeadClockState();
+      renderHomeCalendar();
       homeValidate();
     } else {
+      // Normal mode, not green: set allocation/remaining
       homeGoalTimers[k].initial=sec;
       homeGoalTimers[k].remaining=sec;
+      if(_clockState[k] === 'white') _setClockState(k, 'red');
+      const data=(state.practiceLog||{})[homeViewDate];
+      if(data && data.finished) _setClockState(k, 'red');
       updateGoalTimerDisplay(k); homeValidate();
     }
   };
 }
+function updateHeadClockState(){
+  const el = document.getElementById('homeTotalDisplay');
+  const dot = document.getElementById('htsStatusDot');
+  const saveBtn = document.getElementById('htsSaveBtn');
+  if(!el) return;
+  const data = (state.practiceLog||{})[homeViewDate];
+  el.classList.remove('state-purple','state-red','state-green');
+  if(dot) dot.classList.remove('dot-green','dot-red');
+
+  const isFinished = data && data.finished;
+  const isRunning = ['t1','t2','t3'].some(k => homeGoalTimers[k].running);
+  const hasElapsed = ['t1','t2','t3'].some(k => homeGoalTimers[k].initial>0 && homeGoalTimers[k].remaining < homeGoalTimers[k].initial);
+
+  if(isFinished){
+    el.classList.add('state-green');
+    el.textContent = homeSecToDisplay(data.elapsedTotal||0);
+    if(dot) dot.classList.add('dot-green');
+    if(saveBtn) saveBtn.style.opacity = '0.35';
+  } else if(_posteriorMode){
+    // Posterior: clocks are green, unsaved — show red dot (needs saving)
+    el.classList.add('state-green');
+    const total = data ? (data.elapsedTotal||0) : 0;
+    el.textContent = homeSecToDisplay(total);
+    if(dot) dot.classList.add('dot-red');
+    if(saveBtn) saveBtn.style.opacity = '1';
+  } else if(isRunning){
+    el.classList.add('state-purple');
+    if(dot) dot.classList.add('dot-red');
+    if(saveBtn) saveBtn.style.opacity = '1';
+  } else if(hasElapsed){
+    el.classList.add('state-red');
+    if(dot) dot.classList.add('dot-red');
+    if(saveBtn) saveBtn.style.opacity = '1';
+  } else {
+    if(saveBtn) saveBtn.style.opacity = '0.35';
+  }
+}
+
 function homeTotalSetTime(){
   const picker=document.getElementById('homeTotalPicker');
   if(!picker) return;
   picker.showPicker?.(); picker.focus(); picker.click();
   picker.onchange=()=>{
     const dec=homeTimeToDecimal(picker.value);
-    document.getElementById('homeTotalVal').value=dec.toFixed(2);
-    updateHomeTotalDisplay();
+    const sec=homeDeclToSec(dec);
+    const data=(state.practiceLog||{})[homeViewDate];
+    if(_posteriorMode || (data && data.finished)){
+      // Posterior or green: set total elapsed directly
+      if(!state.practiceLog) state.practiceLog = {};
+      if(!state.practiceLog[homeViewDate]) state.practiceLog[homeViewDate] = {};
+      const d = state.practiceLog[homeViewDate];
+      d.elapsedTotal = sec;
+      if(d.finished) d.finished = false;
+      document.getElementById('homeTotalVal').value=dec.toFixed(2);
+      updateHeadClockState();
+      renderHomeCalendar();
+    } else {
+      document.getElementById('homeTotalVal').value=dec.toFixed(2);
+      updateHomeTotalDisplay();
+    }
   };
 }
 
@@ -8619,12 +9052,14 @@ function homeValidate(){
   const v3=Number(document.getElementById('goalVal-t3').value)||0;
   const sum=v1+v2+v3;
   ['t1','t2','t3'].forEach(k=>{ const el=document.getElementById(`goalWarn-${k}`); if(el) el.textContent=''; });
-  if(_homePreset !== 1) return; // no ideal-split hints on presets 2/3
+  if(_homePreset === 3) return; // no hints on manual preset
   if(sum>total+0.001){
     ['t1','t2','t3'].forEach(k=>{ const el=document.getElementById(`goalWarn-${k}`); if(el) el.textContent='Buckets exceed total'; });
   } else if(total>0){
-    const ideals={t1:total*0.5,t2:total*0.25,t3:total*0.25};
-    const vals={t1:v1,t2:v2,t3:v3}, thresh={t1:0.3,t2:0.2,t3:0.2};
+    const r = _splitRatios[_timeSplit] || [2,1,1];
+    const rSum = r[0]+r[1]+r[2];
+    const ideals = { t1: total*r[0]/rSum, t2: total*r[1]/rSum, t3: total*r[2]/rSum };
+    const vals={t1:v1,t2:v2,t3:v3}, thresh={t1:0.15,t2:0.15,t3:0.15};
     ['t1','t2','t3'].forEach(k=>{
       const el=document.getElementById(`goalWarn-${k}`);
       const sec = Math.round(ideals[k] * 3600);
@@ -8652,15 +9087,13 @@ function homeLoadDay(date){
   const isToday=date===todayStr;
   const lbl=document.getElementById('sidebarDateLabel');
   if(lbl) lbl.textContent=isToday?'Today':date;
-  // Update hts-label
-  const htslbl=document.getElementById('htsPracticeLabel');
-  if(htslbl){
-    if(isToday) htslbl.textContent='今日の練習';
-    else{
-      const d=new Date(date+'T12:00:00');
-      htslbl.textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
-    }
-  }
+
+  // Auto-switch mode: past days → posterior, today → saved preference
+  const targetMode = isToday ? ((state && state.posteriorMode) || false) : true;
+  _posteriorMode = targetMode;
+  _renderModeUI();
+  // Update hts-label via unified function (reads split from saved data for past days)
+  updatePracticeHeaderLabel();
   ['t1','t2','t3'].forEach(k=>stopGoalTimer(k));
   if(data){
     document.getElementById('homeTotalVal').value=data.total||'0';
@@ -8685,14 +9118,32 @@ function homeLoadDay(date){
     const dec=Number(document.getElementById(`goalVal-${k}`).value)||0;
     homeGoalTimers[k].initial=homeDeclToSec(dec);
     homeGoalTimers[k].remaining=homeGoalTimers[k].initial;
+    homeGoalTimers[k]._baseElapsed=0;
+    _setClockState(k, dec > 0 ? 'red' : 'white');
     updateGoalTimerDisplay(k);
   });
   updateHomeTotalDisplay(); updateAllGoalLabels();
   const linksMap={t1:'linksW',t2:'linksM',t3:'linksO'};
   ['t1','t2','t3'].forEach(k=>renderGoalLinks(k,(data&&data[linksMap[k]])||[]));
   homeValidate();
+  // If posterior mode active and day has existing data, show clocks as green
+  if(_posteriorMode){
+    const d = (state.practiceLog||{})[date];
+    if(d){
+      ['t1','t2','t3'].forEach(k => {
+        const elKey = {t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+        const elapsed = d[elKey] || 0;
+        homeGoalTimers[k].initial = elapsed;
+        homeGoalTimers[k].remaining = 0;
+        _setClockState(k, elapsed > 0 ? 'green' : 'white');
+        updateGoalTimerDisplay(k);
+      });
+    }
+    // No data yet — clocks stay white, nothing written to log
+  }
   // Finished state
   updateFinishedTimerDisplay(data);
+  updateHeadClockState();
   // Monthly goal header
   updateMonthlyGoalHeader();
   // Weekly counter
@@ -8702,22 +9153,29 @@ function homeLoadDay(date){
 function savePracticeHome(silent){
   if(!state.practiceLog) state.practiceLog={};
   const existing=state.practiceLog[homeViewDate]||{};
-  // If already finished and we're doing a manual re-save, use existing elapsed
-  // (user may have manually adjusted via 🕒 — those are stored directly in existing)
   let elapsed={};
   if(existing.finished && !silent){
-    // Preserve whatever elapsed values are already stored (possibly hand-edited)
+    // Re-save of finished session: use stored elapsed (may have been hand-edited via 🕒)
+    elapsed={t1:existing.elapsedT1||0, t2:existing.elapsedT2||0, t3:existing.elapsedT3||0};
+  } else if(_posteriorMode){
+    // Posterior mode: elapsed was written directly to log by 🕒, use it as-is
     elapsed={t1:existing.elapsedT1||0, t2:existing.elapsedT2||0, t3:existing.elapsedT3||0};
   } else {
-    // Normal: compute from initial - remaining
     ['t1','t2','t3'].forEach(k=>{
       const t=homeGoalTimers[k];
-      elapsed[k]=Math.max(0, t.initial - t.remaining);
+      const newElapsed = Math.max(0, t.initial - t.remaining);
+      // If resumed, add base elapsed from previous save
+      const base = t._baseElapsed || 0;
+      elapsed[k] = base + newElapsed;
+      t._baseElapsed = 0; // clear after use
     });
   }
   const totalElapsed=elapsed.t1+elapsed.t2+elapsed.t3;
+  // Auto-derive total if not manually set
+  const manualTotal = Number(document.getElementById('homeTotalVal').value)||0;
+  const effectiveTotal = manualTotal > 0 ? manualTotal : totalElapsed/3600;
   state.practiceLog[homeViewDate]={
-    total: document.getElementById('homeTotalVal').value,
+    total: effectiveTotal.toFixed(2),
     t1:    document.getElementById('goalVal-t1').value,
     t2:    document.getElementById('goalVal-t2').value,
     t3:    document.getElementById('goalVal-t3').value,
@@ -8728,11 +9186,12 @@ function savePracticeHome(silent){
     notesM:  document.getElementById('goalNotes-t2').value,
     notesO:  document.getElementById('goalNotes-t3').value,
     linksW: existing.linksW||[], linksM: existing.linksM||[], linksO: existing.linksO||[],
-    finished: !silent,  // only mark finished on manual save
+    finished: !silent,
     elapsedT1: elapsed.t1,
     elapsedT2: elapsed.t2,
     elapsedT3: elapsed.t3,
     elapsedTotal: totalElapsed,
+    split: _timeSplit,
     savedAt: new Date().toISOString()
   };
   saveState(); renderHomeCalendar(); renderWeeklyCounter();
@@ -8743,30 +9202,28 @@ function savePracticeHome(silent){
 function updateFinishedTimerDisplay(data){
   const finished = data && data.finished;
   ['t1','t2','t3'].forEach(k=>{
-    const timerEl=document.getElementById(`gcTimer-${k}`);
     const card=document.getElementById(`goalCard-${k}`);
-    if(!timerEl) return;
     if(finished){
       const elapsedKey={t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+      const allocKey={t1:'t1',t2:'t2',t3:'t3'}[k];
       const sec=data[elapsedKey]||0;
-      timerEl.textContent=homeSecToDisplay(sec);
-      timerEl.style.color='#4caf50';
+      const allocSec=homeDeclToSec(Number(data[allocKey])||0);
+      // Restore initial so resume knows the original allocation
+      homeGoalTimers[k].initial = allocSec;
+      // Preserve remaining = allocation - elapsed for potential resume
+      homeGoalTimers[k].remaining = Math.max(0, allocSec - sec);
+      _setClockState(k, 'green');
+      updateGoalTimerDisplay(k);
       if(card) card.style.borderColor='#1a3a1a';
     } else {
-      timerEl.style.color='';
+      if(_clockState[k] === 'green'){
+        _setClockState(k, homeGoalTimers[k].remaining > 0 ? 'red' : 'white');
+        updateGoalTimerDisplay(k);
+      }
       if(card) card.style.borderColor='';
     }
   });
-  // Header timer: show total elapsed if finished
-  const htsDisplay=document.getElementById('homeTotalDisplay');
-  if(htsDisplay){
-    if(finished && data.elapsedTotal!=null){
-      htsDisplay.textContent=homeSecToDisplay(data.elapsedTotal);
-      htsDisplay.style.color='#4caf50';
-    } else {
-      htsDisplay.style.color='';
-    }
-  }
+  updateHeadClockState();
 }
 
 function updateMonthlyGoalHeader(){
@@ -8831,6 +9288,7 @@ function homeGetWeekNumber(){
 }
 
 function practiceSessionSetupHome(){
+  if(_posteriorMode){ showToast('Switch to Normal mode first'); return; }
   if(homeGoalTimers.t1.running||homeGoalTimers.t2.running||homeGoalTimers.t3.running) return;
 
   if(_homePreset === 3){
@@ -8841,6 +9299,7 @@ function practiceSessionSetupHome(){
       document.getElementById(`goalVal-${k}`).value = '0';
       homeGoalTimers[k].initial = 0;
       homeGoalTimers[k].remaining = 0;
+      _setClockState(k,'white');
       updateGoalTimerDisplay(k);
       document.getElementById(`goalSelect-${k}`).value = '';
     });
@@ -8848,59 +9307,138 @@ function practiceSessionSetupHome(){
     return;
   }
 
+  // Presets 1 & 2: calculate total minutes then split
+  let totalMin = 0;
+
   if(_homePreset === 2){
-    // Until preset: set header to countdown, leave timers for user to fill manually
     const input = document.getElementById('preset2EndTime');
     if(!input || !input.value){ showToast('Set an end time first'); return; }
-    updatePreset2Countdown();
-    // zero out goal timers so user fills manually
-    ['t1','t2','t3'].forEach(k=>{
-      document.getElementById(`goalVal-${k}`).value = '0';
-      homeGoalTimers[k].initial = 0;
-      homeGoalTimers[k].remaining = 0;
-      updateGoalTimerDisplay(k);
-    });
-    updateAllGoalLabels(); homeValidate();
-    return;
+    const [hh,mm] = input.value.split(':').map(Number);
+    const now = new Date();
+    let target = new Date(now);
+    target.setHours(hh, mm, 0, 0);
+    if(target <= now) target.setDate(target.getDate()+1);
+    totalMin = Math.max(0, Math.floor((target - now) / 60000));
+  } else {
+    // Preset 1: until 3am
+    const now = new Date();
+    let target = new Date(now);
+    target.setHours(3,0,0,0);
+    if(now > target) target.setDate(target.getDate()+1);
+    totalMin = Math.max(0, Math.floor((target - now) / 60000));
   }
 
-  // Preset 1 (original): calculate time until 3am, auto-split 50/25/25
-  const now=new Date(); let target=new Date(now);
-  target.setHours(3,0,0,0);
-  if(now>target) target.setDate(target.getDate()+1);
-  const remaining=Math.max(0,(target-now)/(1000*60*60));
-  document.getElementById('homeTotalVal').value=remaining.toFixed(2);
+  const totalHours = totalMin / 60;
+  document.getElementById('homeTotalVal').value = totalHours.toFixed(2);
   updateHomeTotalDisplay();
-  const totalMin=Math.floor(remaining*60);
-  const w=Math.floor(totalMin*0.5),m=Math.floor(totalMin*0.25),o=totalMin-w-m;
-  document.getElementById('goalVal-t1').value=(w/60).toFixed(2);
-  document.getElementById('goalVal-t2').value=(m/60).toFixed(2);
-  document.getElementById('goalVal-t3').value=(o/60).toFixed(2);
+
+  const split = _calcSplit(totalMin, _timeSplit);
+  document.getElementById('goalVal-t1').value = (split.t1/60).toFixed(2);
+  document.getElementById('goalVal-t2').value = (split.t2/60).toFixed(2);
+  document.getElementById('goalVal-t3').value = (split.t3/60).toFixed(2);
+
   ['t1','t2','t3'].forEach(k=>{
-    const dec=Number(document.getElementById(`goalVal-${k}`).value)||0;
-    homeGoalTimers[k].initial=homeDeclToSec(dec);
-    homeGoalTimers[k].remaining=homeGoalTimers[k].initial;
+    const dec = Number(document.getElementById(`goalVal-${k}`).value)||0;
+    homeGoalTimers[k].initial = homeDeclToSec(dec);
+    homeGoalTimers[k].remaining = homeGoalTimers[k].initial;
+    _setClockState(k, dec > 0 ? 'red' : 'white');
     updateGoalTimerDisplay(k);
   });
+
   document.getElementById('goalSelect-t1').value=HOME_WEEKLY_CYCLE[(homeGetWeekNumber()-1)%HOME_WEEKLY_CYCLE.length];
   document.getElementById('goalSelect-t2').value=HOME_MONTHLY_CYCLE[new Date().getMonth()%HOME_MONTHLY_CYCLE.length];
   document.getElementById('goalSelect-t3').value='listening';
   updateAllGoalLabels(); homeValidate();
 }
 
+function setCurrentGoals(){
+  document.getElementById('goalSelect-t1').value = HOME_WEEKLY_CYCLE[(homeGetWeekNumber()-1) % HOME_WEEKLY_CYCLE.length];
+  document.getElementById('goalSelect-t2').value = HOME_MONTHLY_CYCLE[new Date().getMonth() % HOME_MONTHLY_CYCLE.length];
+  document.getElementById('goalSelect-t3').value = 'listening';
+  updateAllGoalLabels();
+}
+
 function practiceResetHome(){
-  if(!confirm('Reset all timers and goals for today?')) return;
+  const dateLabel = homeViewDate === new Date().toISOString().split('T')[0] ? 'today' : homeViewDate;
+  if(!confirm(`Delete all practice data for ${dateLabel}? This cannot be undone.`)) return;
+  // Clear from log
+  if(state.practiceLog) delete state.practiceLog[homeViewDate];
+  // Reset all timers and fields
   ['t1','t2','t3'].forEach(k=>{
     stopGoalTimer(k);
     document.getElementById(`goalVal-${k}`).value='0';
-    homeGoalTimers[k].remaining=0; updateGoalTimerDisplay(k);
+    document.getElementById(`goalNotes-${k}`).value='';
+    document.getElementById(`goalSelect-${k}`).value='';
+    homeGoalTimers[k].initial=0;
+    homeGoalTimers[k].remaining=0;
+    homeGoalTimers[k]._baseElapsed=0;
+    _setClockState(k,'white');
+    updateGoalTimerDisplay(k);
+    renderGoalLinks(k,[]);
   });
-  document.getElementById('homeTotalVal').value='0'; updateHomeTotalDisplay();
+  document.getElementById('homeTotalVal').value='0';
+  updateHomeTotalDisplay();
+  updateHeadClockState();
+  saveState();
+  renderHomeCalendar();
+  renderWeeklyCounter();
+  showToast(`${homeViewDate} cleared`);
+}
+
+// ── Current Goals Modal ───────────────────────────────────
+function openCurrentGoalsModal(){
+  const now = new Date();
+  const weekNum = homeGetWeekNumber();
+  const monthNum = now.getMonth(); // 0-indexed
+
+  const weekGoal  = HOME_WEEKLY_CYCLE[(weekNum-1) % HOME_WEEKLY_CYCLE.length];
+  const monthGoal = HOME_MONTHLY_CYCLE[monthNum % HOME_MONTHLY_CYCLE.length];
+
+  // Week date range (Mon–Sun)
+  const day = now.getDay();
+  const mondayOffset = day===0 ? -6 : 1-day;
+  const monday = new Date(now); monday.setDate(now.getDate()+mondayOffset); monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+  const weekRange = `${fmt(monday)} – ${fmt(sunday)}`;
+
+  // Month name
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthName = monthNames[monthNum];
+
+  // Build HTML
+  let html = '';
+
+  // Weekly section
+  html += `<p class="goals-section-title">This Week <span class="goals-section-date">(${weekRange})</span></p>`;
+  html += `<ul class="goals-list">`;
+  HOME_WEEKLY_CYCLE.forEach((g,i) => {
+    const isCurrent = g === weekGoal;
+    html += `<li class="${isCurrent?'current':''}">${g}</li>`;
+  });
+  html += `</ul>`;
+
+  // Monthly section
+  html += `<p class="goals-section-title">This Month <span class="goals-section-date">(${monthName})</span></p>`;
+  html += `<ul class="goals-list">`;
+  HOME_MONTHLY_CYCLE.forEach((g,i) => {
+    const isCurrent = g === monthGoal;
+    html += `<li class="${isCurrent?'current':''}">${g}</li>`;
+  });
+  html += `</ul>`;
+
+  document.getElementById('currentGoalsContent').innerHTML = html;
+  openModal('currentGoalsModal');
+}
+
+function closeCurrentGoalsModal(){
+  document.getElementById('currentGoalsModal').classList.remove('active');
 }
 
 // ── Presets ──────────────────────────────────────────────
 let _homePreset = 1; // 1=auto, 2=until, 3=manual
 let _preset2Interval = null;
+let _posteriorMode = false;
 
 function setHomePreset(n){
   _homePreset = n;
@@ -8920,6 +9458,12 @@ function _renderPresetUI(){
   });
   const row = document.getElementById('preset2EndTimeRow');
   if(row) row.style.display = _homePreset === 2 ? 'block' : 'none';
+  // Dim head clock 🕒 on preset 2 (countdown controls display)
+  const htsBtn = document.querySelector('.hts-btn');
+  if(htsBtn){
+    htsBtn.disabled = (_homePreset === 2);
+    htsBtn.style.opacity = (_homePreset === 2) ? '0.3' : '';
+  }
   // restart countdown if preset 2 active
   if(_homePreset === 2){
     _startPreset2Countdown();
@@ -8961,12 +9505,216 @@ function updatePreset2Countdown(){
 
 function initHomePreset(){
   _homePreset = (state && state.homePreset) || 1;
-  // restore preset 2 end time if saved
   if(_homePreset === 2 && state && state.homePreset2EndTime){
     const input = document.getElementById('preset2EndTime');
     if(input) input.value = state.homePreset2EndTime;
   }
   _renderPresetUI();
+}
+
+// ── Posterior Mode ──────────────────────────────────────
+function setPosteriorMode(on){
+  if(on && _posteriorMode) return;
+  if(!on && !_posteriorMode) return;
+
+  if(on){
+    // Normal → Posterior
+    ['t1','t2','t3'].forEach(k => {
+      if(homeGoalTimers[k].running) stopGoalTimer(k);
+    });
+    const inMemoryElapsed = {};
+    ['t1','t2','t3'].forEach(k => {
+      inMemoryElapsed[k] = Math.max(0, homeGoalTimers[k].initial - homeGoalTimers[k].remaining);
+    });
+    const anyElapsed = Object.values(inMemoryElapsed).some(v => v > 0);
+    const existingData = (state.practiceLog||{})[homeViewDate];
+    const anyStored = existingData && ['elapsedT1','elapsedT2','elapsedT3'].some(k => (existingData[k]||0) > 0);
+
+    if(anyElapsed || anyStored){
+      // Only create/update log entry if there's something to commit
+      if(!state.practiceLog) state.practiceLog = {};
+      if(!state.practiceLog[homeViewDate]) state.practiceLog[homeViewDate] = {};
+      const data = state.practiceLog[homeViewDate];
+      ['t1','t2','t3'].forEach(k => {
+        const elKey = {t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+        data[elKey] = Math.max(data[elKey]||0, inMemoryElapsed[k]);
+        homeGoalTimers[k].initial = data[elKey];
+        homeGoalTimers[k].remaining = 0;
+        homeGoalTimers[k]._baseElapsed = 0;
+        _setClockState(k, data[elKey] > 0 ? 'green' : 'white');
+        updateGoalTimerDisplay(k);
+      });
+      data.elapsedTotal = (data.elapsedT1||0)+(data.elapsedT2||0)+(data.elapsedT3||0);
+    } else {
+      // Nothing to commit — just set all clocks to white
+      ['t1','t2','t3'].forEach(k => {
+        homeGoalTimers[k].initial = 0;
+        homeGoalTimers[k].remaining = 0;
+        homeGoalTimers[k]._baseElapsed = 0;
+        _setClockState(k, 'white');
+        updateGoalTimerDisplay(k);
+      });
+    }
+
+  } else {
+    // Posterior → Normal
+    const data = (state.practiceLog||{})[homeViewDate];
+    ['t1','t2','t3'].forEach(k => {
+      const elKey = {t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+      const storedElapsed = data ? (data[elKey]||0) : 0;
+
+      if(storedElapsed > 0){
+        // Load stored elapsed as the new initial, remaining = 0
+        // This means normal mode will treat the posterior-logged time as already elapsed
+        homeGoalTimers[k].initial = storedElapsed;
+        homeGoalTimers[k].remaining = 0;
+        homeGoalTimers[k]._baseElapsed = storedElapsed; // so next save accumulates correctly
+        _setClockState(k, 'green');
+      } else {
+        // Nothing logged — go white, clear provisional log entry
+        homeGoalTimers[k].initial = 0;
+        homeGoalTimers[k].remaining = 0;
+        homeGoalTimers[k]._baseElapsed = 0;
+        if(data) data[elKey] = 0;
+        _setClockState(k, 'white');
+      }
+      updateGoalTimerDisplay(k);
+    });
+    if(data) data.elapsedTotal = (data.elapsedT1||0)+(data.elapsedT2||0)+(data.elapsedT3||0);
+  }
+
+  _posteriorMode = on;
+  if(state) state.posteriorMode = on;
+  saveState();
+  _renderModeUI();
+  updateHeadClockState();
+}
+
+function _renderModeUI(){
+  const normalBtn    = document.getElementById('modeBtn-normal');
+  const posteriorBtn = document.getElementById('modeBtn-posterior');
+  const headerToggle = document.getElementById('homeModeToggle');
+
+  if(normalBtn && posteriorBtn){
+    [normalBtn, posteriorBtn].forEach(btn => {
+      btn.style.background  = '#1a1a1a';
+      btn.style.borderColor = '#333';
+      btn.style.color       = '#aaa';
+    });
+    const activeBtn = _posteriorMode ? posteriorBtn : normalBtn;
+    activeBtn.style.background  = '#252540';
+    activeBtn.style.borderColor = 'var(--accent)';
+    activeBtn.style.color       = 'var(--accent)';
+  }
+
+  // Header shortcut toggle
+  if(headerToggle){
+    headerToggle.textContent = _posteriorMode ? '📋' : '🎸';
+    headerToggle.classList.toggle('posterior', _posteriorMode);
+  }
+
+  // Dim セッション準備 in posterior mode
+  document.querySelectorAll('.sidebar-btn.setup').forEach(btn => {
+    if(btn.textContent.includes('セッション準備')){
+      btn.style.opacity = _posteriorMode ? '0.4' : '';
+    }
+  });
+}
+
+function initPosteriorMode(){
+  _posteriorMode = (state && state.posteriorMode) || false;
+  _renderModeUI();
+  if(_posteriorMode){
+    // Re-apply green states on load — same as switching ON
+    if(!state.practiceLog) state.practiceLog = {};
+    if(!state.practiceLog[homeViewDate]) state.practiceLog[homeViewDate] = {};
+    const data = state.practiceLog[homeViewDate];
+    ['t1','t2','t3'].forEach(k => {
+      const elKey = {t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+      const elapsed = data[elKey] || 0;
+      homeGoalTimers[k].initial = elapsed;
+      homeGoalTimers[k].remaining = 0;
+      _setClockState(k, 'green');
+      updateGoalTimerDisplay(k);
+    });
+    data.elapsedTotal = (data.elapsedT1||0)+(data.elapsedT2||0)+(data.elapsedT3||0);
+    updateHeadClockState();
+  }
+}
+
+// ── Time Split ─────────────────────────────────────────
+let _timeSplit = '2:1:1';
+
+const _splitLabels = {
+  '2:1:1': 'Weekly Focus',
+  '1:2:1': 'Monthly Focus',
+  '1:1:1': 'Balanced',
+  '1:1:2': 'Bored'
+};
+
+const _splitRatios = {
+  '2:1:1': [2,1,1],
+  '1:2:1': [1,2,1],
+  '1:1:1': [1,1,1],
+  '1:1:2': [1,1,2]
+};
+
+function _calcSplit(totalMin, split){
+  const r = _splitRatios[split] || [2,1,1];
+  const total = r[0]+r[1]+r[2];
+  const t1 = Math.floor(totalMin * r[0]/total);
+  const t2 = Math.floor(totalMin * r[1]/total);
+  const t3 = totalMin - t1 - t2;
+  return { t1, t2, t3 };
+}
+
+function setTimeSplit(split){
+  _timeSplit = split;
+  _renderSplitUI();
+  homeValidate();
+}
+
+function saveDefaultTimeSplit(){
+  state.defaultTimeSplit = _timeSplit;
+  saveState();
+  showToast(`Default split saved: ${_timeSplit}`);
+}
+
+function _renderSplitUI(){
+  ['2:1:1','1:2:1','1:1:1','1:1:2'].forEach(s => {
+    const btn = document.getElementById(`splitBtn-${s}`);
+    if(!btn) return;
+    const active = _timeSplit === s;
+    btn.style.background  = active ? '#252540' : '#1a1a1a';
+    btn.style.borderColor = active ? 'var(--accent)' : '#333';
+    btn.style.color       = active ? 'var(--accent)' : '#aaa';
+  });
+  updatePracticeHeaderLabel();
+}
+
+function updatePracticeHeaderLabel(){
+  const el = document.getElementById('htsPracticeLabel');
+  if(!el) return;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isToday = homeViewDate === todayStr;
+  const label = _splitLabels[_timeSplit] || '';
+  let text;
+  if(isToday){
+    text = label ? `今日の練習: ${label}` : '今日の練習';
+  } else {
+    const d = new Date(homeViewDate+'T12:00:00');
+    const dateLabel = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+    const data = (state.practiceLog||{})[homeViewDate];
+    const pastLabel = data && data.split ? `: ${_splitLabels[data.split]||data.split}` : '';
+    text = dateLabel + pastLabel;
+  }
+  el.innerHTML = `${text} <span id="htsStatusDot" class="hts-status-dot"></span>`;
+  updateHeadClockState(); // re-apply dot state after rebuild
+}
+
+function initTimeSplit(){
+  _timeSplit = (state && state.defaultTimeSplit) || '2:1:1';
+  _renderSplitUI();
 }
 
 // Save preset2 end time when changed
@@ -8986,11 +9734,81 @@ function toggleSidebarYearCal(){
   cal.style.display = cal.style.display === 'none' ? 'block' : 'none';
 }
 
+// ── Unsaved Changes Intercept ──────────────────────────
+let _pendingNavDate = null;
+let _preChangeSnapshot = null; // snapshot of log entry before unsaved changes
+
+function _hasUnsavedChanges(){
+  const data = (state.practiceLog||{})[homeViewDate];
+  if(data && data.finished) return false;
+  // Normal mode: any timer has elapsed
+  if(!_posteriorMode){
+    return ['t1','t2','t3'].some(k => {
+      const t = homeGoalTimers[k];
+      return t.running || (t.initial > 0 && t.remaining < t.initial);
+    });
+  }
+  // Posterior mode: any elapsed written to log
+  return ['t1','t2','t3'].some(k => {
+    const elKey = {t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
+    return (data && (data[elKey]||0) > 0);
+  });
+}
+
+function homeNavigateTo(date){
+  if(date === homeViewDate) return;
+  if(_hasUnsavedChanges()){
+    _pendingNavDate = date;
+    // Snapshot the last saved state (or null if nothing was saved)
+    const existing = (state.practiceLog||{})[homeViewDate];
+    _preChangeSnapshot = existing ? JSON.parse(JSON.stringify(existing)) : null;
+    const msg = document.getElementById('homeUnsavedMsg');
+    if(msg) msg.textContent = `You have unsaved changes for ${homeViewDate}.`;
+    openModal('homeUnsavedModal');
+  } else {
+    _doNavigate(date);
+  }
+}
+
+function _doNavigate(date){
+  homeViewDate = date;
+  homeCalViewDate = new Date(date+'T12:00:00');
+  homeLoadDay(date);
+  renderHomeCalendar();
+  renderHomeYearGrid();
+}
+
+function _unsavedAction(action){
+  document.getElementById('homeUnsavedModal').classList.remove('active');
+  const date = _pendingNavDate;
+  _pendingNavDate = null;
+  if(action === 'cancel' || !date) return;
+  if(action === 'save')  { savePracticeHome(false); }
+  if(action === 'cache') { savePracticeHome(true); }
+  if(action === 'discard'){
+    // Restore to last saved state, or remove entry if there was none
+    if(_preChangeSnapshot){
+      if(!state.practiceLog) state.practiceLog = {};
+      state.practiceLog[homeViewDate] = _preChangeSnapshot;
+    } else {
+      if(state.practiceLog) delete state.practiceLog[homeViewDate];
+    }
+    saveState();
+    renderHomeCalendar();
+  }
+  _preChangeSnapshot = null;
+  _doNavigate(date);
+}
+
+function _unsavedCancel(){
+  document.getElementById('homeUnsavedModal').classList.remove('active');
+  _pendingNavDate = null;
+  _preChangeSnapshot = null;
+}
+
 function homeNavDate(delta){
   const d=new Date(homeViewDate); d.setDate(d.getDate()+delta);
-  homeViewDate=d.toISOString().split('T')[0];
-  homeCalViewDate=new Date(homeViewDate+'T12:00:00');
-  homeLoadDay(homeViewDate); renderHomeCalendar();
+  homeNavigateTo(d.toISOString().split('T')[0]);
 }
 function homeSidebarPickDate(){
   const input=document.createElement('input');
@@ -8999,9 +9817,7 @@ function homeSidebarPickDate(){
   document.body.appendChild(input);
   input.showPicker?.(); input.focus(); input.click();
   input.onchange=()=>{
-    homeViewDate=input.value;
-    homeCalViewDate=new Date(homeViewDate+'T12:00:00');
-    homeLoadDay(homeViewDate); renderHomeCalendar();
+    homeNavigateTo(input.value);
     document.body.removeChild(input);
   };
   input.onblur=()=>setTimeout(()=>{ if(document.body.contains(input)) document.body.removeChild(input); },200);
@@ -9010,6 +9826,7 @@ function homeSidebarPickDate(){
 function openHomeSidebar(){
   document.getElementById('homeSidebar').classList.add('open');
   document.getElementById('homeSidebarBackdrop').classList.add('open');
+  history.pushState({ nav: 'sidebar' }, '');
   renderHomeCalendar();
   renderHomeYearGrid();
 }
@@ -9036,13 +9853,21 @@ function renderHomeCalendar(){
   for(let d=1;d<=last.getDate();d++){
     const dateStr=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const sq=document.createElement('div'); sq.className='prac-day-sq'; sq.textContent=d;
-    if(log[dateStr]){
+    const isUnsaved = dateStr===homeViewDate &&
+      !(log[dateStr] && log[dateStr].finished) &&
+      ['t1','t2','t3'].some(k=>{
+        const t=homeGoalTimers[k];
+        return t.running || (t.initial>0 && t.remaining<t.initial);
+      });
+    if(isUnsaved){
+      sq.classList.add('unsaved');
+    } else if(log[dateStr]){
       const h=Number(log[dateStr].total)||0; sq.classList.add('has-data');
       let lvl=1; if(h>=2)lvl=2; if(h>=4)lvl=3; if(h>=6)lvl=4;
       sq.classList.add(`level-${lvl}`);
     }
     if(dateStr===homeViewDate) sq.classList.add('selected');
-    sq.onclick=()=>{ homeViewDate=dateStr; homeCalViewDate=new Date(dateStr+'T12:00:00'); homeLoadDay(dateStr); renderHomeCalendar(); renderHomeYearGrid(); };
+    sq.onclick=()=>{ homeNavigateTo(dateStr); };
     grid.appendChild(sq);
   }
   // Keep year grid in sync with the displayed year
@@ -9532,6 +10357,10 @@ renderSystemTiles();
 renderPlaylists();
 initHomeGoalCards();
 initHomePreset();
+initTimeSplit();
+initPosteriorMode();
+// Push a permanent bottom sentinel so Android back never exits the app
+history.replaceState({ nav: 'home' }, '');
 
 // ══ AUDIO PLAYER ══════════════════════════════════════════
 
@@ -9635,8 +10464,8 @@ function seekFromMiniBar(e){
 }
 
 // ── Expanded player ───────────────────────────────────────
-function openExpandedPlayer(){
-  history.pushState({ nav: 'player' }, '');
+function openExpandedPlayer(silent){
+  if(!silent) history.pushState({ nav: 'player' }, '');
   document.getElementById('expandedPlayer').classList.add('open');
   _renderWaveform();
   // Focus playhead so arrow keys can seek
@@ -9908,48 +10737,43 @@ _audio.addEventListener('seeked',()=> _renderWaveform());
 
 // ── Android back button / browser back ───────────────
 window.addEventListener('popstate', () => {
-  // Expanded player open → close it first
+  // Sidebar
+  const sidebar = document.getElementById('homeSidebar');
+  if(sidebar && sidebar.classList.contains('open')){ closeHomeSidebar(); return; }
+
+  // Split view (before modals — songViewer is a .modal and would be caught first)
+  if(_splitViewOpen){
+    const exp = document.getElementById('expandedPlayer');
+    if(exp && exp.classList.contains('open')){ closeExpandedPlayer(); _pushUnderlyingState(); return; }
+    closeSplitView(); return;
+  }
+
+  // Modals (includes songViewer via MODAL_CLOSE_FNS)
+  if(closeTopmostModal()) return;
+
+  // Expanded player
   const expanded = document.getElementById('expandedPlayer');
   if(expanded && expanded.classList.contains('open')){ closeExpandedPlayer(); return; }
 
-  // Any modal open → close topmost
-  if(closeTopmostModal()) return;
-
-  // Split view open → close it
-  if(_splitViewOpen){ closeSplitView(); return; }
-
-  // Song viewer open → close it
-  const viewer = document.getElementById('songViewer');
-  if(viewer && viewer.classList.contains('active')){
-    closeSongViewer();
-    return;
-  }
-
-  // Practice view open → close it
+  // Practice view
   const practiceView = document.getElementById('practiceView');
-  if(practiceView && practiceView.classList.contains('active')){
-    closePracticeView();
-    return;
-  }
+  if(practiceView && practiceView.classList.contains('active')){ closePracticeView(); return; }
 
-  // Techniques list view open → go home
+  // Techniques view
   const tqView = document.getElementById('techniquesView');
-  if(tqView && tqView.classList.contains('active')){
-    closeTechniquesView();
-    return;
-  }
+  if(tqView && tqView.classList.contains('active')){ closeTechniquesView(); return; }
 
-  // Playlist view open → dismiss layers then exit
+  // Playlist view
   const playlistView = document.getElementById('playlistView');
   if(playlistView && playlistView.classList.contains('active')){
     const pop = document.getElementById('sortPopover');
-    if(pop && pop.classList.contains('open')){ pop.classList.remove('open'); history.pushState({nav:'playlist'}, ''); return; }
+    if(pop && pop.classList.contains('open')){ pop.classList.remove('open'); history.replaceState({nav:'playlist'}, ''); return; }
 
     const fb = document.getElementById('filterBar');
     if(fb && fb.classList.contains('open')){
       fb.classList.remove('open');
       document.getElementById('filterToggleBtn')?.classList.remove('active');
-      history.pushState({nav:'playlist'}, '');
+      history.replaceState({nav:'playlist'}, '');
       return;
     }
 
@@ -9959,14 +10783,18 @@ window.addEventListener('popstate', () => {
       document.getElementById('editPlaylistBtn').classList.remove('active');
       document.getElementById('deletePlaylistBtn').style.display = 'none';
       renderSongs();
-      history.pushState({nav:'playlist'}, '');
+      history.replaceState({nav:'playlist'}, '');
       return;
     }
 
     if(activeTechniquePlaylist) backFromTechniquePlaylist();
     else if(techniquePlaylistFromHome){ techniquePlaylistFromHome=false; goHome(); }
     else goHome();
+    return;
   }
+
+  // Home / nothing open — re-push sentinel so the app never exits on Android
+  history.pushState({ nav: 'home' }, '');
 });
 
 </script>
@@ -10230,7 +11058,7 @@ window.addEventListener('popstate', () => {
         <span id="svTitle" class="sv-title-text"></span>
         <span id="svArtist" class="sv-artist-text"></span>
       </div>
-      <button class="sv-close-btn" onclick="closeSplitView()">✕</button>
+      <button class="sv-close-btn" onclick="closeSplitView(true)">✕</button>
     </div>
 
     <!-- Scroll-snap track: left panel + right panel -->
@@ -10330,15 +11158,15 @@ window.addEventListener('popstate', () => {
 
       <!-- RIGHT: sections -->
       <div class="sv-panel sv-right">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-shrink:0;">
           <span style="font-size:.78rem;font-weight:600;color:#ccc;">Sections<span id="svSectionDurationChip" style="margin-left:6px;font-size:.65rem;background:#252525;color:var(--muted);border-radius:4px;padding:1px 6px;display:none;"></span></span>
           <div style="display:flex;gap:6px;align-items:center;">
             <button id="svSectionJumpLoopBtn" onclick="toggleSectionLoopMode()" style="font-size:.65rem;padding:3px 9px;border-radius:6px;background:none;border:1px solid #333;color:#555;cursor:default;" disabled>⟳ Loop</button>
             <button class="ghost" id="svSectionEditToggleBtn" onclick="toggleSectionEdit()">Edit</button>
           </div>
         </div>
-        <div id="svSections" class="section-list"></div>
-        <button class="ghost" onclick="addSection()" style="font-size:.7rem;margin-top:.3rem;">＋ Add Section</button>
+        <div id="svSections" class="section-list" style="flex:1;min-height:0;max-height:none;"></div>
+        <button class="ghost" onclick="addSection()" style="font-size:.7rem;margin-top:.3rem;flex-shrink:0;">＋ Add Section</button>
       </div>
 
     </div><!-- /sv-track -->
@@ -10393,6 +11221,36 @@ window.addEventListener('popstate', () => {
     <div class="modal-actions" style="flex-shrink:0;margin-top:.5rem;">
       <button class="ghost" onclick="closeGlobalToneNotes()">Cancel</button>
       <button onclick="saveGlobalToneNotes()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Current Goals Modal -->
+<div class="modal" id="currentGoalsModal">
+  <div class="modal-content" style="max-width:420px;width:92vw;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-shrink:0;">
+      <h4 style="margin:0;font-size:.9rem;">🎯 Current Goals</h4>
+      <button class="ghost" onclick="closeCurrentGoalsModal()" style="font-size:.75rem;">✕</button>
+    </div>
+    <div id="currentGoalsContent" style="overflow-y:auto;flex:1;"></div>
+    <div class="modal-actions" style="flex-shrink:0;margin-top:.75rem;">
+      <button onclick="closeCurrentGoalsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Unsaved Changes Modal -->
+<div class="modal" id="homeUnsavedModal">
+  <div class="modal-content" style="max-width:360px;width:92vw;">
+    <div style="margin-bottom:.75rem;">
+      <h4 style="margin:0 0 .35rem;font-size:.88rem;">⚠️ Unsaved Changes</h4>
+      <p id="homeUnsavedMsg" style="margin:0;font-size:.78rem;color:var(--muted);"></p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.4rem;">
+      <button onclick="_unsavedAction('save')" style="background:#27ae60;border:none;color:#fff;padding:.5rem;border-radius:8px;font-size:.8rem;cursor:pointer;">💾 Save — mark as finished</button>
+      <button onclick="_unsavedAction('cache')" style="background:#252540;border:1px solid var(--accent);color:var(--accent);padding:.5rem;border-radius:8px;font-size:.8rem;cursor:pointer;">📦 Cache — keep as unfinished</button>
+      <button onclick="_unsavedAction('discard')" style="background:#2a1a1a;border:1px solid #7b1a1a;color:#ff6b6b;padding:.5rem;border-radius:8px;font-size:.8rem;cursor:pointer;">↩ Discard — revert to last saved</button>
+      <button onclick="_unsavedAction('cancel')" style="background:none;border:1px solid #333;color:var(--muted);padding:.5rem;border-radius:8px;font-size:.8rem;cursor:pointer;">✕ Cancel — stay on this day</button>
     </div>
   </div>
 </div>
