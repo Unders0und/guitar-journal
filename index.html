@@ -76,13 +76,13 @@ h2{font-size:.85rem;color:var(--muted);margin:1.2rem 0 .5rem;text-transform:uppe
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  width: 118px;
+  flex: 1;
 }
 .gc-timer-row-right {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 118px;
+  flex: 1;
   justify-content: flex-start;
 }
 .gc-timer {
@@ -3309,6 +3309,7 @@ function openSplitView(){
 
   // Show
   document.getElementById('splitView').classList.add('open');
+  history.replaceState(history.state || { nav: 'viewer' }, '');
   history.pushState({ nav: 'splitview' }, '');
   _splitViewOpen = true;
 
@@ -3563,6 +3564,7 @@ function addPlaylist(){
 }
 
 function openPlaylist(id){
+  history.replaceState({ nav: 'home' }, '');
   history.pushState({ nav: 'playlist' }, '');
   activePlaylist = typeof id === 'object'
     ? id
@@ -4385,6 +4387,7 @@ let viewerEditMode = false;
 let activeViewerTab = 'fields';
 
 function openSongViewer(id){
+  history.replaceState(history.state || { nav: 'playlist' }, '');
   history.pushState({ nav: 'viewer' }, '');
   const song = state.songs.find(s => s.id === id);
   if(!song) return;
@@ -6241,11 +6244,11 @@ function closeTopmostModal(){
   } else {
     top.classList.remove('active');
   }
+  // If more modals are still stacked, re-push so the next back closes them too.
+  // Otherwise do nothing — the underlying view's history entry is already in the stack.
   const stillActive = [...document.querySelectorAll('.modal.active')];
   if(stillActive.length > 0){
-    history.pushState({ nav: 'modal', id: stillActive[stillActive.length-1].id }, '');
-  } else {
-    _pushUnderlyingState();
+    history.replaceState({ nav: 'modal', id: stillActive[stillActive.length-1].id }, '');
   }
   return true;
 }
@@ -10359,8 +10362,11 @@ initHomeGoalCards();
 initHomePreset();
 initTimeSplit();
 initPosteriorMode();
-// Push a permanent bottom sentinel so Android back never exits the app
-history.replaceState({ nav: 'home' }, '');
+// Two-entry base: replaceState stamps the browser's initial entry as 'sentinel',
+// then pushState adds 'home' on top. This means the stack always has something
+// below 'home', so Android back never exits the app.
+history.replaceState({ nav: 'sentinel' }, '');
+history.pushState({ nav: 'home' }, '');
 
 // ══ AUDIO PLAYER ══════════════════════════════════════════
 
@@ -10744,7 +10750,7 @@ window.addEventListener('popstate', () => {
   // Split view (before modals — songViewer is a .modal and would be caught first)
   if(_splitViewOpen){
     const exp = document.getElementById('expandedPlayer');
-    if(exp && exp.classList.contains('open')){ closeExpandedPlayer(); _pushUnderlyingState(); return; }
+    if(exp && exp.classList.contains('open')){ closeExpandedPlayer(); return; }
     closeSplitView(); return;
   }
 
@@ -10793,7 +10799,8 @@ window.addEventListener('popstate', () => {
     return;
   }
 
-  // Home / nothing open — re-push sentinel so the app never exits on Android
+  // Hit home or sentinel — re-push both so the stack never empties
+  history.replaceState({ nav: 'sentinel' }, '');
   history.pushState({ nav: 'home' }, '');
 });
 
@@ -11260,6 +11267,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 </script>
+
 
 </body>
 </html>
