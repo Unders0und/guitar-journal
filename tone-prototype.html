@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-1</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-2</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1110,7 +1110,68 @@ function fmtVal(val, param) {
   return val;
 }
 
-// ── MIDI Engine ───────────────────────────────────────────────────────────
+// ── Effect ID → Name lookup (from ToneLib APK) ───────────────────────────
+const EFFECT_ID_MAP = {
+  0x1358: 'Output VP',  0x2766: 'PDL Reso',   0x2A4A: 'Octave',
+  0x2D60: 'Exciter',    0x2E0F: 'ZNR',        0x2EBF: 'PDL Vol',
+  0x2F46: 'BendCho',    0x2F5E: 'P-BitCRSH',  0x2FC4: 'Comp',
+  0x32A4: 'PDL Vibe',   0x32C2: 'TapeEcho',   0x330D: 'Chorus',
+  0x3359: 'AutoPan',    0x339A: 'OptComp',    0x350F: 'TS Drive',
+  0x353A: 'Step',       0x353C: 'RingMod',    0x3548: 'VioletDST',
+  0x3576: 'Air',        0x35C1: 'StereoCho',  0x35E8: 'Cry',
+  0x368E: 'Detune',     0x37FA: 'ParaEQ',     0x380E: 'HPS',
+  0x3824: 'PDL FLNGR',  0x382C: 'WarpPhase',  0x3929: 'Slicer',
+  0x394E: 'Phaser',     0x39D5: 'PDL PHSR',   0x39FE: 'AutoWah',
+  0x3A03: 'Resonance',  0x3ABD: 'ModDelay',   0x3AEB: 'LFO FLTR',
+  0x3B04: 'LFO FLTR',   0x3C54: 'CloneCho',   0x3C7F: 'Pitch DLY',
+  0x3CA2: 'P-P Delay',  0x3D06: 'ReverseDL',  0x3D33: 'RndmFLTR',
+  0x3D73: 'PDL Delay',  0x3D92: 'TapeEcho3',  0x3DA1: 'Delay',
+  0x3DDC: 'LowPassFL',  0x3E28: 'FilterDly',  0x3E7C: 'AnalogDly',
+  0x3EFE: 'EP Stomp',   0x3F68: 'TB MK1.5',   0x3F91: 'RackComp',
+  0x3F9F: 'NYC Muff',   0x3FA3: 'Room',       0x3FB9: 'Hall',
+  0x4003: 'Spring',     0x4046: 'PDL Rev',    0x4071: 'GrayComp',
+  0x40D1: 'SpotBoost',  0x4235: 'PDL Pitch',  0x424C: 'Gt GEQ7',
+  0x4332: 'SlapBackD',  0x437F: 'VinFLNGR',   0x43E5: 'Gt GEQ',
+  0x442C: 'St Gt GEQ',  0x466C: 'EarlyRef',   0x47F2: 'UpOctBSTR',
+  0x47FF: 'Plate',      0x482C: 'SeqFLTR',    0x4A65: 'BG GRID',
+  0x4B0A: 'CoronaTri',  0x4B1B: 'Tremolo',    0x4B2B: 'SuperCho',
+  0x4B54: 'HD Hall',    0x4C95: 'OutputBST',  0x4E1C: 'Vibrato',
+  0x5045: 'RedCrunch',  0x513B: 'RC Boost',   0x519F: 'PDL Drive',
+  0x51DF: 'PitchSHFT',  0x51ED: 'StonePha',   0x524F: 'Duo Phase',
+  0x5390: 'PhaseDly',   0x550F: 'Zen O.DRV',  0x5525: 'MonoPitch',
+  0x563C: 'TheVibe',    0x577B: 'PDL Roto',   0x579D: 'VoiceWah',
+  0x57AE: 'HotSpice',   0x57D8: 'FD Spring',  0x57F6: 'SlwAtkDly',
+  0x587B: 'HG THRTTL',  0x5889: 'DIST Plus',  0x58B1: 'A-Pan DLY',
+  0x58F2: 'Chamber',    0x5925: 'NoiseGate',  0x5BEF: 'Squeak',
+  0x5C6B: 'OSC Echo',   0x5CB8: 'DIST 1',     0x5D6C: 'MuteSW',
+  0x60CC: 'Aco.Sim',    0x6137: 'BlackOpt',   0x62AC: 'OctFuzz',
+  0x62DB: 'BlackWah',   0x6312: 'ChromeWah',  0x631A: 'SoftEcho',
+  0x63A7: 'GateRev',    0x6430: 'SlowATTCK',  0x6453: 'Church',
+  0x65F6: 'LMT-76',     0x6794: 'MetalWRLD',  0x6A43: 'SweetDrv',
+  0x6ADD: 'PDL MnPit',  0x6D04: 'WAH100',     0x70A0: 'LoopRoll',
+  0x719B: 'DYN Drive',  0x71CA: 'Bomber',     0x7591: 'GoldDrive',
+  0x78C8: 'ICE Delay',  0x797E: 'FD2x12',     0x79B9: 'BGN4x12',
+  0x79CE: 'UK2x12',     0x79E0: 'MK3 1x12',   0x7A07: 'FD-DX1x12',
+  0x7A2F: 'MS4x12',     0x7B26: 'DZ4x12F',    0x7B48: 'MA2x12',
+  0x7B7B: 'ORG4x12',    0x7B93: 'FD MA2x12',  0x7C4B: 'HW4x12',
+  0x7C97: 'MS4x12GB',   0x7FBA: 'MK1 1x12',   0x80F6: 'RCT4x12',
+  0x825D: 'MS4x12AL',   0x9A22: 'MS 800',     0x9E99: 'FD B-MAN',
+  0xA037: 'UK 30A',     0xA068: 'BG MK3',     0xA114: 'BG MK1',
+  0xA2BA: 'FD TWNR',    0xA58A: 'FD DLXR',    0xA86B: 'DZ DRV',
+  0xAD70: 'MS 1959',    0xAE70: 'FD MASTER',  0xAF74: 'XtasyBlue',
+  0xBB4B: 'MATCH30',    0xBE59: 'MS 45os',    0xD4DA: 'HW 100',
+  0xD801: 'Recti ORG',  0xE060: 'ORG120',
+};
+
+// Find which category an effect belongs to
+function effectNameToCat(name) {
+  for (const [cat, effects] of Object.entries(EFFECTS)) {
+    if (effects[name]) return cat;
+  }
+  return null;
+}
+
+// ── Effect ID → Name lookup (from ToneLib APK) ───────────────────────────
 const ZOOM = [0x52, 0x00, 0x6e];
 let midiOut = null, midiIn = null, midiAccess = null;
 let editorMode = false;
@@ -1199,8 +1260,30 @@ function onMidiMessage(e) {
       patch.slots[slot].on = val === 1;
       buildSlots();
     } else if (param === 1) {
-      // effect type ID — store raw, we'll map later
-      patch.slots[slot]._effectId = val;
+      // effect type ID — look up name
+      const effectName = EFFECT_ID_MAP[val];
+      if (effectName) {
+        const cat = effectNameToCat(effectName);
+        patch.slots[slot].effect = effectName;
+        patch.slots[slot].cat = cat;
+        patch.slots[slot].params = {};
+        patch.slots[slot].page = 0;
+        // Apply any buffered raw params
+        if (patch.slots[slot]._rawParams) {
+          const paramDefs = EFFECTS[cat]?.[effectName] || [];
+          for (const [idx, v] of Object.entries(patch.slots[slot]._rawParams)) {
+            const pd = paramDefs[parseInt(idx)];
+            if (pd) patch.slots[slot].params[pd.n] = v;
+          }
+          delete patch.slots[slot]._rawParams;
+        }
+        buildSlots();
+        if (patch.activeSlot === slot) renderEditor();
+      } else {
+        patch.slots[slot]._effectId = val;
+        patch.slots[slot].effect = `0x${val.toString(16).toUpperCase()}`;
+        patch.slots[slot].cat = null;
+      }
     } else {
       // dial param (param 2 = dial 1, param 3 = dial 2, etc.)
       const dialIndex = param - 2;
