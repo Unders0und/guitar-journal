@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-9</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-10</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1114,13 +1114,11 @@ function fmtVal(val, param) {
 // ── PTCF Effect ID map (empirically discovered from G1X Four MIDI) ───────
 const PTCF_ID_MAP = {
   0x01: 'FD DLXR',
-  0x10: 'PitchSHFT',
   0x20: 'MonoPitch',
-  0x28: 'UpOctBSTR',
+  0x28: 'FD B-MAN',
   0x2D: 'TapeEcho',
   0x30: 'FD-DX1x12',
-  0x58: 'PitchSHFT',
-  // Report unknown IDs to expand this map
+  // Add more as confirmed through testing
 };
 
 // ── Parse a PTCF binary (array of bytes) into slot assignments ───────────
