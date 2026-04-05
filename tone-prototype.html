@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-8</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-9</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1340,10 +1340,13 @@ function onMidiMessage(e) {
 
 // Flash a slot card briefly to indicate incoming MIDI
 function flashSlot(slotIndex) {
+  const STOMP_SLOTS = [0,1,2,4,5];
+  const visIdx = STOMP_SLOTS.indexOf(slotIndex);
+  if (visIdx < 0) return;
   const cols = document.querySelectorAll('.slot-column');
-  if (cols[slotIndex]) {
-    cols[slotIndex].classList.add('midi-flash');
-    setTimeout(() => cols[slotIndex].classList.remove('midi-flash'), 300);
+  if (cols[visIdx]) {
+    cols[visIdx].classList.add('midi-flash');
+    setTimeout(() => cols[visIdx].classList.remove('midi-flash'), 300);
   }
 }
 
