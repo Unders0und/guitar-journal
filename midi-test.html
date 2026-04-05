@@ -161,8 +161,12 @@
 <!-- Capture effect types -->
 <div class="section">
   <div class="label">Capture Effect Types</div>
-  <p style="font-size:.72rem;color:var(--muted2);margin-bottom:.5rem;">Enter editor mode, then tap this. Touch each knob on the pedal once to identify effects.</p>
-  <button class="btn btn-ghost" onclick="captureEffectTypes()">Start Capture</button>
+  <p style="font-size:.72rem;color:var(--muted2);margin-bottom:.5rem;">Enter editor mode first, then try these requests.</p>
+  <div class="btn-row" style="margin-bottom:.4rem;">
+    <button class="btn btn-ghost" onclick="captureEffectTypes()">Start Capture (knobs)</button>
+    <button class="btn btn-ghost" onclick="requestEditBuffer()">Get Edit Buffer</button>
+  </div>
+  <button class="btn btn-ghost" onclick="requestCurrentPatch()">Get PTCF (0x64 13)</button>
   <div id="captureLog" style="margin-top:.6rem;font-family:monospace;font-size:.68rem;color:#a8e6cf;line-height:1.6;"></div>
 </div>
 <div class="section">
@@ -311,11 +315,15 @@ function onMidiMessage(e) {
 
 // ── Editor mode ──────────────────────────────────────────────────────────
 function enterEditor() {
+  if (!midiOut) { log('Connect first', 'err'); return; }
+  log('Sending enter editor mode (0x50)...', 'info');
   send(sysex(0x50));
   inEditorMode = true;
   document.getElementById('exitEditorBtn').disabled = false;
   document.getElementById('enterEditorBtn').disabled = true;
-  log('Editor mode ON', 'ok');
+  log('Waiting for pedal response...', 'info');
+  // Log everything for next 3 seconds
+  setTimeout(() => log('--- 3s window closed ---', 'info'), 3000);
 }
 
 function exitEditor() {
@@ -403,6 +411,13 @@ function buildSlots() {
 
 let capturing = false;
 const capturedEffects = {};
+
+function requestEditBuffer() {
+  if (!midiOut) { log('Connect first', 'err'); return; }
+  // Old method - get edit buffer (requires editor mode)
+  log('Requesting edit buffer (0x29)...', 'info');
+  send(sysex(0x29));
+}
 
 function captureEffectTypes() {
   capturing = true;
