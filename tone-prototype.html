@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tone Patch Editor — Prototype</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --card: #161616;
+    --card2: #1c1c1c;
+    --border: #2a2a2a;
+    --border2: #333;
+    --accent: #7c5cbf;
+    --muted: #555;
+    --muted2: #888;
+    --text: #e8e8e8;
+    --text2: #bbb;
+    --c-dynamics: #4a9eff;
+    --c-filter:   #ff9f43;
+    --c-drive:    #ff6b6b;
+    --c-amp:      #ffd93d;
+    --c-cabinet:  #c8a96e;
+    --c-mod:      #a8e6cf;
+    --c-sfx:      #ff8dce;
+    --c-delay:    #74b9ff;
+    --c-reverb:   #81ecec;
+    --c-pedal:    #b2bec3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Pro Display', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* ── Patch header ── */
+  .patch-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: .9rem;
+  }
+  .patch-slot {
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: .7rem;
+    color: var(--muted2);
+    white-space: nowrap;
+  }
+  .patch-name-input {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border2);
+    color: var(--text);
+    font-size: 1.05rem;
+    font-weight: 600;
+    padding: 2px 0;
+    outline: none;
+  }
+  .patch-name-input:focus { border-bottom-color: var(--accent); }
+  .patch-level-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .68rem;
+    color: var(--muted2);
+    white-space: nowrap;
+  }
+  .patch-level-wrap input[type=range] { width: 60px; accent-color: var(--accent); }
+
+  /* ── Guitar section ── */
+  .guitar-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: .85rem;
+  }
+  .guitar-info {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+  .guitar-info-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .guitar-emoji { font-size: 1.25rem; line-height: 1; flex-shrink: 0; }
+  .guitar-name-input {
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border2);
+    color: var(--text);
+    font-size: .82rem;
+    padding: 2px 0;
+    outline: none;
+    font-family: inherit;
+    width: 120px;
+  }
+  .guitar-name-input:focus { border-bottom-color: var(--accent); }
+  .guitar-pickup-select {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text2);
+    font-size: .7rem;
+    padding: 3px 6px;
+    outline: none;
+    font-family: inherit;
+  }
+  .guitar-pickup-select:focus { border-color: var(--accent); }
+  .guitar-knobs {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    margin-left: auto;
+  }
+
+  /* ── Slots row ── */
+  .slots-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: .85rem;
+    align-items: flex-end;
+  }
+
+  /* each slot = the card + stomp button as a column */
+  .slot-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: grab;
+  }
+  .slot-column.dragging { opacity: .35; cursor: grabbing; }
+  .slot-column.drag-over .effect-slot { border-top: 2px solid var(--accent); }
+
+  .effect-slot {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 7px 3px 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    user-select: none;
+    min-height: 96px;
+    gap: 4px;
+  }
+  .effect-slot:hover { background: var(--card2); border-color: var(--border2); }
+  .effect-slot.active { border-color: var(--accent) !important; box-shadow: 0 0 0 1px #7c5cbf33; }
+  .effect-slot.empty { border-style: dashed; border-color: #252525; }
+  .effect-slot.empty:hover { border-color: #3a3a3a; }
+
+  .slot-num {
+    font-size: .52rem;
+    color: var(--muted);
+    align-self: flex-start;
+    padding-left: 3px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .slot-cat {
+    font-size: .48rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .slot-name {
+    font-size: .59rem;
+    color: var(--text2);
+    text-align: center;
+    line-height: 1.25;
+    word-break: break-word;
+    padding: 0 2px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slot-empty-icon {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #2d2d2d;
+  }
+
+  /* ── Stomp button ── */
+  .stomp-btn {
+    width: 100%;
+    height: 22px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background .15s, box-shadow .15s;
+    flex-shrink: 0;
+    outline: none;
+  }
+  .stomp-btn.on {
+    background: #1a0505;
+    box-shadow:
+      0 0 6px #ff3b3b88,
+      0 0 12px #ff3b3b33,
+      inset 0 1px 0 rgba(255,255,255,.06),
+      inset 0 -1px 0 rgba(0,0,0,.5);
+    border: 1px solid #ff3b3b55;
+  }
+  .stomp-btn.on::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #ff4444;
+    box-shadow: 0 0 6px #ff4444, 0 0 10px #ff444466;
+  }
+  .stomp-btn.off {
+    background: #141414;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.04),
+      inset 0 -1px 0 rgba(0,0,0,.4);
+    border: 1px solid #2a2a2a;
+  }
+  .stomp-btn.off::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #2a2a2a;
+    box-shadow: none;
+  }
+  /* active press */
+  .stomp-btn:active {
+    transform: scaleY(.92);
+  }
+
+  /* category colors */
+  .cat-DYNAMICS { color: var(--c-dynamics); }
+  .cat-FILTER   { color: var(--c-filter); }
+  .cat-DRIVE    { color: var(--c-drive); }
+  .cat-AMP      { color: var(--c-amp); }
+  .cat-CABINET  { color: var(--c-cabinet); }
+  .cat-MOD      { color: var(--c-mod); }
+  .cat-SFX      { color: var(--c-sfx); }
+  .cat-DELAY    { color: var(--c-delay); }
+  .cat-REVERB   { color: var(--c-reverb); }
+  .cat-PEDAL    { color: var(--c-pedal); }
+
+  .bg-DYNAMICS { background: #4a9eff14 !important; border-color: #4a9eff30 !important; }
+  .bg-FILTER   { background: #ff9f4314 !important; border-color: #ff9f4330 !important; }
+  .bg-DRIVE    { background: #ff6b6b14 !important; border-color: #ff6b6b30 !important; }
+  .bg-AMP      { background: #ffd93d14 !important; border-color: #ffd93d30 !important; }
+  .bg-CABINET  { background: #c8a96e14 !important; border-color: #c8a96e30 !important; }
+  .bg-MOD      { background: #a8e6cf14 !important; border-color: #a8e6cf30 !important; }
+  .bg-SFX      { background: #ff8dce14 !important; border-color: #ff8dce30 !important; }
+  .bg-DELAY    { background: #74b9ff14 !important; border-color: #74b9ff30 !important; }
+  .bg-REVERB   { background: #81ecec14 !important; border-color: #81ecec30 !important; }
+  .bg-PEDAL    { background: #b2bec314 !important; border-color: #b2bec330 !important; }
+
+  .arc-DYNAMICS { stroke: var(--c-dynamics); }
+  .arc-FILTER   { stroke: var(--c-filter); }
+  .arc-DRIVE    { stroke: var(--c-drive); }
+  .arc-AMP      { stroke: var(--c-amp); }
+  .arc-CABINET  { stroke: var(--c-cabinet); }
+  .arc-MOD      { stroke: var(--c-mod); }
+  .arc-SFX      { stroke: var(--c-sfx); }
+  .arc-DELAY    { stroke: var(--c-delay); }
+  .arc-REVERB   { stroke: var(--c-reverb); }
+  .arc-PEDAL    { stroke: var(--c-pedal); }
+  .arc-GUITAR   { stroke: #777; }
+
+  /* ── Effect editor ── */
+  .effect-editor {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .8rem .9rem;
+    margin-bottom: .85rem;
+    display: none;
+  }
+  .effect-editor.open { display: block; }
+  .editor-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: .7rem;
+  }
+  .editor-cat-select, .editor-effect-select {
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: .75rem;
+    padding: 4px 8px;
+    outline: none;
+    font-family: inherit;
+  }
+  .editor-cat-select:focus, .editor-effect-select:focus { border-color: var(--accent); }
+  .editor-effect-select { flex: 1; }
+
+  .page-tabs { display: flex; gap: 4px; margin-bottom: .6rem; }
+  .page-tab {
+    font-size: .6rem; padding: 2px 9px;
+    border-radius: 5px; border: 1px solid var(--border);
+    background: none; color: var(--muted2); cursor: pointer; font-family: inherit;
+  }
+  .page-tab.active { background: var(--card2); border-color: var(--border2); color: var(--text); }
+
+  .knobs-grid { display: flex; flex-wrap: wrap; gap: 10px 6px; }
+
+  /* ── Notes ── */
+  .tone-notes label {
+    font-size: .62rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .08em;
+    display: block; margin-bottom: .3rem;
+  }
+  .tone-notes textarea {
+    width: 100%; background: var(--card2);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: .78rem; padding: .5rem;
+    resize: none; outline: none; font-family: inherit; line-height: 1.5;
+  }
+  .tone-notes textarea:focus { border-color: var(--accent); }
+
+  /* ── Knob ── */
+  .knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px; }
+  .knob-label { font-size: .55rem; color: var(--muted2); text-transform: uppercase; letter-spacing: .06em; text-align: center; line-height: 1.2; min-height: 1.5em; }
+  .knob-value { font-size: .62rem; color: var(--text2); font-variant-numeric: tabular-nums; text-align: center; min-width: 22px; }
+  .knob { width: 44px; height: 44px; border-radius: 50%; position: relative; cursor: ns-resize; touch-action: none; flex-shrink: 0; }
+  .knob-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .knob-body {
+    position: absolute; inset: 6px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #4a4a4a 0%, #282828 45%, #0e0e0e 100%);
+    box-shadow: 0 3px 8px rgba(0,0,0,.9), inset 0 1px 2px rgba(255,255,255,.09), inset 0 -1px 3px rgba(0,0,0,.7);
+    border: 1px solid #1e1e1e;
+  }
+  .knob-indicator { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; box-shadow: 0 0 3px rgba(255,255,255,.8); }
+</style>
+</head>
+<body>
+
+<!-- Patch header -->
+<div class="patch-header">
+  <div class="patch-slot">A-07</div>
+  <input class="patch-name-input" id="patchName" value="Crunch Lead" maxlength="10" />
+  <div class="patch-level-wrap">
+    LVL <input type="range" min="0" max="100" value="80" id="patchLevel" />
+    <span id="patchLevelVal">80</span>
+  </div>
+</div>
+
+<!-- Guitar section -->
+<div class="guitar-section">
+  <div class="guitar-info">
+    <div class="guitar-info-top">
+      <span class="guitar-emoji">🎸</span>
+      <input class="guitar-name-input" placeholder="Guitar name…" value="Fender Strat" />
+    </div>
+    <select class="guitar-pickup-select">
+      <option>— Pickup —</option>
+      <option selected>Bridge</option>
+      <option>Middle</option>
+      <option>Neck</option>
+      <option>Bridge + Middle</option>
+      <option>Neck + Middle</option>
+    </select>
+  </div>
+  <div class="guitar-knobs" id="guitarKnobs"></div>
+</div>
+
+<!-- 5 Effect slots -->
+<div class="slots-row" id="slotsRow"></div>
+
+<!-- Effect editor -->
+<div class="effect-editor" id="effectEditor">
+  <div class="editor-header">
+    <select class="editor-cat-select" id="editorCat" onchange="onCatChange()"></select>
+    <select class="editor-effect-select" id="editorEffect" onchange="onEffectChange()"></select>
+  </div>
+  <div class="page-tabs" id="pageTabs"></div>
+  <div class="knobs-grid" id="knobsGrid"></div>
+</div>
+
+<!-- Notes -->
+<div class="tone-notes">
+  <label>Notes</label>
+  <textarea rows="3" placeholder="Tone context, song usage, ideas…"></textarea>
+</div>
+
+<script>
+const EFFECTS = {
+  DYNAMICS: {
+    'Comp':       [{n:'Sense',min:0,max:10},{n:'ATTCK',min:0,max:1,labels:['SLOW','FAST']},{n:'Tone',min:0,max:10},{n:'VOL',min:0,max:100}],
+    'RackComp':   [{n:'THRSH',min:0,max:50},{n:'Ratio',min:1,max:10},{n:'ATTCK',min:1,max:10},{n:'VOL',min:0,max:100}],
+    'ZNR':        [{n:'DETCT',min:0,max:1,labels:['GTRIN','EFXIN']},{n:'Depth',min:0,max:100},{n:'THRSH',min:0,max:100},{n:'Decay',min:0,max:100}],
+    'NoiseGate':  [{n:'DETCT',min:0,max:1,labels:['GTRIN','EFXIN']},{n:'Depth',min:0,max:100},{n:'THRSH',min:0,max:100},{n:'Decay',min:0,max:100}],
+    'GrayComp':   [{n:'SUSTN',min:0,max:100},{n:'Lo',min:0,max:100},{n:'Hi',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'LMT-76':     [{n:'Input',min:0,max:80},{n:'Ratio',min:0,max:3,labels:['4:1','8:1','12:1','20:1']},{n:'REL',min:10,max:70},{n:'Output',min:0,max:80}],
+  },
+  FILTER: {
+    'AutoWah':    [{n:'Mode',min:0,max:1,labels:['DOWN','UP']},{n:'Sense',min:1,max:10},{n:'RESO',min:0,max:10},{n:'VOL',min:0,max:100}],
+    'Gt GEQ':     [{n:'160Hz',min:-12,max:12},{n:'400Hz',min:-12,max:12},{n:'800Hz',min:-12,max:12},{n:'3.2k',min:-12,max:12},{n:'6.4k',min:-12,max:12},{n:'12k',min:-12,max:12},{n:'VOL',min:0,max:100}],
+    'ParaEQ':     [{n:'FREQ',min:20,max:20000},{n:'Q',min:0,max:16},{n:'Gain',min:-12,max:12},{n:'VOL',min:0,max:100}],
+    'Exciter':    [{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'VOL',min:0,max:100}],
+  },
+  DRIVE: {
+    'TS Drive':   [{n:'Gain',min:0,max:100},{n:'Boost',min:0,max:1,labels:['OFF','ON']},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'RC Boost':   [{n:'Gain',min:0,max:100},{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'GoldDrive':  [{n:'Gain',min:0,max:100},{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'RedCrunch':  [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'MetalWRLD':  [{n:'Gain',min:0,max:100},{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'DIST 1':     [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100},{n:'Comp',min:0,max:1,labels:['ORG','MOD']}],
+    'NYC Muff':   [{n:'SUSTN',min:0,max:100},{n:'Tone',min:0,max:100},{n:'BAL',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'OctFuzz':    [{n:'Boost',min:0,max:100},{n:'Color',min:1,max:2},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'VioletDST':  [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Voice',min:0,max:2},{n:'VOL',min:0,max:100}],
+  },
+  AMP: {
+    'MS 800':     [{n:'Input',min:0,max:1,labels:['LO','HI']},{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'FD TWNR':    [{n:'Bass',min:10,max:100},{n:'MID',min:10,max:100},{n:'Treble',min:10,max:100},{n:'Gain',min:10,max:100},{n:'VOL',min:10,max:100},{n:'Depth',min:10,max:100},{n:'Speed',min:10,max:100}],
+    'BG MK1':     [{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain1',min:0,max:100},{n:'Gain2',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'Recti ORG':  [{n:'Mode',min:0,max:1,labels:['VNTG','MDRN']},{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'XtasyBlue':  [{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'STRCT',min:0,max:1,labels:['LO','HI']},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'DZ DRV':     [{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100},{n:'Deep',min:0,max:100},{n:'MidCut',min:0,max:100}],
+  },
+  CABINET: {
+    'MS4x12':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'FD2x12':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'UK4x12':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+  },
+  MOD: {
+    'Chorus':   [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Flanger':  [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Resonance',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Phaser':   [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Resonance',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Tremolo':  [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Wave',min:0,max:3,labels:['SINE','TRI','SQR','SAWUP']},{n:'VOL',min:0,max:100}],
+  },
+  SFX: {
+    'Ring Mod': [{n:'Freq',min:0,max:100},{n:'Depth',min:0,max:100},{n:'BAL',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'Pitch SFX':[{n:'Pitch',min:-24,max:24},{n:'Fine',min:-50,max:50},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+  },
+  DELAY: {
+    'Delay':      [{n:'Time',min:1,max:3000},{n:'F.B',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Tape Echo':  [{n:'Time',min:1,max:3000},{n:'F.B',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Analog DLY': [{n:'Time',min:1,max:800},{n:'F.B',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Reverse DLY':[{n:'Time',min:1,max:1000},{n:'F.B',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+  },
+  REVERB: {
+    'Hall':   [{n:'Decay',min:0,max:100},{n:'Pre-D',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Room':   [{n:'Decay',min:0,max:100},{n:'Pre-D',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Spring': [{n:'Decay',min:0,max:100},{n:'Pre-D',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Plate':  [{n:'Decay',min:0,max:100},{n:'Pre-D',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+  },
+  PEDAL: {
+    'PDL Wah':    [{n:'Freq',min:0,max:100},{n:'RESO',min:0,max:10},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'PDL Volume': [{n:'InLvl',min:0,max:100},{n:'Curve',min:0,max:10},{n:'Min',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'PDL Delay':  [{n:'InLvl',min:0,max:100},{n:'Time',min:1,max:3000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100}],
+  },
+};
+
+const PAGE_SIZE = 4;
+const patch = {
+  slots: Array(5).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0})),
+  activeSlot: null,
+};
+const guitarParams = [
+  {n:'Vol',   min:0,max:10,val:8},
+  {n:'Tone 1',min:0,max:10,val:7},
+  {n:'Tone 2',min:0,max:10,val:6},
+];
+
+// ── Drag state ───────────────────────────────────────────────────────────
+let dragSrcIndex = null;
+
+// ── Build slots ──────────────────────────────────────────────────────────
+function buildSlots() {
+  const row = document.getElementById('slotsRow');
+  row.innerHTML = '';
+
+  for (let i = 0; i < 5; i++) {
+    const s = patch.slots[i];
+
+    // Outer column (draggable)
+    const col = document.createElement('div');
+    col.className = 'slot-column';
+    col.draggable = true;
+    col.dataset.index = i;
+
+    // Drag events
+    col.addEventListener('dragstart', e => {
+      dragSrcIndex = i;
+      col.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    col.addEventListener('dragend', () => {
+      col.classList.remove('dragging');
+      document.querySelectorAll('.slot-column').forEach(c => c.classList.remove('drag-over'));
+    });
+    col.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.slot-column').forEach(c => c.classList.remove('drag-over'));
+      if (dragSrcIndex !== i) col.classList.add('drag-over');
+    });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      if (dragSrcIndex !== null && dragSrcIndex !== i) {
+        // swap slots
+        const tmp = patch.slots[dragSrcIndex];
+        patch.slots[dragSrcIndex] = patch.slots[i];
+        patch.slots[i] = tmp;
+        // update activeSlot index
+        if (patch.activeSlot === dragSrcIndex) patch.activeSlot = i;
+        else if (patch.activeSlot === i) patch.activeSlot = dragSrcIndex;
+        dragSrcIndex = null;
+        buildSlots();
+        renderEditor();
+      }
+    });
+
+    // Effect card
+    const slot = document.createElement('div');
+    slot.className = 'effect-slot'
+      + (s.cat ? ' bg-' + s.cat : ' empty')
+      + (patch.activeSlot === i ? ' active' : '');
+    slot.onclick = () => selectSlot(i);
+
+    const num = document.createElement('div');
+    num.className = 'slot-num';
+    num.textContent = i + 1;
+    slot.appendChild(num);
+
+    if (s.cat) {
+      const cat = document.createElement('div');
+      cat.className = 'slot-cat cat-' + s.cat;
+      cat.textContent = s.cat;
+      slot.appendChild(cat);
+
+      const name = document.createElement('div');
+      name.className = 'slot-name';
+      name.textContent = s.effect;
+      slot.appendChild(name);
+    } else {
+      const icon = document.createElement('div');
+      icon.className = 'slot-empty-icon';
+      icon.textContent = '＋';
+      slot.appendChild(icon);
+    }
+
+    col.appendChild(slot);
+
+    // Stomp button — only show if slot has an effect
+    const stomp = document.createElement('button');
+    stomp.className = 'stomp-btn ' + (s.on ? 'on' : 'off');
+    stomp.title = s.on ? 'ON' : 'OFF (bypassed)';
+    stomp.onclick = e => {
+      e.stopPropagation();
+      s.on = !s.on;
+      stomp.className = 'stomp-btn ' + (s.on ? 'on' : 'off');
+      stomp.title = s.on ? 'ON' : 'OFF (bypassed)';
+    };
+    // hide stomp on empty slots — show a dimmed placeholder
+    if (!s.cat) {
+      stomp.style.opacity = '0.2';
+      stomp.style.pointerEvents = 'none';
+    }
+    col.appendChild(stomp);
+
+    row.appendChild(col);
+  }
+}
+
+function selectSlot(i) {
+  patch.activeSlot = patch.activeSlot === i ? null : i;
+  buildSlots();
+  renderEditor();
+}
+
+// ── Editor ───────────────────────────────────────────────────────────────
+function renderEditor() {
+  const editor = document.getElementById('effectEditor');
+  if (patch.activeSlot === null) { editor.classList.remove('open'); return; }
+  editor.classList.add('open');
+  const s = patch.slots[patch.activeSlot];
+
+  const catSel = document.getElementById('editorCat');
+  catSel.innerHTML = Object.keys(EFFECTS).map(c =>
+    `<option value="${c}" ${s.cat===c?'selected':''}>${c}</option>`
+  ).join('');
+  if (!s.cat) { s.cat = Object.keys(EFFECTS)[0]; catSel.value = s.cat; }
+  renderEffectSelect();
+}
+
+function renderEffectSelect() {
+  const s = patch.slots[patch.activeSlot];
+  const effSel = document.getElementById('editorEffect');
+  const effects = Object.keys(EFFECTS[s.cat] || {});
+  effSel.innerHTML = effects.map(e =>
+    `<option value="${e}" ${s.effect===e?'selected':''}>${e}</option>`
+  ).join('');
+  if (!s.effect || !EFFECTS[s.cat][s.effect]) { s.effect = effects[0]; effSel.value = s.effect; }
+  initDefaults();
+  renderKnobs();
+}
+
+function initDefaults() {
+  const s = patch.slots[patch.activeSlot];
+  (EFFECTS[s.cat]?.[s.effect] || []).forEach(p => {
+    if (s.params[p.n] === undefined)
+      s.params[p.n] = p.labels ? 0 : Math.round((p.min + p.max) / 2);
+  });
+}
+
+function onCatChange() {
+  const s = patch.slots[patch.activeSlot];
+  s.cat = document.getElementById('editorCat').value;
+  s.effect = null; s.params = {}; s.page = 0;
+  renderEffectSelect(); buildSlots();
+}
+
+function onEffectChange() {
+  const s = patch.slots[patch.activeSlot];
+  s.effect = document.getElementById('editorEffect').value;
+  s.params = {}; s.page = 0;
+  initDefaults(); renderKnobs(); buildSlots();
+}
+
+function renderKnobs() {
+  const s = patch.slots[patch.activeSlot];
+  const all = EFFECTS[s.cat]?.[s.effect] || [];
+  const pages = Math.ceil(all.length / PAGE_SIZE);
+
+  document.getElementById('pageTabs').innerHTML = pages <= 1 ? '' :
+    Array.from({length:pages},(_,pi) =>
+      `<button class="page-tab ${s.page===pi?'active':''}" onclick="setPage(${pi})">Page ${pi+1}</button>`
+    ).join('');
+
+  const visible = all.slice(s.page * PAGE_SIZE, (s.page+1) * PAGE_SIZE);
+  const grid = document.getElementById('knobsGrid');
+  grid.innerHTML = '';
+  visible.forEach(p => {
+    grid.appendChild(makeKnob(p, s.params[p.n] ?? p.min, s.cat, v => s.params[p.n] = v));
+  });
+}
+
+function setPage(pi) { patch.slots[patch.activeSlot].page = pi; renderKnobs(); }
+
+// ── Guitar knobs ─────────────────────────────────────────────────────────
+function buildGuitarKnobs() {
+  const wrap = document.getElementById('guitarKnobs');
+  wrap.innerHTML = '';
+  guitarParams.forEach((p, i) => {
+    wrap.appendChild(makeKnob(p, p.val, 'GUITAR', v => guitarParams[i].val = v));
+  });
+}
+
+// ── Knob factory ─────────────────────────────────────────────────────────
+const MIN_ANG = -135, MAX_ANG = 135;
+function valToAngle(val, min, max) {
+  return MIN_ANG + ((val - min) / (max - min)) * (MAX_ANG - MIN_ANG);
+}
+
+function makeKnob(param, initVal, cat, onChange) {
+  const SIZE = 44, CX = 22, CY = 22, R = 18;
+  const wrap = document.createElement('div');
+  wrap.className = 'knob-wrap';
+
+  const label = document.createElement('div');
+  label.className = 'knob-label';
+  label.textContent = param.n;
+
+  const knob = document.createElement('div');
+  knob.className = 'knob';
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox',`0 0 ${SIZE} ${SIZE}`);
+  svg.classList.add('knob-svg');
+
+  function polar(a, r) {
+    const rad = (a - 90) * Math.PI / 180;
+    return {x: CX + r*Math.cos(rad), y: CY + r*Math.sin(rad)};
+  }
+  function arc(a1, a2) {
+    const s = polar(a1,R), e = polar(a2,R);
+    const large = Math.abs(a2-a1) > 180 ? 1 : 0;
+    return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
+  }
+
+  const track = document.createElementNS('http://www.w3.org/2000/svg','path');
+  track.setAttribute('d', arc(MIN_ANG, MAX_ANG));
+  track.setAttribute('fill','none');
+  track.setAttribute('stroke','#252525');
+  track.setAttribute('stroke-width','2.5');
+  track.setAttribute('stroke-linecap','round');
+
+  const valArc = document.createElementNS('http://www.w3.org/2000/svg','path');
+  valArc.setAttribute('fill','none');
+  valArc.setAttribute('stroke-width','2.5');
+  valArc.setAttribute('stroke-linecap','round');
+  valArc.classList.add('arc-' + cat);
+
+  svg.appendChild(track);
+  svg.appendChild(valArc);
+
+  const body = document.createElement('div');
+  body.className = 'knob-body';
+  const dot = document.createElement('div');
+  dot.className = 'knob-indicator';
+  body.appendChild(dot);
+  knob.appendChild(svg);
+  knob.appendChild(body);
+
+  const valDisplay = document.createElement('div');
+  valDisplay.className = 'knob-value';
+
+  let cur = initVal;
+
+  function update(val) {
+    cur = Math.max(param.min, Math.min(param.max, val));
+    const angle = valToAngle(cur, param.min, param.max);
+    if (cur > param.min) {
+      valArc.setAttribute('d', arc(MIN_ANG, angle));
+      valArc.style.display = '';
+    } else {
+      valArc.style.display = 'none';
+    }
+    const bodyR = (SIZE/2 - 6) - 4;
+    const rad = (angle - 90) * Math.PI / 180;
+    dot.style.left = (CX + bodyR * Math.cos(rad) - 1.5) + 'px';
+    dot.style.top  = (CY + bodyR * Math.sin(rad) - 1.5) + 'px';
+    valDisplay.textContent = fmtVal(cur, param);
+    onChange?.(cur);
+  }
+
+  update(initVal);
+
+  let startY, startVal;
+  const range = param.max - param.min;
+
+  function onMove(cy) {
+    update(Math.round(startVal + ((startY - cy) / 160) * range));
+  }
+  knob.addEventListener('mousedown', e => {
+    startY = e.clientY; startVal = cur; e.preventDefault();
+    const mm = e2 => onMove(e2.clientY);
+    const mu = () => { document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu); };
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',mu);
+  });
+  knob.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY; startVal = cur; e.preventDefault();
+  }, {passive:false});
+  knob.addEventListener('touchmove', e => {
+    onMove(e.touches[0].clientY); e.preventDefault();
+  }, {passive:false});
+
+  wrap.appendChild(label);
+  wrap.appendChild(knob);
+  wrap.appendChild(valDisplay);
+  return wrap;
+}
+
+function fmtVal(val, param) {
+  if (param.labels) return param.labels[Math.min(Math.round(val), param.labels.length-1)] ?? val;
+  return val;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+document.getElementById('patchLevel').addEventListener('input', function() {
+  document.getElementById('patchLevelVal').textContent = this.value;
+});
+
+patch.slots[0] = {cat:'DRIVE',   effect:'TS Drive', on:true,  params:{Gain:60,Boost:0,Tone:55,VOL:75}, page:0};
+patch.slots[1] = {cat:'AMP',     effect:'MS 800',   on:true,  params:{Input:1,Bass:40,MID:50,Treble:60,PRSNC:45,Gain:70,VOL:80}, page:0};
+patch.slots[2] = {cat:'CABINET', effect:'MS4x12',   on:true,  params:{MIC:1,'D57:421':60,Hi:50,Lo:50}, page:0};
+patch.slots[3] = {cat:'DELAY',   effect:'Delay',    on:false, params:{Time:350,'F.B':30,Tone:60,Mix:25}, page:0};
+
+buildSlots();
+buildGuitarKnobs();
+</script>
+</body>
+</html>
