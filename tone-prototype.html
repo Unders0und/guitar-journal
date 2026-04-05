@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tone Patch Editor — Prototype</title>
+<meta name="version" content="2025-04-05-001">
 <style>
   :root {
     --bg: #0d0d0d;
@@ -90,6 +91,12 @@
   .midi-editor-btn.active {
     border-color: #2ecc7155; color: #2ecc71;
     background: rgba(46,204,113,.08);
+  }
+
+  .slot-column.midi-flash .effect-slot {
+    border-color: #2ecc71 !important;
+    box-shadow: 0 0 8px rgba(46,204,113,.5);
+    transition: border-color .05s, box-shadow .05s;
   }
 
   /* ── Patch header ── */
@@ -485,6 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-1</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1169,7 +1177,71 @@ async function connectMIDI() {
 }
 
 function onMidiMessage(e) {
-  // Could parse incoming patch state here in future
+  const d = Array.from(e.data);
+  // Only handle Zoom SysEx: F0 52 00 6E ...
+  if (d[0] !== 0xF0 || d[1] !== 0x52 || d[2] !== 0x00 || d[3] !== 0x6E) return;
+  const cmd = d[4];
+
+  // Editor mode param change: F0 52 00 6E 64 03 00 [slot] [param] [lo] [hi] ... F7
+  if (cmd === 0x64 && d[5] === 0x03 && d[6] === 0x00) {
+    const slot  = d[7];
+    const param = d[8];
+    const lo    = d[9]  ?? 0;
+    const hi    = d[10] ?? 0;
+    // Decode 7-bit little-endian, handle negatives (values >= 8192 are negative)
+    let val = lo | (hi << 7);
+    if (val >= 8192) val = val - 16384;
+
+    if (slot < 0 || slot > 4) return;
+
+    if (param === 0) {
+      // on/off
+      patch.slots[slot].on = val === 1;
+      buildSlots();
+    } else if (param === 1) {
+      // effect type ID — store raw, we'll map later
+      patch.slots[slot]._effectId = val;
+    } else {
+      // dial param (param 2 = dial 1, param 3 = dial 2, etc.)
+      const dialIndex = param - 2;
+      const s = patch.slots[slot];
+      if (s.cat && s.effect) {
+        const paramDef = (EFFECTS[s.cat]?.[s.effect] || [])[dialIndex];
+        if (paramDef) {
+          s.params[paramDef.n] = val;
+          // If this slot is currently open in the editor, re-render knobs
+          if (patch.activeSlot === slot) renderKnobs();
+        }
+      } else {
+        // Store by index until we know the effect
+        if (!s._rawParams) s._rawParams = {};
+        s._rawParams[dialIndex] = val;
+      }
+    }
+
+    // Flash the slot to show it received data
+    flashSlot(slot);
+  }
+}
+
+// Flash a slot card briefly to indicate incoming MIDI
+function flashSlot(slotIndex) {
+  const cols = document.querySelectorAll('.slot-column');
+  if (cols[slotIndex]) {
+    cols[slotIndex].classList.add('midi-flash');
+    setTimeout(() => cols[slotIndex].classList.remove('midi-flash'), 300);
+  }
+}
+
+// Clear patch UI when switching to a new bank/prog
+function clearPatchUI() {
+  patch.slots = Array(5).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
+  patch.activeSlot = null;
+  buildSlots();
+  renderEditor();
+  // Show sync hint
+  setMidiStatus('connected', midiOut?.name + ' — touch a knob to sync');
+  setTimeout(() => setMidiStatus('connected', midiOut?.name), 3000);
 }
 
 function setMidiStatus(state, text) {
@@ -1203,7 +1275,7 @@ function buildBankProg() {
     const btn = document.createElement('button');
     btn.className = 'midi-bank-btn' + (i === midiBank ? ' active' : '');
     btn.textContent = name;
-    btn.onclick = () => { midiBank = i; buildBankProg(); sendBankProg(); updatePatchSlotLabel(); };
+    btn.onclick = () => { midiBank = i; buildBankProg(); sendBankProg(); updatePatchSlotLabel(); clearPatchUI(); };
     bb.appendChild(btn);
   });
 
@@ -1213,7 +1285,7 @@ function buildBankProg() {
     const btn = document.createElement('button');
     btn.className = 'midi-prog-btn' + (i === midiProg ? ' active' : '');
     btn.textContent = i;
-    btn.onclick = () => { midiProg = i; buildBankProg(); sendBankProg(); updatePatchSlotLabel(); };
+    btn.onclick = () => { midiProg = i; buildBankProg(); sendBankProg(); updatePatchSlotLabel(); clearPatchUI(); };
     pb.appendChild(btn);
   }
 }
