@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-3</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-4</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -724,7 +724,7 @@ const EFFECTS = {
 
 const PAGE_SIZE = 4;
 const patch = {
-  slots: Array(5).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0})),
+  slots: Array(6).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0})),
   activeSlot: null,
 };
 const guitarParams = [
@@ -741,7 +741,7 @@ function buildSlots() {
   const row = document.getElementById('slotsRow');
   row.innerHTML = '';
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     const s = patch.slots[i];
 
     // Outer column (draggable)
@@ -1111,68 +1111,66 @@ function fmtVal(val, param) {
 }
 
 // ── PTCF Effect ID map (empirically discovered from G1X Four MIDI) ───────
-// These are the 1-byte IDs stored in the PTCF binary for each slot.
-// Grown through testing — unknown IDs show as "Unknown (0xXX)".
 const PTCF_ID_MAP = {
   0x01: 'FD DLXR',
+  0x10: 'PitchSHFT',
   0x20: 'MonoPitch',
+  0x28: 'UpOctBSTR',
   0x2D: 'TapeEcho',
   0x30: 'FD-DX1x12',
-  // Add more as discovered
+  0x58: 'PitchSHFT',
+  // Report unknown IDs to expand this map
 };
 
 // ── Parse a PTCF binary (array of bytes) into slot assignments ───────────
-// Returns: [{slot, effectId, effectName, cat}]
 function parsePTCF(bytes) {
   // Find PTCF magic
   let ptcfStart = -1;
   for (let i = 0; i < bytes.length - 3; i++) {
-    if (bytes[i] === 0x50 && bytes[i+1] === 0x54 && bytes[i+2] === 0x43 && bytes[i+3] === 0x46) {
+    if (bytes[i]===0x50 && bytes[i+1]===0x54 && bytes[i+2]===0x43 && bytes[i+3]===0x46) {
       ptcfStart = i; break;
     }
   }
   if (ptcfStart < 0) return null;
-
   const ptcf = bytes.slice(ptcfStart);
 
-  // Find name separator 0x22 ('"')
+  // Name field: FIXED 10 bytes at ptcf[29:39], filter nulls
+  const nameBytes = ptcf.slice(29, 39).filter(b => b > 31 && b < 127);
+  const patchName = nameBytes.map(b => String.fromCharCode(b)).join('').trim();
+
+  // Find '"' (0x22) separator
   let sepPos = -1;
-  for (let i = 28; i < Math.min(60, ptcf.length); i++) {
+  for (let i = 28; i < Math.min(65, ptcf.length); i++) {
     if (ptcf[i] === 0x22) { sepPos = i; break; }
   }
   if (sepPos < 0) return null;
 
-  // Extract patch name (bytes 28..sepPos, filter nulls)
-  let nameBytes = [];
-  for (let i = 28; i < sepPos; i++) {
-    if (ptcf[i] !== 0) nameBytes.push(ptcf[i]);
+  // After sep: [label 2 bytes] [00] [00] [06=numslots] [flags 4 bytes] [entries...]
+  // Format confirmed: [slot_1based][effectId][00][00] per active slot
+  const entriesStart = sepPos + 10;
+
+  // Stop at TXJ chunk
+  let txjPos = ptcf.length;
+  for (let i = entriesStart; i < ptcf.length - 2; i++) {
+    if (ptcf[i]===0x54 && ptcf[i+1]===0x58 && ptcf[i+2]===0x4A) { txjPos = i; break; }
   }
-  const patchName = nameBytes.map(b => String.fromCharCode(b)).join('').trim();
 
-  // After separator: [label 2 bytes][00 00][06=num_slots][flags 4 bytes]
-  // then: [slot][00][effectId] triplets
-  const dataStart = sepPos + 5; // skip label(2) + 00 00(2) + 06(1)
-  const flagsStart = dataStart;
-  const tripletStart = flagsStart + 4; // skip 4 flag bytes
-
+  // Scan for [slot_1based 1-6][effectId nonzero][00][00]
   const slots = [];
-  let i = tripletStart;
-  while (i + 2 < ptcf.length) {
-    const slotNum = ptcf[i];
-    const zero = ptcf[i+1];
-    const effectId = ptcf[i+2];
-
-    // Valid slot entry: slotNum in 0-5, followed by 00, then non-zero effectId
-    if (slotNum <= 5 && zero === 0x00 && effectId !== 0x00) {
-      const effectName = PTCF_ID_MAP[effectId] || null;
+  const seen = new Set();
+  for (let i = entriesStart; i + 3 < txjPos; i++) {
+    const slot1 = ptcf[i];
+    const eid   = ptcf[i+1];
+    const p2    = ptcf[i+2];
+    const p3    = ptcf[i+3];
+    if (slot1 >= 1 && slot1 <= 6 && eid !== 0x00 && p2 === 0x00 && p3 === 0x00 && !seen.has(slot1)) {
+      const slotApp = slot1 - 1; // 1-based → 0-based
+      const effectName = PTCF_ID_MAP[eid] || null;
       const cat = effectName ? effectNameToCat(effectName) : null;
-      slots.push({ slot: slotNum, effectId, effectName, cat });
-      i += 4; // skip [slot][00][effectId][00]
-    } else {
-      i++;
+      slots.push({ slot: slotApp, effectId: eid, effectName, cat });
+      seen.add(slot1);
+      i += 3; // skip the matched entry
     }
-    // Stop when we hit TXJ chunk (0x54 0x58 0x4A)
-    if (i + 2 < ptcf.length && ptcf[i] === 0x54 && ptcf[i+1] === 0x58 && ptcf[i+2] === 0x4A) break;
   }
 
   return { patchName, slots };
@@ -1185,30 +1183,28 @@ function applyPTCF(bytes) {
 
   const { patchName, slots } = result;
 
-  // Update patch name display
-  const nameInput = document.getElementById('patchName');
-  if (nameInput && patchName) nameInput.value = patchName;
+  if (patchName) {
+    const nameInput = document.getElementById('patchName');
+    if (nameInput) nameInput.value = patchName;
+  }
 
-  // Clear all slots
+  // Clear slots (keep 5 slots, 0-4)
   patch.slots = Array(5).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
 
-  // Apply known slots
   for (const { slot, effectId, effectName, cat } of slots) {
-    if (slot >= 0 && slot < 5) {
-      if (effectName && cat) {
-        patch.slots[slot] = { cat, effect: effectName, on: true, params: {}, page: 0 };
-        // Apply defaults
-        const paramDefs = EFFECTS[cat]?.[effectName] || [];
-        paramDefs.forEach(p => {
-          patch.slots[slot].params[p.n] = p.labels ? 0 : Math.round((p.min + p.max) / 2);
-        });
-      } else {
-        // Unknown effect — show raw ID
-        patch.slots[slot] = {
-          cat: 'UNKNOWN', effect: `0x${effectId.toString(16).toUpperCase().padStart(2,'0')}`,
-          on: true, params: {}, page: 0, _unknownId: effectId
-        };
-      }
+    if (slot < 0 || slot > 4) continue;
+    if (effectName && cat) {
+      patch.slots[slot] = { cat, effect: effectName, on: true, params: {}, page: 0 };
+      const paramDefs = EFFECTS[cat]?.[effectName] || [];
+      paramDefs.forEach(p => {
+        patch.slots[slot].params[p.n] = p.labels ? 0 : Math.round((p.min + p.max) / 2);
+      });
+    } else {
+      patch.slots[slot] = {
+        cat: null,
+        effect: `?? 0x${effectId.toString(16).toUpperCase().padStart(2,'0')}`,
+        on: true, params: {}, page: 0, _unknownId: effectId
+      };
     }
   }
 
@@ -1216,12 +1212,11 @@ function applyPTCF(bytes) {
   buildSlots();
   renderEditor();
 
-  // Show unknown ID hint if any
   const unknowns = slots.filter(s => !s.effectName);
   if (unknowns.length > 0) {
     const ids = unknowns.map(s => `0x${s.effectId.toString(16).toUpperCase().padStart(2,'0')}`).join(', ');
-    setMidiStatus('connected', `${midiOut?.name} — unknown IDs: ${ids}`);
-    setTimeout(() => setMidiStatus('connected', midiOut?.name), 5000);
+    setMidiStatus('connected', `${midiOut?.name} — unknown: ${ids}`);
+    setTimeout(() => setMidiStatus('connected', midiOut?.name), 6000);
   }
 }
 
@@ -1319,7 +1314,7 @@ function onMidiMessage(e) {
     const hi    = d[10] ?? 0;
     let val = lo | (hi << 7);
     if (val >= 8192) val -= 16384;
-    if (slot < 0 || slot > 4) return;
+    if (slot < 0 || slot > 5) return;
 
     if (param === 0) {
       patch.slots[slot].on = val === 1;
@@ -1359,7 +1354,7 @@ function requestPatch() {
 
 // Clear patch UI and request fresh state from pedal
 function clearPatchUI() {
-  patch.slots = Array(5).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
+  patch.slots = Array(6).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
   patch.activeSlot = null;
   buildSlots();
   renderEditor();
@@ -1442,11 +1437,6 @@ function midiSendParam(slotIndex, paramIndex, value) {
 document.getElementById('patchLevel').addEventListener('input', function() {
   document.getElementById('patchLevelVal').textContent = this.value;
 });
-
-patch.slots[0] = {cat:'DRIVE',   effect:'TS Drive', on:true,  params:{Gain:60,Boost:0,Tone:55,VOL:75}, page:0};
-patch.slots[1] = {cat:'AMP',     effect:'MS 800',   on:true,  params:{Input:1,Bass:40,MID:50,Treble:60,PRSNC:45,Gain:70,VOL:80}, page:0};
-patch.slots[2] = {cat:'CABINET', effect:'MS4x12',   on:true,  params:{MIC:1,'D57:D421':60,Hi:50,Lo:50}, page:0};
-patch.slots[3] = {cat:'DELAY',   effect:'Delay',    on:false, params:{Time:350,'F.B':30,Mix:25,Tail:0}, page:0};
 
 buildSlots();
 buildGuitarKnobs();
