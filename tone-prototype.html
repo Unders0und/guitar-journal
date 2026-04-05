@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-11</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-12</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1059,8 +1059,7 @@ function makeKnob(param, initVal, cat, onChange) {
   const valDisplay = document.createElement('div');
   valDisplay.className = 'knob-value';
 
-  let cur = initVal;
-
+  let rendering = true;
   function update(val) {
     cur = Math.max(param.min, Math.min(param.max, val));
     const angle = valToAngle(cur, param.min, param.max);
@@ -1075,10 +1074,11 @@ function makeKnob(param, initVal, cat, onChange) {
     dot.style.left = (CX + bodyR * Math.cos(rad) - 1.5) + 'px';
     dot.style.top  = (CY + bodyR * Math.sin(rad) - 1.5) + 'px';
     valDisplay.textContent = fmtVal(cur, param);
-    onChange?.(cur);
+    if (!rendering) onChange?.(cur);
   }
 
   update(initVal);
+  rendering = false;
 
   let startY, startVal;
   const range = param.max - param.min;
@@ -1187,17 +1187,20 @@ function applyPTCF(bytes) {
     if (nameInput) nameInput.value = patchName;
   }
 
-  // Clear slots (keep 5 slots, 0-4)
+  // Save existing slot params before clearing
+  const existingSlots = patch.slots.slice();
+
+  // Reset slots
   patch.slots = Array(6).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
 
   for (const { slot, effectId, effectName, cat } of slots) {
     if (slot < 0 || slot > 5) continue;
     if (effectName && cat) {
-      patch.slots[slot] = { cat, effect: effectName, on: true, params: {}, page: 0 };
-      const paramDefs = EFFECTS[cat]?.[effectName] || [];
-      paramDefs.forEach(p => {
-        patch.slots[slot].params[p.n] = p.labels ? 0 : Math.round((p.min + p.max) / 2);
-      });
+      const prev = existingSlots[slot];
+      const sameEffect = prev?.effect === effectName && prev?.cat === cat;
+      // Preserve params if same effect, otherwise start empty (no defaults pushed to pedal)
+      const params = sameEffect ? (prev.params || {}) : {};
+      patch.slots[slot] = { cat, effect: effectName, on: true, params, page: 0 };
     } else {
       patch.slots[slot] = {
         cat: null,
