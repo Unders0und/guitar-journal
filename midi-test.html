@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G1X Four — MIDI Test</title>
+<style>
+  :root {
+    --bg: #0d0d0d; --card: #161616; --border: #2a2a2a;
+    --accent: #7c5cbf; --text: #e8e8e8; --muted: #666;
+    --ok: #2ecc71; --err: #e74c3c; --warn: #f39c12;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'SF Pro Display', -apple-system, sans-serif;
+    font-size: 14px; padding: 1.2rem; max-width: 480px; margin: 0 auto;
+  }
+  h1 { font-size: 1rem; font-weight: 700; margin-bottom: 1.2rem; color: var(--accent); }
+  .section { margin-bottom: 1rem; }
+  .label {
+    font-size: .62rem; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin-bottom: .4rem;
+  }
+
+  /* Status pill */
+  .status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px;
+    font-size: .75rem; font-weight: 600;
+    border: 1px solid var(--border); background: var(--card);
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .status.connected .status-dot { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .status.error .status-dot { background: var(--err); }
+  .status.searching .status-dot {
+    background: var(--warn);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* Buttons */
+  .btn {
+    width: 100%; padding: .6rem 1rem; border-radius: 8px;
+    font-size: .82rem; font-weight: 600; cursor: pointer;
+    font-family: inherit; border: none; transition: opacity .15s;
+  }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-ghost {
+    background: none; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-danger { background: var(--err); color: #fff; }
+  .btn-ok { background: var(--ok); color: #000; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { flex: 1; }
+
+  /* Bank/Program picker */
+  .bp-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    margin-bottom: .5rem;
+  }
+  .bp-btn {
+    padding: .45rem 0; border-radius: 7px; font-size: .75rem;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+    border: 1px solid var(--border); background: var(--card); color: var(--muted);
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  .bp-btn.active {
+    background: rgba(124,92,191,.2);
+    border-color: var(--accent); color: var(--text);
+  }
+  .bp-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+  .bp-btn.prog { font-size: .7rem; }
+
+  /* Effect slot quick editor */
+  .slot-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: .5rem .6rem; border-radius: 8px;
+    background: var(--card); border: 1px solid var(--border);
+    margin-bottom: 6px;
+  }
+  .slot-num {
+    font-size: .6rem; color: var(--muted);
+    min-width: 14px; text-align: center;
+  }
+  .slot-onoff {
+    width: 32px; height: 18px; border-radius: 9px;
+    border: 1px solid #333; background: #1a1a1a;
+    cursor: pointer; position: relative; flex-shrink: 0;
+    transition: background .15s, border-color .15s;
+  }
+  .slot-onoff.on {
+    background: #1a0a2a; border-color: var(--accent);
+    box-shadow: 0 0 5px rgba(124,92,191,.4);
+  }
+  .slot-onoff::after {
+    content:''; position:absolute; top:2px; left:2px;
+    width:12px; height:12px; border-radius:50%;
+    background:#333; transition: left .15s, background .15s;
+  }
+  .slot-onoff.on::after { left:16px; background:var(--accent); }
+  .slot-name { flex:1; font-size:.75rem; color:var(--text); }
+  .slot-empty { color: var(--muted); font-style: italic; }
+
+  /* Log */
+  .log {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .6rem; height: 140px;
+    overflow-y: auto; font-family: monospace; font-size: .68rem;
+    color: var(--muted); display: flex; flex-direction: column; gap: 2px;
+  }
+  .log-line { line-height: 1.4; }
+  .log-line.ok { color: var(--ok); }
+  .log-line.err { color: var(--err); }
+  .log-line.tx { color: #74b9ff; }
+  .log-line.rx { color: #a8e6cf; }
+  .log-line.info { color: var(--text); }
+</style>
+</head>
+<body>
+
+<h1>🎛 G1X Four — MIDI Test</h1>
+
+<!-- Connection -->
+<div class="section">
+  <div class="label">Connection</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:.7rem;">
+    <div class="status searching" id="statusPill">
+      <div class="status-dot"></div>
+      <span id="statusText">Not connected</span>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="connectBtn" onclick="connectMIDI()">Connect to pedal</button>
+</div>
+
+<!-- Editor mode -->
+<div class="section">
+  <div class="label">Editor Mode</div>
+  <div class="btn-row">
+    <button class="btn btn-ok" id="enterEditorBtn" onclick="enterEditor()" disabled>Enter Editor Mode</button>
+    <button class="btn btn-ghost" id="exitEditorBtn" onclick="exitEditor()" disabled>Exit</button>
+  </div>
+</div>
+
+<!-- Bank / Program -->
+<div class="section">
+  <div class="label">Bank</div>
+  <div class="bp-grid" id="bankGrid"></div>
+  <div class="label" style="margin-top:.5rem;">Program (0–9)</div>
+  <div class="bp-row" id="progGrid"></div>
+</div>
+
+<!-- Effect slots on/off -->
+<div class="section">
+  <div class="label">Effect Slots (toggle on/off)</div>
+  <div id="slotsList"></div>
+</div>
+
+<!-- Log -->
+<div class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
+    <div class="label" style="margin:0;">MIDI Log</div>
+    <button class="btn btn-ghost" onclick="clearLog()" style="padding:2px 10px;font-size:.65rem;width:auto;">Clear</button>
+  </div>
+  <div class="log" id="log"></div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────
+let midiAccess = null;
+let midiOut = null;
+let midiIn  = null;
+let inEditorMode = false;
+let currentBank = 0;
+let currentProg = 0;
+
+// Slot on/off state (5 slots)
+const slotState = [true, true, true, true, true];
+
+// Zoom G1X Four SysEx address
+const ZOOM_ADDR = [0x52, 0x00, 0x6e];
+
+// ── Logging ──────────────────────────────────────────────────────────────
+function log(msg, type = '') {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = 'log-line' + (type ? ' ' + type : '');
+  const ts = new Date().toLocaleTimeString('en', {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  line.textContent = `[${ts}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() { document.getElementById('log').innerHTML = ''; }
+
+// ── MIDI helpers ─────────────────────────────────────────────────────────
+function sysex(...bytes) {
+  return [0xF0, ...ZOOM_ADDR, ...bytes, 0xF7];
+}
+
+function send(bytes) {
+  if (!midiOut) { log('No MIDI output — connect first', 'err'); return; }
+  midiOut.send(bytes);
+  log('TX: ' + bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' '), 'tx');
+}
+
+// ── Connect ──────────────────────────────────────────────────────────────
+async function connectMIDI() {
+  setStatus('searching', 'Requesting MIDI access…');
+  log('Requesting Web MIDI access…', 'info');
+
+  try {
+    midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+  } catch(e) {
+    setStatus('error', 'Permission denied');
+    log('MIDI access denied: ' + e.message, 'err');
+    return;
+  }
+
+  log('MIDI access granted. Scanning devices…', 'ok');
+
+  // Find Zoom device
+  for (const [id, output] of midiAccess.outputs) {
+    log('Output: ' + output.name, 'info');
+    if (output.name.toLowerCase().includes('zoom') || output.name.toLowerCase().includes('g1')) {
+      midiOut = output;
+      log('→ Selected output: ' + output.name, 'ok');
+    }
+  }
+  for (const [id, input] of midiAccess.inputs) {
+    log('Input: ' + input.name, 'info');
+    if (input.name.toLowerCase().includes('zoom') || input.name.toLowerCase().includes('g1')) {
+      midiIn = input;
+      midiIn.onmidimessage = onMidiMessage;
+      log('→ Selected input: ' + input.name, 'ok');
+    }
+  }
+
+  if (!midiOut) {
+    // fallback: just grab first available
+    const first = midiAccess.outputs.values().next().value;
+    if (first) {
+      midiOut = first;
+      log('No Zoom device found by name — using: ' + first.name, 'warn');
+    }
+  }
+  if (!midiIn) {
+    const first = midiAccess.inputs.values().next().value;
+    if (first) {
+      midiIn = first;
+      midiIn.onmidimessage = onMidiMessage;
+    }
+  }
+
+  if (midiOut) {
+    setStatus('connected', midiOut.name);
+    document.getElementById('enterEditorBtn').disabled = false;
+    document.getElementById('connectBtn').textContent = 'Reconnect';
+    buildBankProg();
+    buildSlots();
+  } else {
+    setStatus('error', 'No device found');
+    log('No MIDI output found. Is the pedal connected?', 'err');
+  }
+
+  // Watch for device changes
+  midiAccess.onstatechange = e => {
+    log('Device ' + e.port.state + ': ' + e.port.name, 'info');
+  };
+}
+
+// ── MIDI receive ─────────────────────────────────────────────────────────
+function onMidiMessage(e) {
+  const bytes = Array.from(e.data);
+  const hex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+  log('RX: ' + hex, 'rx');
+}
+
+// ── Editor mode ──────────────────────────────────────────────────────────
+function enterEditor() {
+  send(sysex(0x50));
+  inEditorMode = true;
+  document.getElementById('exitEditorBtn').disabled = false;
+  document.getElementById('enterEditorBtn').disabled = true;
+  log('Editor mode ON', 'ok');
+}
+
+function exitEditor() {
+  send(sysex(0x51));
+  inEditorMode = false;
+  document.getElementById('enterEditorBtn').disabled = false;
+  document.getElementById('exitEditorBtn').disabled = true;
+  log('Editor mode OFF', 'info');
+}
+
+// ── Bank / Program ───────────────────────────────────────────────────────
+function buildBankProg() {
+  const banks = ['A','B','C','D','E'];
+  const bg = document.getElementById('bankGrid');
+  bg.innerHTML = '';
+  banks.forEach((name, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'bp-btn' + (i === currentBank ? ' active' : '');
+    btn.textContent = name;
+    btn.onclick = () => selectBank(i);
+    bg.appendChild(btn);
+  });
+
+  const pg = document.getElementById('progGrid');
+  pg.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'bp-btn prog' + (i === currentProg ? ' active' : '');
+    btn.textContent = i;
+    btn.onclick = () => selectProg(i);
+    pg.appendChild(btn);
+  }
+}
+
+function selectBank(b) {
+  currentBank = b;
+  buildBankProg();
+  sendBankProg();
+}
+
+function selectProg(p) {
+  currentProg = p;
+  buildBankProg();
+  sendBankProg();
+}
+
+function sendBankProg() {
+  if (!midiOut) return;
+  // CC: bank select  b0 20 [bank]
+  // PC: program      c0 [prog]
+  midiOut.send([0xb0, 0x20, currentBank]);
+  log('TX: B0 20 ' + currentBank.toString(16).toUpperCase().padStart(2,'0'), 'tx');
+  midiOut.send([0xc0, currentProg]);
+  log('TX: C0 ' + currentProg.toString(16).toUpperCase().padStart(2,'0'), 'tx');
+  const bankName = ['A','B','C','D','E'][currentBank];
+  log(`→ Switched to patch ${bankName}${currentProg}`, 'ok');
+}
+
+// ── Effect slot toggle ───────────────────────────────────────────────────
+function buildSlots() {
+  const list = document.getElementById('slotsList');
+  list.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const row = document.createElement('div');
+    row.className = 'slot-row';
+
+    const num = document.createElement('div');
+    num.className = 'slot-num';
+    num.textContent = i + 1;
+
+    const tog = document.createElement('div');
+    tog.className = 'slot-onoff' + (slotState[i] ? ' on' : '');
+    tog.onclick = () => toggleSlot(i, tog);
+
+    const name = document.createElement('div');
+    name.className = 'slot-name slot-empty';
+    name.textContent = 'Slot ' + (i + 1);
+
+    row.appendChild(num);
+    row.appendChild(tog);
+    row.appendChild(name);
+    list.appendChild(row);
+  }
+}
+
+function toggleSlot(i, togEl) {
+  slotState[i] = !slotState[i];
+  togEl.classList.toggle('on', slotState[i]);
+  // SysEx: configure slot i, param 0 (on/off), value 0 or 1
+  // f0 52 00 6e 64 03 00 [slot] 00 [onoff] 00 00 00 00 f7
+  send(sysex(0x64, 0x03, 0x00, i, 0x00, slotState[i] ? 0x01 : 0x00, 0x00, 0x00, 0x00, 0x00));
+  log(`Slot ${i+1} → ${slotState[i] ? 'ON' : 'OFF'}`, 'info');
+}
+
+// ── Status UI ────────────────────────────────────────────────────────────
+function setStatus(state, text) {
+  const pill = document.getElementById('statusPill');
+  const label = document.getElementById('statusText');
+  pill.className = 'status ' + state;
+  label.textContent = text;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+if (!navigator.requestMIDIAccess) {
+  setStatus('error', 'Web MIDI not supported');
+  log('Web MIDI API not available in this browser.', 'err');
+  log('Use Chrome on Android with USB connected.', 'info');
+}
+</script>
+</body>
+</html>
