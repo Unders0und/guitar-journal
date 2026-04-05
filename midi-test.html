@@ -158,10 +158,12 @@
   <div id="slotsList"></div>
 </div>
 
-<!-- Request patch -->
+<!-- Capture effect types -->
 <div class="section">
-  <div class="label">Read Current Patch</div>
-  <button class="btn btn-ghost" onclick="requestCurrentPatch()">Request Patch Data</button>
+  <div class="label">Capture Effect Types</div>
+  <p style="font-size:.72rem;color:var(--muted2);margin-bottom:.5rem;">Enter editor mode, then tap this. Touch each knob on the pedal once to identify effects.</p>
+  <button class="btn btn-ghost" onclick="captureEffectTypes()">Start Capture</button>
+  <div id="captureLog" style="margin-top:.6rem;font-family:monospace;font-size:.68rem;color:#a8e6cf;line-height:1.6;"></div>
 </div>
 <div class="section">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
@@ -279,6 +281,32 @@ function onMidiMessage(e) {
   const bytes = Array.from(e.data);
   const hex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
   log('RX: ' + hex, 'rx');
+
+  // Parse Zoom SysEx
+  if (bytes[0] !== 0xF0 || bytes[1] !== 0x52 || bytes[2] !== 0x00 || bytes[3] !== 0x6E) return;
+  const cmd = bytes[4];
+
+  // Editor mode param update: F0 52 00 6E 64 03 00 [slot] [param] [lo] [hi] ...
+  if (cmd === 0x64 && bytes[5] === 0x03 && bytes[6] === 0x00) {
+    const slot  = bytes[7];
+    const param = bytes[8];
+    const lo    = bytes[9]  || 0;
+    const hi    = bytes[10] || 0;
+    let val = lo | (hi << 7);
+    if (val >= 8192) val -= 16384;
+
+    if (param === 1 && capturing) {
+      // Effect type ID
+      capturedEffects[slot] = val;
+      const hexId = `0x${val.toString(16).toUpperCase().padStart(4,'0')}`;
+      const cl = document.getElementById('captureLog');
+      cl.innerHTML = Object.entries(capturedEffects)
+        .sort(([a],[b]) => a-b)
+        .map(([s,v]) => `Slot ${parseInt(s)+1}: 0x${v.toString(16).toUpperCase().padStart(4,'0')}`)
+        .join('<br>');
+      log(`Slot ${slot+1} effect type ID: ${hexId}`, 'ok');
+    }
+  }
 }
 
 // ── Editor mode ──────────────────────────────────────────────────────────
@@ -373,9 +401,18 @@ function buildSlots() {
   }
 }
 
+let capturing = false;
+const capturedEffects = {};
+
+function captureEffectTypes() {
+  capturing = true;
+  Object.keys(capturedEffects).forEach(k => delete capturedEffects[k]);
+  document.getElementById('captureLog').innerHTML = 'Listening... touch each knob on the pedal once per slot.';
+  log('Effect type capture started', 'ok');
+}
+
 function requestCurrentPatch() {
   if (!midiOut) { log('Connect first', 'err'); return; }
-  // New method for G1X Four (G5n platform): 0x64 0x13
   log('Requesting current patch...', 'info');
   send(sysex(0x64, 0x13));
 }
