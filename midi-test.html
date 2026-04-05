@@ -158,7 +158,11 @@
   <div id="slotsList"></div>
 </div>
 
-<!-- Log -->
+<!-- Request patch -->
+<div class="section">
+  <div class="label">Read Current Patch</div>
+  <button class="btn btn-ghost" onclick="requestCurrentPatch()">Request Patch Data</button>
+</div>
 <div class="section">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
     <div class="label" style="margin:0;">MIDI Log</div>
@@ -367,6 +371,13 @@ function buildSlots() {
     row.appendChild(name);
     list.appendChild(row);
   }
+}
+
+function requestCurrentPatch() {
+  if (!midiOut) { log('Connect first', 'err'); return; }
+  // New method for G1X Four (G5n platform): 0x64 0x13
+  log('Requesting current patch...', 'info');
+  send(sysex(0x64, 0x13));
 }
 
 function toggleSlot(i, togEl) {
