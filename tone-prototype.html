@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-10</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-11</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -909,7 +909,7 @@ function renderKnobs() {
     const paramIdx = i;
     const cb = v => {
       s.params[p.n] = v;
-      midiSendParam(slotIdx, paramIdx, v);
+      midiSendParam(slotIdx, paramIdx, v, p);
     };
     let el;
     if (p.labels && p.labels.length === 2) {
@@ -1324,7 +1324,8 @@ function onMidiMessage(e) {
       if (s.cat && s.effect && EFFECTS[s.cat]?.[s.effect]) {
         const paramDef = EFFECTS[s.cat][s.effect][dialIndex];
         if (paramDef) {
-          s.params[paramDef.n] = val;
+          // Pedal sends 0-based values; add param.min to get display value
+          s.params[paramDef.n] = val + paramDef.min;
           if (patch.activeSlot === slot) renderKnobs();
         }
       } else {
@@ -1374,11 +1375,17 @@ function enterEditorMode() {
   editorMode = true;
   document.getElementById('midiEditorBtn').classList.add('active');
   document.getElementById('midiEditorBtn').textContent = 'Editing';
+  // Keepalive: re-enter editor mode every 25s (pedal times out after ~30s)
+  clearInterval(window._editorKeepalive);
+  window._editorKeepalive = setInterval(() => {
+    if (editorMode && midiOut) midiSend(sysex(0x50));
+  }, 25000);
 }
 
 function exitEditorMode() {
   midiSend(sysex(0x51));
   editorMode = false;
+  clearInterval(window._editorKeepalive);
   document.getElementById('midiEditorBtn').classList.remove('active');
   document.getElementById('midiEditorBtn').textContent = 'Edit';
 }
@@ -1427,11 +1434,12 @@ function midiSendSlotOnOff(slotIndex, on) {
 }
 
 // ── Send param change to pedal ────────────────────────────────────────────
-function midiSendParam(slotIndex, paramIndex, value) {
+function midiSendParam(slotIndex, paramIndex, value, paramDef) {
   if (!midiOut || !editorMode) return;
-  // param index offset by 2 (0=on/off, 1=effect type, 2+=dials)
   const midiParamIndex = paramIndex + 2;
-  const encoded = encode7bit(value);
+  // Subtract param.min — pedal expects 0-based values
+  const rawVal = paramDef ? value - paramDef.min : value;
+  const encoded = encode7bit(rawVal);
   midiSend(sysex(0x64, 0x03, 0x00, slotIndex, midiParamIndex, encoded[0], encoded[1], 0x00, 0x00, 0x00));
 }
 
