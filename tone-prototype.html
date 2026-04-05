@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-7</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-8</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -741,7 +741,7 @@ function buildSlots() {
   const row = document.getElementById('slotsRow');
   row.innerHTML = '';
 
-  const STOMP_SLOTS = [0,1,2,3,4];
+  const STOMP_SLOTS = [0,1,2,4,5];
   for (let _si = 0; _si < STOMP_SLOTS.length; _si++) { const i = STOMP_SLOTS[_si];
     const s = patch.slots[i];
 
@@ -794,7 +794,7 @@ function buildSlots() {
 
     const num = document.createElement('div');
     num.className = 'slot-num';
-    num.textContent = i + 1;
+    num.textContent = _si + 1;
     slot.appendChild(num);
 
     if (s.cat) {
