@@ -39,6 +39,59 @@
     margin: 0 auto;
   }
 
+  /* ── MIDI bar ── */
+  .midi-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: .5rem .7rem; border-radius: 10px;
+    background: var(--card); border: 1px solid var(--border);
+    margin-bottom: .85rem;
+  }
+  .midi-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted); flex-shrink: 0;
+    transition: background .3s, box-shadow .3s;
+  }
+  .midi-dot.connected { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
+  .midi-dot.searching { background: #f39c12; animation: mpulse 1s ease-in-out infinite; }
+  .midi-dot.error     { background: #e74c3c; }
+  @keyframes mpulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .midi-status { font-size: .7rem; color: var(--muted2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .midi-connect-btn {
+    font-size: .65rem; padding: 4px 10px; border-radius: 6px;
+    border: 1px solid var(--border2); background: none;
+    color: var(--text2); cursor: pointer; font-family: inherit;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .midi-connect-btn:hover { border-color: var(--accent); color: var(--text); }
+  .midi-connect-btn.connected { border-color: #2ecc7155; color: #2ecc71; }
+
+  /* bank/prog row */
+  .midi-bp-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: .85rem;
+  }
+  .midi-bp-label { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+  .midi-bank-btn, .midi-prog-btn {
+    padding: 3px 8px; border-radius: 5px; font-size: .72rem; font-weight: 700;
+    border: 1px solid var(--border); background: var(--card2);
+    color: var(--muted2); cursor: pointer; font-family: inherit;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  .midi-bank-btn.active, .midi-prog-btn.active {
+    background: rgba(124,92,191,.2); border-color: var(--accent); color: var(--text);
+  }
+  .midi-sep { color: var(--muted); font-size: .8rem; }
+  .midi-editor-btn {
+    margin-left: auto; font-size: .62rem; padding: 3px 9px;
+    border-radius: 5px; border: 1px solid var(--border);
+    background: none; color: var(--muted); cursor: pointer; font-family: inherit;
+    transition: all .15s;
+  }
+  .midi-editor-btn.active {
+    border-color: #2ecc7155; color: #2ecc71;
+    background: rgba(46,204,113,.08);
+  }
+
   /* ── Patch header ── */
   .patch-header {
     display: flex;
@@ -326,29 +379,90 @@
   .editor-cat-select:focus, .editor-effect-select:focus { border-color: var(--accent); }
   .editor-effect-select { flex: 1; }
 
-  .page-tabs { display: flex; gap: 4px; margin-bottom: .6rem; }
-  .page-tab {
-    font-size: .6rem; padding: 2px 9px;
-    border-radius: 5px; border: 1px solid var(--border);
-    background: none; color: var(--muted2); cursor: pointer; font-family: inherit;
-  }
-  .page-tab.active { background: var(--card2); border-color: var(--border2); color: var(--text); }
-
   .knobs-grid { display: flex; flex-wrap: wrap; gap: 10px 6px; }
 
-  /* ── Notes ── */
-  .tone-notes label {
-    font-size: .62rem; color: var(--muted);
-    text-transform: uppercase; letter-spacing: .08em;
-    display: block; margin-bottom: .3rem;
+  .param-alt-page {
+    background: rgba(255,255,255,.03);
+    border-radius: 7px;
+    outline: 1px solid rgba(255,255,255,.055);
+    outline-offset: 2px;
   }
-  .tone-notes textarea {
+
+  /* ── Patch description ── */
+  .patch-desc {
     width: 100%; background: var(--card2);
     border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text); font-size: .78rem; padding: .5rem;
+    color: var(--text2); font-size: .78rem; padding: .45rem .6rem;
     resize: none; outline: none; font-family: inherit; line-height: 1.5;
+    margin-bottom: .85rem;
   }
-  .tone-notes textarea:focus { border-color: var(--accent); }
+  .patch-desc:focus { border-color: var(--accent); color: var(--text); }
+  .patch-desc::placeholder { color: var(--muted); }
+
+  /* ── Toggle switch ── */
+  .switch-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; width: 56px;
+  }
+  .switch-label {
+    font-size: .55rem; color: var(--muted2);
+    text-transform: uppercase; letter-spacing: .06em;
+    text-align: center; line-height: 1.2; min-height: 1.5em;
+  }
+  .switch-track {
+    position: relative; width: 38px; height: 20px;
+    background: #1e1e1e; border: 1px solid #333;
+    border-radius: 10px; cursor: pointer;
+    transition: background .2s, border-color .2s;
+    flex-shrink: 0;
+  }
+  .switch-track.on {
+    background: #1a1a2e;
+    border-color: var(--accent);
+    box-shadow: 0 0 6px rgba(124,92,191,.35);
+  }
+  .switch-thumb {
+    position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #444;
+    box-shadow: 0 1px 3px rgba(0,0,0,.6);
+    transition: left .2s, background .2s;
+  }
+  .switch-track.on .switch-thumb {
+    left: 20px;
+    background: var(--accent);
+    box-shadow: 0 0 5px rgba(124,92,191,.7);
+  }
+  .switch-value {
+    font-size: .62rem; color: var(--text2);
+    text-align: center; min-width: 22px;
+  }
+
+  /* ── Multi-option pill selector ── */
+  .pill-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; min-width: 56px; max-width: 90px;
+  }
+  .pill-label {
+    font-size: .55rem; color: var(--muted2);
+    text-transform: uppercase; letter-spacing: .06em;
+    text-align: center; line-height: 1.2; min-height: 1.5em;
+  }
+  .pill-options {
+    display: flex; flex-direction: column; gap: 2px; width: 100%;
+  }
+  .pill-opt {
+    font-size: .6rem; padding: 2px 6px; border-radius: 4px;
+    border: 1px solid #2a2a2a; background: none;
+    color: var(--muted2); cursor: pointer; font-family: inherit;
+    text-align: center; transition: background .12s, color .12s, border-color .12s;
+    white-space: nowrap;
+  }
+  .pill-opt.active {
+    background: rgba(124,92,191,.18);
+    border-color: var(--accent);
+    color: var(--text);
+  }
 
   /* ── Knob ── */
   .knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px; }
@@ -367,15 +481,33 @@
 </head>
 <body>
 
+<!-- MIDI Bar -->
+<div class="midi-bar">
+  <div class="midi-dot" id="midiDot"></div>
+  <div class="midi-status" id="midiStatus">Not connected</div>
+  <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
+</div>
+
+<!-- Bank / Program selector -->
+<div class="midi-bp-row" id="midiBpRow" style="display:none;">
+  <span class="midi-bp-label">Bank</span>
+  <div id="midiBankBtns" style="display:flex;gap:4px;"></div>
+  <span class="midi-sep">·</span>
+  <span class="midi-bp-label">Patch</span>
+  <div id="midiProgBtns" style="display:flex;gap:3px;"></div>
+  <button class="midi-editor-btn" id="midiEditorBtn" onclick="toggleEditorMode()">Edit</button>
+</div>
+
 <!-- Patch header -->
 <div class="patch-header">
-  <div class="patch-slot">A-07</div>
+  <div class="patch-slot" id="patchSlotLabel">A-0</div>
   <input class="patch-name-input" id="patchName" value="Crunch Lead" maxlength="10" />
   <div class="patch-level-wrap">
     LVL <input type="range" min="0" max="100" value="80" id="patchLevel" />
     <span id="patchLevelVal">80</span>
   </div>
 </div>
+<textarea class="patch-desc" id="patchDesc" rows="2" placeholder="Describe this tone — context, songs, amp settings…"></textarea>
 
 <!-- Guitar section -->
 <div class="guitar-section">
@@ -409,78 +541,176 @@
   <div class="knobs-grid" id="knobsGrid"></div>
 </div>
 
-<!-- Notes -->
-<div class="tone-notes">
-  <label>Notes</label>
-  <textarea rows="3" placeholder="Tone context, song usage, ideas…"></textarea>
-</div>
+
 
 <script>
 const EFFECTS = {
   DYNAMICS: {
     'Comp':       [{n:'Sense',min:0,max:10},{n:'ATTCK',min:0,max:1,labels:['SLOW','FAST']},{n:'Tone',min:0,max:10},{n:'VOL',min:0,max:100}],
     'RackComp':   [{n:'THRSH',min:0,max:50},{n:'Ratio',min:1,max:10},{n:'ATTCK',min:1,max:10},{n:'VOL',min:0,max:100}],
+    'SlowATTCK':  [{n:'Time',min:1,max:50},{n:'Curve',min:0,max:10},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100}],
     'ZNR':        [{n:'DETCT',min:0,max:1,labels:['GTRIN','EFXIN']},{n:'Depth',min:0,max:100},{n:'THRSH',min:0,max:100},{n:'Decay',min:0,max:100}],
-    'NoiseGate':  [{n:'DETCT',min:0,max:1,labels:['GTRIN','EFXIN']},{n:'Depth',min:0,max:100},{n:'THRSH',min:0,max:100},{n:'Decay',min:0,max:100}],
+    'MuteSW':     [{n:'Edge',min:0,max:100},{n:'Speed',min:0,max:100},{n:'INVRT',min:0,max:1,labels:['NORMAL','INVERT']},{n:'ON/OFF',min:0,max:2,labels:['LATCH','UnLATCH','TRGGR']}],
     'GrayComp':   [{n:'SUSTN',min:0,max:100},{n:'Lo',min:0,max:100},{n:'Hi',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'NoiseGate':  [{n:'DETCT',min:0,max:1,labels:['GTRIN','EFXIN']},{n:'Depth',min:0,max:100},{n:'THRSH',min:0,max:100},{n:'Decay',min:0,max:100}],
+    'OptComp':    [{n:'Drive',min:0,max:10},{n:'Lo',min:0,max:100},{n:'Hi',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'BlackOpt':   [{n:'Comp',min:0,max:100},{n:'Lo',min:0,max:100},{n:'Hi',min:0,max:100},{n:'VOL',min:0,max:100}],
     'LMT-76':     [{n:'Input',min:0,max:80},{n:'Ratio',min:0,max:3,labels:['4:1','8:1','12:1','20:1']},{n:'REL',min:10,max:70},{n:'Output',min:0,max:80}],
   },
   FILTER: {
     'AutoWah':    [{n:'Mode',min:0,max:1,labels:['DOWN','UP']},{n:'Sense',min:1,max:10},{n:'RESO',min:0,max:10},{n:'VOL',min:0,max:100}],
-    'Gt GEQ':     [{n:'160Hz',min:-12,max:12},{n:'400Hz',min:-12,max:12},{n:'800Hz',min:-12,max:12},{n:'3.2k',min:-12,max:12},{n:'6.4k',min:-12,max:12},{n:'12k',min:-12,max:12},{n:'VOL',min:0,max:100}],
+    'Resonance':  [{n:'Mode',min:0,max:1,labels:['DOWN','UP']},{n:'Sense',min:1,max:10},{n:'RESO',min:0,max:10},{n:'VOL',min:0,max:100}],
+    'Cry':        [{n:'Range',min:1,max:10},{n:'RESO',min:0,max:10},{n:'Sense',min:1,max:10},{n:'BAL',min:0,max:100}],
+    'SeqFLTR':    [{n:'Step',min:2,max:8},{n:'PTTRN',min:1,max:8},{n:'Speed',min:1,max:50},{n:'RESO',min:0,max:10}],
+    'Gt GEQ':     [{n:'160',min:-12,max:12},{n:'400',min:-12,max:12},{n:'800',min:-12,max:12},{n:'3.2k',min:-12,max:12},{n:'6.4k',min:-12,max:12},{n:'12k',min:-12,max:12},{n:'VOL',min:0,max:100}],
+    'Gt GEQ7':    [{n:'100',min:-12,max:12},{n:'200',min:-12,max:12},{n:'400',min:-12,max:12},{n:'800',min:-12,max:12},{n:'1.6k',min:-12,max:12},{n:'3.2k',min:-12,max:12},{n:'6.4k',min:-12,max:12},{n:'VOL',min:0,max:100}],
+    'St Gt GEQ':  [{n:'160',min:-12,max:12},{n:'400',min:-12,max:12},{n:'800',min:-12,max:12},{n:'3.2k',min:-12,max:12},{n:'6.4k',min:-12,max:12},{n:'12k',min:-12,max:12},{n:'VOL',min:0,max:100}],
     'ParaEQ':     [{n:'FREQ',min:20,max:20000},{n:'Q',min:0,max:16},{n:'Gain',min:-12,max:12},{n:'VOL',min:0,max:100}],
-    'Exciter':    [{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'RndmFLTR':   [{n:'Type',min:0,max:1,labels:['HPF','LPF']},{n:'Speed',min:1,max:50},{n:'BAL',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'LowPassFL':  [{n:'FREQ',min:0,max:100},{n:'Sense',min:0,max:100},{n:'RESO',min:0,max:100},{n:'BAL',min:0,max:100}],
+    'Exciter':    [{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'VOL',min:0,max:100},{n:'ON/OFF',min:0,max:1,labels:['LATCH','UnLATCH']}],
+    'Step':       [{n:'Depth',min:0,max:100},{n:'Rate',min:0,max:50},{n:'RESO',min:0,max:10},{n:'Shape',min:0,max:10}],
+    'LFO FLTR':   [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'RESO',min:0,max:10},{n:'Wave',min:0,max:3,labels:['SINE','TRI','SAWUP','SAWDN']}],
   },
   DRIVE: {
     'TS Drive':   [{n:'Gain',min:0,max:100},{n:'Boost',min:0,max:1,labels:['OFF','ON']},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'EP Stomp':   [{n:'Gain',min:0,max:100},{n:'Bass',min:-10,max:10},{n:'Treble',min:-10,max:10},{n:'VOL',min:0,max:100}],
     'RC Boost':   [{n:'Gain',min:0,max:100},{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'VOL',min:0,max:100}],
     'GoldDrive':  [{n:'Gain',min:0,max:100},{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'SweetDrv':   [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Focus',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'DYN Drive':  [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mode',min:0,max:1,labels:['COMBO','STACK']},{n:'VOL',min:0,max:100}],
     'RedCrunch':  [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'VOL',min:0,max:100}],
     'MetalWRLD':  [{n:'Gain',min:0,max:100},{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'VOL',min:0,max:100}],
-    'DIST 1':     [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100},{n:'Comp',min:0,max:1,labels:['ORG','MOD']}],
-    'NYC Muff':   [{n:'SUSTN',min:0,max:100},{n:'Tone',min:0,max:100},{n:'BAL',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'TB MK1.5':   [{n:'ATTCK',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Color',min:1,max:2},{n:'VOL',min:0,max:100}],
     'OctFuzz':    [{n:'Boost',min:0,max:100},{n:'Color',min:1,max:2},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'SpotBoost':  [{n:'Boost',min:0,max:100},{n:'Bass',min:-10,max:10},{n:'Treble',min:-10,max:10},{n:'ON/OFF',min:0,max:1,labels:['LATCH','UnLATCH']}],
+    'Aco.Sim':    [{n:'Top',min:0,max:100},{n:'Body',min:0,max:100},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'NYC Muff':   [{n:'SUSTN',min:0,max:100},{n:'Tone',min:0,max:100},{n:'BAL',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'HG THRTTL':  [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'MdCut',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'BG GRID':    [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'BAL',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'DIST 1':     [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100},{n:'Comp',min:0,max:1,labels:['ORG','MOD']}],
+    'Squeak':     [{n:'Gain',min:0,max:100},{n:'FLTR',min:0,max:100},{n:'VOL',min:0,max:100},{n:'DryMx',min:0,max:100}],
+    'UpOctBSTR':  [{n:'UpOct',min:0,max:100},{n:'DryMx',min:0,max:100},{n:'Bottom',min:0,max:100},{n:'PRSNC',min:0,max:100}],
+    'OutputBST':  [{n:'Range',min:1,max:10},{n:'Boost',min:0,max:100},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'DIST Plus':  [{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100},{n:'DryMx',min:0,max:100},{n:'Comp',min:0,max:2,labels:['ORG','MOD1','MOD2']}],
+    'Zen O.DRV':  [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Voice',min:0,max:100},{n:'VOL',min:0,max:100}],
     'VioletDST':  [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Voice',min:0,max:2},{n:'VOL',min:0,max:100}],
   },
   AMP: {
     'MS 800':     [{n:'Input',min:0,max:1,labels:['LO','HI']},{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100}],
-    'FD TWNR':    [{n:'Bass',min:10,max:100},{n:'MID',min:10,max:100},{n:'Treble',min:10,max:100},{n:'Gain',min:10,max:100},{n:'VOL',min:10,max:100},{n:'Depth',min:10,max:100},{n:'Speed',min:10,max:100}],
+    'MS 1959':    [{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Input1',min:0,max:100},{n:'Input2',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'MS 45os':    [{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Input1',min:0,max:100},{n:'Input2',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'FD TWNR':    [{n:'Bass',min:10,max:100},{n:'MID',min:10,max:100},{n:'Treble',min:10,max:100},{n:'BRGHT',min:0,max:1,labels:['OFF','ON']},{n:'Gain',min:10,max:100},{n:'VOL',min:10,max:100},{n:'Depth',min:10,max:100},{n:'Speed',min:10,max:100}],
+    'FD B-MAN':   [{n:'Input',min:0,max:1,labels:['NORMAL','BRIGHT']},{n:'Bass',min:10,max:120},{n:'MID',min:10,max:120},{n:'Treble',min:10,max:120},{n:'PRSNC',min:10,max:120},{n:'Gain',min:10,max:120},{n:'VOL',min:10,max:120}],
+    'FD DLXR':    [{n:'Input',min:0,max:1,labels:['NORMAL','VIBRATO']},{n:'Bass',min:10,max:100},{n:'Treble',min:10,max:100},{n:'Gain',min:10,max:100},{n:'VOL',min:10,max:100},{n:'Depth',min:10,max:100},{n:'Speed',min:10,max:100}],
+    'FD MASTER':  [{n:'Gain',min:10,max:100},{n:'Bass',min:10,max:100},{n:'MID',min:10,max:100},{n:'Treble',min:10,max:100},{n:'Fat',min:0,max:1,labels:['OFF','ON']},{n:'VOL',min:10,max:100}],
+    'UK 30A':     [{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'Cut',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100},{n:'Depth',min:0,max:100},{n:'Speed',min:0,max:100}],
     'BG MK1':     [{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain1',min:0,max:100},{n:'Gain2',min:0,max:100},{n:'VOL',min:0,max:100}],
-    'Recti ORG':  [{n:'Mode',min:0,max:1,labels:['VNTG','MDRN']},{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'BG MK3':     [{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain1',min:0,max:100},{n:'Gain2',min:0,max:100},{n:'VOL',min:0,max:100}],
     'XtasyBlue':  [{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'STRCT',min:0,max:1,labels:['LO','HI']},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'HW 100':     [{n:'Input',min:0,max:1,labels:['NORMAL','BRILL']},{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'Recti ORG':  [{n:'Mode',min:0,max:1,labels:['VNTG','MDRN']},{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'ORG120':     [{n:'Input',min:0,max:1,labels:['LO','HI']},{n:'Color',min:1,max:6},{n:'Bass',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100}],
     'DZ DRV':     [{n:'Bass',min:0,max:100},{n:'MID',min:0,max:100},{n:'Treble',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'Gain',min:0,max:100},{n:'VOL',min:0,max:100},{n:'Deep',min:0,max:100},{n:'MidCut',min:0,max:100}],
+    'MATCH30':    [{n:'Gain1',min:0,max:100},{n:'Bass1',min:0,max:100},{n:'TRBL1',min:0,max:100},{n:'Gain2',min:0,max:100},{n:'Tone2',min:0,max:5},{n:'Cut',min:0,max:100},{n:'VOL',min:0,max:100}],
   },
   CABINET: {
-    'MS4x12':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
-    'FD2x12':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
-    'UK4x12':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'MS4x12':     [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'MS4x12GB':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'MS4x12AL':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'FD2x12':     [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'FD-B4x10':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'FD-DX1x12':  [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'FD MA2x12':  [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'UK2x12':     [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'MK1 1x12':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'MK3 1x12':   [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'BGN4x12':    [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'HW4x12':     [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'RCT4x12':    [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'ORG4x12':    [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'DZ4x12F':    [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
+    'MA2x12':     [{n:'MIC',min:0,max:1,labels:['OFF','ON']},{n:'D57:D421',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100}],
   },
   MOD: {
-    'Chorus':   [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
-    'Flanger':  [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Resonance',min:0,max:100},{n:'Mix',min:0,max:100}],
-    'Phaser':   [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Resonance',min:0,max:100},{n:'Mix',min:0,max:100}],
-    'Tremolo':  [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Wave',min:0,max:3,labels:['SINE','TRI','SQR','SAWUP']},{n:'VOL',min:0,max:100}],
+    'Tremolo':    [{n:'Wave',min:0,max:2,labels:['TRI','TUBE','SQR']},{n:'Depth',min:0,max:100},{n:'Rate',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'Chorus':     [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Tone',min:0,max:10},{n:'Mix',min:0,max:100}],
+    'StereoCho':  [{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Tone',min:0,max:10},{n:'Mix',min:0,max:100}],
+    'Phaser':     [{n:'Color',min:0,max:3,labels:['4 STG','8 STG','INV 4','INV 8']},{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'RESO',min:0,max:100}],
+    'VinFLNGR':   [{n:'PreD',min:0,max:50},{n:'Depth',min:0,max:100},{n:'Rate',min:0,max:50},{n:'RESO',min:-10,max:10}],
+    'TheVibe':    [{n:'Speed',min:0,max:50},{n:'Depth',min:0,max:100},{n:'Mode',min:0,max:1,labels:['VIBRT','CHORS']},{n:'VOL',min:0,max:100}],
+    'Vibrato':    [{n:'Depth',min:0,max:100},{n:'Rate',min:0,max:50},{n:'Tone',min:0,max:10},{n:'BAL',min:0,max:100}],
+    'Octave':     [{n:'OCT1',min:0,max:100},{n:'OCT2',min:0,max:100},{n:'Tone',min:0,max:10},{n:'Dry',min:0,max:100}],
+    'RingMod':    [{n:'FREQ',min:1,max:50},{n:'Tone',min:0,max:10},{n:'BAL',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'Detune':     [{n:'Cent',min:-25,max:25},{n:'PreD',min:0,max:50},{n:'Tone',min:0,max:10},{n:'Mix',min:0,max:100}],
+    'PitchSHFT':  [{n:'Shift',min:-12,max:24},{n:'Fine',min:-25,max:25},{n:'Tone',min:0,max:10},{n:'BAL',min:0,max:100}],
+    'MonoPitch':  [{n:'Shift',min:-12,max:24},{n:'Fine',min:-25,max:25},{n:'Tone',min:0,max:10},{n:'BAL',min:0,max:100}],
+    'HPS':        [{n:'Scale',min:0,max:9,labels:['-6','-5','-4','-3','-m','m','3','4','5','6']},{n:'Key',min:0,max:11,labels:['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']},{n:'Tone',min:0,max:10},{n:'Mix',min:0,max:100}],
+    'Slicer':     [{n:'PTTRN',min:1,max:20},{n:'Speed',min:1,max:50},{n:'THRSH',min:0,max:50},{n:'VOL',min:0,max:100}],
+    'CloneCho':   [{n:'Depth',min:1,max:2},{n:'Rate',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'SuperCho':   [{n:'Depth',min:0,max:100},{n:'Rate',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'StonePha':   [{n:'Color',min:1,max:2},{n:'Depth',min:0,max:100},{n:'Rate',min:0,max:100},{n:'RESO',min:0,max:100}],
+    'CoronaTri':  [{n:'Depth',min:0,max:100},{n:'Speed',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'BendCho':    [{n:'Mode',min:0,max:1,labels:['UP','DOWN']},{n:'Depth',min:0,max:100},{n:'Time',min:0,max:50},{n:'BAL',min:0,max:100}],
+    'AnalogCho':  [{n:'Depth',min:0,max:100},{n:'Rate',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'WarpPhase':  [{n:'Mode',min:0,max:1,labels:['GO','BACK']},{n:'Speed',min:1,max:50},{n:'RESO',min:0,max:10},{n:'VOL',min:0,max:100}],
+    'Duo Phase':  [{n:'DPT A',min:1,max:100},{n:'RateA',min:1,max:50},{n:'ResoA',min:0,max:10},{n:'Link',min:0,max:2,labels:['SERI','PARA','STR']},{n:'DPT B',min:1,max:100},{n:'RateB',min:1,max:50},{n:'ResoB',min:0,max:10},{n:'VOL',min:0,max:100}],
   },
   SFX: {
-    'Ring Mod': [{n:'Freq',min:0,max:100},{n:'Depth',min:0,max:100},{n:'BAL',min:0,max:100},{n:'VOL',min:0,max:100}],
-    'Pitch SFX':[{n:'Pitch',min:-24,max:24},{n:'Fine',min:-50,max:50},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Bomber':     [{n:'Decay',min:1,max:100},{n:'Tone',min:0,max:10},{n:'Mix',min:0,max:100},{n:'ON/OFF',min:0,max:1,labels:['LATCH','TRGGR']}],
+    'AutoPan':    [{n:'Rate',min:0,max:50},{n:'Width',min:0,max:50},{n:'Clip',min:0,max:10},{n:'VOL',min:0,max:100}],
+    'LoopRoll':   [{n:'Time',min:10,max:3000},{n:'Duty',min:25,max:100},{n:'BAL',min:0,max:100},{n:'ON/OFF',min:0,max:1,labels:['LATCH','UnLATCH']}],
+    'HotSpice':   [{n:'Bend',min:0,max:100},{n:'Buzz',min:0,max:100},{n:'+1oct',min:0,max:100},{n:'VOL',min:0,max:100}],
   },
   DELAY: {
-    'Delay':      [{n:'Time',min:1,max:3000},{n:'F.B',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
-    'Tape Echo':  [{n:'Time',min:1,max:3000},{n:'F.B',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
-    'Analog DLY': [{n:'Time',min:1,max:800},{n:'F.B',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
-    'Reverse DLY':[{n:'Time',min:1,max:1000},{n:'F.B',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Delay':      [{n:'Time',min:1,max:3000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'AnalogDly':  [{n:'Time',min:1,max:3000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'TapeEcho':   [{n:'Time',min:1,max:2000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'ReverseDL':  [{n:'Time',min:10,max:1500},{n:'F.B',min:0,max:100},{n:'BAL',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'ModDelay':   [{n:'Time',min:1,max:2000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'P-P Delay':  [{n:'Time',min:1,max:3000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'FilterDly':  [{n:'Time',min:1,max:2000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'Dual DLY':   [{n:'TimeA',min:0,max:1490},{n:'F.B A',min:0,max:110},{n:'TimeB',min:0,max:1490},{n:'F.B B',min:0,max:110},{n:'DlyMx',min:0,max:100},{n:'BAL',min:0,max:100},{n:'Depth',min:0,max:50},{n:'Speed',min:0,max:50}],
+    'Pitch DLY':  [{n:'Pitch',min:-12,max:12},{n:'Time',min:1,max:2000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'SlapBackD':  [{n:'Time',min:1,max:300},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'SubDv',min:0,max:2,labels:['♩','♪','P-P']}],
+    'A-Pan DLY':  [{n:'Time',min:1,max:1500},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Link',min:0,max:1,labels:['PAN-DLY','DLY-PAN']},{n:'Cycle',min:0,max:50},{n:'Width',min:0,max:50},{n:'Clip',min:0,max:10}],
+    'PhaseDly':   [{n:'Time',min:1,max:2000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']},{n:'Color',min:0,max:3,labels:['4 STG','8 STG','INV 4','INV 8']},{n:'Depth',min:0,max:100},{n:'Rate',min:1,max:50},{n:'Reso',min:0,max:100}],
+    'TapeEcho3':  [{n:'Gain',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Lo',min:0,max:100},{n:'VOL',min:0,max:100},{n:'Time',min:10,max:1000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100},{n:'RecLv',min:0,max:100}],
+    'ICE Delay':  [{n:'INTVL',min:0,max:100},{n:'Time',min:60,max:980},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'SlwAtkDly':  [{n:'Swell',min:1,max:50},{n:'Time',min:1,max:1900},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'SoftEcho':   [{n:'MOD',min:0,max:1,labels:['OFF','ON']},{n:'Time',min:19,max:581},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100}],
   },
   REVERB: {
-    'Hall':   [{n:'Decay',min:0,max:100},{n:'Pre-D',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
-    'Room':   [{n:'Decay',min:0,max:100},{n:'Pre-D',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
-    'Spring': [{n:'Decay',min:0,max:100},{n:'Pre-D',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
-    'Plate':  [{n:'Decay',min:0,max:100},{n:'Pre-D',min:0,max:100},{n:'Tone',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Air':        [{n:'Size',min:1,max:100},{n:'REF',min:0,max:10},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'Room':       [{n:'PreD',min:1,max:100},{n:'Decay',min:1,max:30},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'Hall':       [{n:'PreD',min:1,max:100},{n:'Decay',min:1,max:30},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'HD Hall':    [{n:'PreD',min:1,max:200},{n:'Decay',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'Spring':     [{n:'PreD',min:1,max:100},{n:'Decay',min:1,max:30},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'FD Spring':  [{n:'Color',min:0,max:1},{n:'Lo',min:0,max:100},{n:'Hi',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'Plate':      [{n:'PreD',min:1,max:200},{n:'Decay',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'EarlyRef':   [{n:'Decay',min:1,max:30},{n:'Shape',min:-10,max:10},{n:'Tone',min:0,max:10},{n:'Mix',min:0,max:100}],
+    'Church':     [{n:'PreD',min:0,max:200},{n:'Decay',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'Chamber':    [{n:'PreD',min:0,max:200},{n:'Decay',min:0,max:100},{n:'Mix',min:0,max:100},{n:'Tail',min:0,max:1,labels:['OFF','ON']}],
+    'GateRev':    [{n:'Color',min:1,max:5},{n:'Decay',min:0,max:100},{n:'Tone',min:0,max:100},{n:'BAL',min:0,max:100}],
   },
   PEDAL: {
-    'PDL Wah':    [{n:'Freq',min:0,max:100},{n:'RESO',min:0,max:10},{n:'Tone',min:0,max:100},{n:'VOL',min:0,max:100}],
-    'PDL Volume': [{n:'InLvl',min:0,max:100},{n:'Curve',min:0,max:10},{n:'Min',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'PDL Vol':    [{n:'VOL',min:0,max:100},{n:'Min',min:0,max:100},{n:'Max',min:0,max:100},{n:'Curve',min:0,max:1,labels:['A','B']}],
+    'BlackWah':   [{n:'FREQ',min:0,max:100},{n:'Range',min:0,max:100},{n:'Dry',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'ChromeWah':  [{n:'FREQ',min:0,max:100},{n:'Range',min:0,max:100},{n:'Dry',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'WAH100':     [{n:'FREQ',min:0,max:50},{n:'Depth',min:0,max:100},{n:'Dry',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'PDL Pitch':  [{n:'Bend',min:0,max:100},{n:'Color',min:1,max:9},{n:'Tone',min:0,max:10},{n:'Mode',min:0,max:1,labels:['UP','DOWN']}],
+    'PDL MnPit':  [{n:'Bend',min:0,max:100},{n:'Color',min:1,max:9},{n:'Tone',min:0,max:10},{n:'Mode',min:0,max:1,labels:['UP','DOWN']}],
+    'PDL Vibe':   [{n:'Speed',min:0,max:50},{n:'Depth',min:0,max:100},{n:'Mode',min:0,max:1,labels:['VIBRAT','CHORS']},{n:'VOL',min:0,max:100}],
+    'PDL Drive':  [{n:'Gain',min:0,max:100},{n:'Tone',min:0,max:100},{n:'PRSNC',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'PDL PHSR':   [{n:'Rate',min:1,max:50},{n:'Depth',min:0,max:100},{n:'RESO',min:0,max:100},{n:'Color',min:0,max:3,labels:['4 STG','8 STG','INV 4','INV 8']}],
     'PDL Delay':  [{n:'InLvl',min:0,max:100},{n:'Time',min:1,max:3000},{n:'F.B',min:0,max:100},{n:'Mix',min:0,max:100}],
+    'PDL Rev':    [{n:'InLvl',min:0,max:100},{n:'PreD',min:1,max:100},{n:'Decay',min:1,max:30},{n:'Mix',min:0,max:100}],
+    'OSC Echo':   [{n:'OSC',min:0,max:100},{n:'T-Min',min:19,max:500},{n:'T-Max',min:19,max:500},{n:'Mix',min:0,max:100}],
+    'VoiceWah':   [{n:'Vowel',min:0,max:100},{n:'PTTRN',min:0,max:2,labels:['A','B','C']},{n:'Voice',min:0,max:100},{n:'Mode',min:0,max:1,labels:['STEP','SOFT']}],
+    'PDL Roto':   [{n:'Mode',min:0,max:1,labels:['SLOW','FAST']},{n:'Drive',min:0,max:100},{n:'BAL',min:0,max:100},{n:'VOL',min:0,max:100}],
+    'P-BitCRSH':  [{n:'SMPL',min:0,max:50},{n:'Bit',min:4,max:32},{n:'Tone',min:0,max:10},{n:'BAL',min:0,max:100}],
+    'PDL FLNGR':  [{n:'FREQ',min:0,max:100},{n:'RESO',min:-10,max:10},{n:'HiDMP',min:0,max:10},{n:'Mix',min:0,max:100}],
+    'PDL Reso':   [{n:'FREQ',min:1,max:50},{n:'RESO',min:0,max:10},{n:'Dry',min:0,max:100},{n:'VOL',min:0,max:100}],
   },
 };
 
@@ -586,6 +816,7 @@ function buildSlots() {
       s.on = !s.on;
       stomp.className = 'stomp-btn ' + (s.on ? 'on' : 'off');
       stomp.title = s.on ? 'ON' : 'OFF (bypassed)';
+      midiSendSlotOnOff(i, s.on);
     };
     // hide stomp on empty slots — show a dimmed placeholder
     if (!s.cat) {
@@ -656,18 +887,31 @@ function onEffectChange() {
 function renderKnobs() {
   const s = patch.slots[patch.activeSlot];
   const all = EFFECTS[s.cat]?.[s.effect] || [];
-  const pages = Math.ceil(all.length / PAGE_SIZE);
 
-  document.getElementById('pageTabs').innerHTML = pages <= 1 ? '' :
-    Array.from({length:pages},(_,pi) =>
-      `<button class="page-tab ${s.page===pi?'active':''}" onclick="setPage(${pi})">Page ${pi+1}</button>`
-    ).join('');
+  document.getElementById('pageTabs').innerHTML = '';
 
-  const visible = all.slice(s.page * PAGE_SIZE, (s.page+1) * PAGE_SIZE);
   const grid = document.getElementById('knobsGrid');
   grid.innerHTML = '';
-  visible.forEach(p => {
-    grid.appendChild(makeKnob(p, s.params[p.n] ?? p.min, s.cat, v => s.params[p.n] = v));
+
+  all.forEach((p, i) => {
+    const pageIndex = Math.floor(i / PAGE_SIZE);
+    const val = s.params[p.n] ?? p.min;
+    const slotIdx = patch.activeSlot;
+    const paramIdx = i;
+    const cb = v => {
+      s.params[p.n] = v;
+      midiSendParam(slotIdx, paramIdx, v);
+    };
+    let el;
+    if (p.labels && p.labels.length === 2) {
+      el = makeSwitch(p, val, cb);
+    } else if (p.labels && p.labels.length > 2) {
+      el = makePill(p, val, cb);
+    } else {
+      el = makeKnob(p, val, s.cat, cb);
+    }
+    if (pageIndex > 0) el.classList.add('param-alt-page');
+    grid.appendChild(el);
   });
 }
 
@@ -680,6 +924,71 @@ function buildGuitarKnobs() {
   guitarParams.forEach((p, i) => {
     wrap.appendChild(makeKnob(p, p.val, 'GUITAR', v => guitarParams[i].val = v));
   });
+}
+
+// ── Switch factory (2-option boolean params) ─────────────────────────────
+function makeSwitch(param, initVal, onChange) {
+  const wrap = document.createElement('div');
+  wrap.className = 'switch-wrap';
+
+  const label = document.createElement('div');
+  label.className = 'switch-label';
+  label.textContent = param.n;
+
+  const track = document.createElement('div');
+  track.className = 'switch-track' + (initVal ? ' on' : '');
+
+  const thumb = document.createElement('div');
+  thumb.className = 'switch-thumb';
+  track.appendChild(thumb);
+
+  const valDisplay = document.createElement('div');
+  valDisplay.className = 'switch-value';
+  valDisplay.textContent = param.labels[initVal ? 1 : 0];
+
+  let cur = initVal ? 1 : 0;
+  track.addEventListener('click', () => {
+    cur = cur ? 0 : 1;
+    track.classList.toggle('on', cur === 1);
+    valDisplay.textContent = param.labels[cur];
+    onChange?.(cur);
+  });
+
+  wrap.appendChild(label);
+  wrap.appendChild(track);
+  wrap.appendChild(valDisplay);
+  return wrap;
+}
+
+// ── Pill selector factory (3+ option enum params) ────────────────────────
+function makePill(param, initVal, onChange) {
+  const wrap = document.createElement('div');
+  wrap.className = 'pill-wrap';
+
+  const label = document.createElement('div');
+  label.className = 'pill-label';
+  label.textContent = param.n;
+
+  const opts = document.createElement('div');
+  opts.className = 'pill-options';
+
+  let cur = Math.round(Math.max(0, Math.min(param.labels.length - 1, initVal - param.min)));
+
+  param.labels.forEach((lbl, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'pill-opt' + (i === cur ? ' active' : '');
+    btn.textContent = lbl;
+    btn.addEventListener('click', () => {
+      cur = i;
+      opts.querySelectorAll('.pill-opt').forEach((b, j) => b.classList.toggle('active', j === i));
+      onChange?.(param.min + i);
+    });
+    opts.appendChild(btn);
+  });
+
+  wrap.appendChild(label);
+  wrap.appendChild(opts);
+  return wrap;
 }
 
 // ── Knob factory ─────────────────────────────────────────────────────────
@@ -793,6 +1102,147 @@ function fmtVal(val, param) {
   return val;
 }
 
+// ── MIDI Engine ───────────────────────────────────────────────────────────
+const ZOOM = [0x52, 0x00, 0x6e];
+let midiOut = null, midiIn = null, midiAccess = null;
+let editorMode = false;
+let midiBank = 0, midiProg = 0;
+
+function sysex(...bytes) { return [0xF0, ...ZOOM, ...bytes, 0xF7]; }
+
+function midiSend(bytes) {
+  if (!midiOut) return;
+  try { midiOut.send(bytes); } catch(e) { console.warn('MIDI send error', e); }
+}
+
+// Encode value to 7-bit little-endian (2 bytes) for SysEx
+function encode7bit(val) {
+  if (val < 0) val = val + 16384; // handle negatives
+  return [val & 0x7F, (val >> 7) & 0x7F];
+}
+
+async function connectMIDI() {
+  setMidiStatus('searching', 'Connecting…');
+  try {
+    midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+  } catch(e) {
+    setMidiStatus('error', 'Permission denied');
+    return;
+  }
+
+  // Find Zoom device
+  for (const out of midiAccess.outputs.values()) {
+    if (out.name.toLowerCase().includes('zoom') || out.name.toLowerCase().includes('g1')) {
+      midiOut = out; break;
+    }
+  }
+  if (!midiOut) midiOut = midiAccess.outputs.values().next().value;
+
+  for (const inp of midiAccess.inputs.values()) {
+    if (inp.name.toLowerCase().includes('zoom') || inp.name.toLowerCase().includes('g1')) {
+      midiIn = inp; break;
+    }
+  }
+  if (!midiIn) midiIn = midiAccess.inputs.values().next().value;
+  if (midiIn) midiIn.onmidimessage = onMidiMessage;
+
+  if (midiOut) {
+    setMidiStatus('connected', midiOut.name);
+    document.getElementById('midiConnectBtn').className = 'midi-connect-btn connected';
+    document.getElementById('midiConnectBtn').textContent = 'Connected';
+    document.getElementById('midiBpRow').style.display = 'flex';
+    buildBankProg();
+    enterEditorMode();
+  } else {
+    setMidiStatus('error', 'No device found');
+  }
+
+  midiAccess.onstatechange = e => {
+    if (e.port.state === 'disconnected' && e.port === midiOut) {
+      setMidiStatus('error', 'Disconnected');
+      document.getElementById('midiConnectBtn').className = 'midi-connect-btn';
+      document.getElementById('midiConnectBtn').textContent = 'Connect';
+      document.getElementById('midiBpRow').style.display = 'none';
+      midiOut = null; editorMode = false;
+    }
+  };
+}
+
+function onMidiMessage(e) {
+  // Could parse incoming patch state here in future
+}
+
+function setMidiStatus(state, text) {
+  document.getElementById('midiDot').className = 'midi-dot ' + state;
+  document.getElementById('midiStatus').textContent = text;
+}
+
+function enterEditorMode() {
+  midiSend(sysex(0x50));
+  editorMode = true;
+  document.getElementById('midiEditorBtn').classList.add('active');
+  document.getElementById('midiEditorBtn').textContent = 'Editing';
+}
+
+function exitEditorMode() {
+  midiSend(sysex(0x51));
+  editorMode = false;
+  document.getElementById('midiEditorBtn').classList.remove('active');
+  document.getElementById('midiEditorBtn').textContent = 'Edit';
+}
+
+function toggleEditorMode() {
+  editorMode ? exitEditorMode() : enterEditorMode();
+}
+
+function buildBankProg() {
+  const bankNames = ['A','B','C','D','E'];
+  const bb = document.getElementById('midiBankBtns');
+  bb.innerHTML = '';
+  bankNames.forEach((name, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'midi-bank-btn' + (i === midiBank ? ' active' : '');
+    btn.textContent = name;
+    btn.onclick = () => { midiBank = i; buildBankProg(); sendBankProg(); updatePatchSlotLabel(); };
+    bb.appendChild(btn);
+  });
+
+  const pb = document.getElementById('midiProgBtns');
+  pb.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'midi-prog-btn' + (i === midiProg ? ' active' : '');
+    btn.textContent = i;
+    btn.onclick = () => { midiProg = i; buildBankProg(); sendBankProg(); updatePatchSlotLabel(); };
+    pb.appendChild(btn);
+  }
+}
+
+function sendBankProg() {
+  midiSend([0xb0, 0x20, midiBank]);
+  midiSend([0xc0, midiProg]);
+}
+
+function updatePatchSlotLabel() {
+  const bankName = ['A','B','C','D','E'][midiBank];
+  document.getElementById('patchSlotLabel').textContent = bankName + '-' + midiProg;
+}
+
+// ── Send slot on/off to pedal ─────────────────────────────────────────────
+function midiSendSlotOnOff(slotIndex, on) {
+  if (!midiOut || !editorMode) return;
+  midiSend(sysex(0x64, 0x03, 0x00, slotIndex, 0x00, on ? 0x01 : 0x00, 0x00, 0x00, 0x00, 0x00));
+}
+
+// ── Send param change to pedal ────────────────────────────────────────────
+function midiSendParam(slotIndex, paramIndex, value) {
+  if (!midiOut || !editorMode) return;
+  // param index offset by 2 (0=on/off, 1=effect type, 2+=dials)
+  const midiParamIndex = paramIndex + 2;
+  const encoded = encode7bit(value);
+  midiSend(sysex(0x64, 0x03, 0x00, slotIndex, midiParamIndex, encoded[0], encoded[1], 0x00, 0x00, 0x00));
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────
 document.getElementById('patchLevel').addEventListener('input', function() {
   document.getElementById('patchLevelVal').textContent = this.value;
@@ -800,8 +1250,8 @@ document.getElementById('patchLevel').addEventListener('input', function() {
 
 patch.slots[0] = {cat:'DRIVE',   effect:'TS Drive', on:true,  params:{Gain:60,Boost:0,Tone:55,VOL:75}, page:0};
 patch.slots[1] = {cat:'AMP',     effect:'MS 800',   on:true,  params:{Input:1,Bass:40,MID:50,Treble:60,PRSNC:45,Gain:70,VOL:80}, page:0};
-patch.slots[2] = {cat:'CABINET', effect:'MS4x12',   on:true,  params:{MIC:1,'D57:421':60,Hi:50,Lo:50}, page:0};
-patch.slots[3] = {cat:'DELAY',   effect:'Delay',    on:false, params:{Time:350,'F.B':30,Tone:60,Mix:25}, page:0};
+patch.slots[2] = {cat:'CABINET', effect:'MS4x12',   on:true,  params:{MIC:1,'D57:D421':60,Hi:50,Lo:50}, page:0};
+patch.slots[3] = {cat:'DELAY',   effect:'Delay',    on:false, params:{Time:350,'F.B':30,Mix:25,Tail:0}, page:0};
 
 buildSlots();
 buildGuitarKnobs();
