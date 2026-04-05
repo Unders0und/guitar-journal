@@ -741,7 +741,7 @@ function buildSlots() {
   const row = document.getElementById('slotsRow');
   row.innerHTML = '';
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 1; i < 6; i++) {
     const s = patch.slots[i];
 
     // Outer column (draggable)
@@ -1189,10 +1189,10 @@ function applyPTCF(bytes) {
   }
 
   // Clear slots (keep 5 slots, 0-4)
-  patch.slots = Array(5).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
+  patch.slots = Array(6).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
 
   for (const { slot, effectId, effectName, cat } of slots) {
-    if (slot < 0 || slot > 4) continue;
+    if (slot < 0 || slot > 5) continue;
     if (effectName && cat) {
       patch.slots[slot] = { cat, effect: effectName, on: true, params: {}, page: 0 };
       const paramDefs = EFFECTS[cat]?.[effectName] || [];
