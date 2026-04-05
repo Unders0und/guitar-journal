@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-2</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-3</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1110,60 +1110,122 @@ function fmtVal(val, param) {
   return val;
 }
 
-// ── Effect ID → Name lookup (from ToneLib APK) ───────────────────────────
-const EFFECT_ID_MAP = {
-  0x1358: 'Output VP',  0x2766: 'PDL Reso',   0x2A4A: 'Octave',
-  0x2D60: 'Exciter',    0x2E0F: 'ZNR',        0x2EBF: 'PDL Vol',
-  0x2F46: 'BendCho',    0x2F5E: 'P-BitCRSH',  0x2FC4: 'Comp',
-  0x32A4: 'PDL Vibe',   0x32C2: 'TapeEcho',   0x330D: 'Chorus',
-  0x3359: 'AutoPan',    0x339A: 'OptComp',    0x350F: 'TS Drive',
-  0x353A: 'Step',       0x353C: 'RingMod',    0x3548: 'VioletDST',
-  0x3576: 'Air',        0x35C1: 'StereoCho',  0x35E8: 'Cry',
-  0x368E: 'Detune',     0x37FA: 'ParaEQ',     0x380E: 'HPS',
-  0x3824: 'PDL FLNGR',  0x382C: 'WarpPhase',  0x3929: 'Slicer',
-  0x394E: 'Phaser',     0x39D5: 'PDL PHSR',   0x39FE: 'AutoWah',
-  0x3A03: 'Resonance',  0x3ABD: 'ModDelay',   0x3AEB: 'LFO FLTR',
-  0x3B04: 'LFO FLTR',   0x3C54: 'CloneCho',   0x3C7F: 'Pitch DLY',
-  0x3CA2: 'P-P Delay',  0x3D06: 'ReverseDL',  0x3D33: 'RndmFLTR',
-  0x3D73: 'PDL Delay',  0x3D92: 'TapeEcho3',  0x3DA1: 'Delay',
-  0x3DDC: 'LowPassFL',  0x3E28: 'FilterDly',  0x3E7C: 'AnalogDly',
-  0x3EFE: 'EP Stomp',   0x3F68: 'TB MK1.5',   0x3F91: 'RackComp',
-  0x3F9F: 'NYC Muff',   0x3FA3: 'Room',       0x3FB9: 'Hall',
-  0x4003: 'Spring',     0x4046: 'PDL Rev',    0x4071: 'GrayComp',
-  0x40D1: 'SpotBoost',  0x4235: 'PDL Pitch',  0x424C: 'Gt GEQ7',
-  0x4332: 'SlapBackD',  0x437F: 'VinFLNGR',   0x43E5: 'Gt GEQ',
-  0x442C: 'St Gt GEQ',  0x466C: 'EarlyRef',   0x47F2: 'UpOctBSTR',
-  0x47FF: 'Plate',      0x482C: 'SeqFLTR',    0x4A65: 'BG GRID',
-  0x4B0A: 'CoronaTri',  0x4B1B: 'Tremolo',    0x4B2B: 'SuperCho',
-  0x4B54: 'HD Hall',    0x4C95: 'OutputBST',  0x4E1C: 'Vibrato',
-  0x5045: 'RedCrunch',  0x513B: 'RC Boost',   0x519F: 'PDL Drive',
-  0x51DF: 'PitchSHFT',  0x51ED: 'StonePha',   0x524F: 'Duo Phase',
-  0x5390: 'PhaseDly',   0x550F: 'Zen O.DRV',  0x5525: 'MonoPitch',
-  0x563C: 'TheVibe',    0x577B: 'PDL Roto',   0x579D: 'VoiceWah',
-  0x57AE: 'HotSpice',   0x57D8: 'FD Spring',  0x57F6: 'SlwAtkDly',
-  0x587B: 'HG THRTTL',  0x5889: 'DIST Plus',  0x58B1: 'A-Pan DLY',
-  0x58F2: 'Chamber',    0x5925: 'NoiseGate',  0x5BEF: 'Squeak',
-  0x5C6B: 'OSC Echo',   0x5CB8: 'DIST 1',     0x5D6C: 'MuteSW',
-  0x60CC: 'Aco.Sim',    0x6137: 'BlackOpt',   0x62AC: 'OctFuzz',
-  0x62DB: 'BlackWah',   0x6312: 'ChromeWah',  0x631A: 'SoftEcho',
-  0x63A7: 'GateRev',    0x6430: 'SlowATTCK',  0x6453: 'Church',
-  0x65F6: 'LMT-76',     0x6794: 'MetalWRLD',  0x6A43: 'SweetDrv',
-  0x6ADD: 'PDL MnPit',  0x6D04: 'WAH100',     0x70A0: 'LoopRoll',
-  0x719B: 'DYN Drive',  0x71CA: 'Bomber',     0x7591: 'GoldDrive',
-  0x78C8: 'ICE Delay',  0x797E: 'FD2x12',     0x79B9: 'BGN4x12',
-  0x79CE: 'UK2x12',     0x79E0: 'MK3 1x12',   0x7A07: 'FD-DX1x12',
-  0x7A2F: 'MS4x12',     0x7B26: 'DZ4x12F',    0x7B48: 'MA2x12',
-  0x7B7B: 'ORG4x12',    0x7B93: 'FD MA2x12',  0x7C4B: 'HW4x12',
-  0x7C97: 'MS4x12GB',   0x7FBA: 'MK1 1x12',   0x80F6: 'RCT4x12',
-  0x825D: 'MS4x12AL',   0x9A22: 'MS 800',     0x9E99: 'FD B-MAN',
-  0xA037: 'UK 30A',     0xA068: 'BG MK3',     0xA114: 'BG MK1',
-  0xA2BA: 'FD TWNR',    0xA58A: 'FD DLXR',    0xA86B: 'DZ DRV',
-  0xAD70: 'MS 1959',    0xAE70: 'FD MASTER',  0xAF74: 'XtasyBlue',
-  0xBB4B: 'MATCH30',    0xBE59: 'MS 45os',    0xD4DA: 'HW 100',
-  0xD801: 'Recti ORG',  0xE060: 'ORG120',
+// ── PTCF Effect ID map (empirically discovered from G1X Four MIDI) ───────
+// These are the 1-byte IDs stored in the PTCF binary for each slot.
+// Grown through testing — unknown IDs show as "Unknown (0xXX)".
+const PTCF_ID_MAP = {
+  0x01: 'FD DLXR',
+  0x20: 'MonoPitch',
+  0x2D: 'TapeEcho',
+  0x30: 'FD-DX1x12',
+  // Add more as discovered
 };
 
-// Find which category an effect belongs to
+// ── Parse a PTCF binary (array of bytes) into slot assignments ───────────
+// Returns: [{slot, effectId, effectName, cat}]
+function parsePTCF(bytes) {
+  // Find PTCF magic
+  let ptcfStart = -1;
+  for (let i = 0; i < bytes.length - 3; i++) {
+    if (bytes[i] === 0x50 && bytes[i+1] === 0x54 && bytes[i+2] === 0x43 && bytes[i+3] === 0x46) {
+      ptcfStart = i; break;
+    }
+  }
+  if (ptcfStart < 0) return null;
+
+  const ptcf = bytes.slice(ptcfStart);
+
+  // Find name separator 0x22 ('"')
+  let sepPos = -1;
+  for (let i = 28; i < Math.min(60, ptcf.length); i++) {
+    if (ptcf[i] === 0x22) { sepPos = i; break; }
+  }
+  if (sepPos < 0) return null;
+
+  // Extract patch name (bytes 28..sepPos, filter nulls)
+  let nameBytes = [];
+  for (let i = 28; i < sepPos; i++) {
+    if (ptcf[i] !== 0) nameBytes.push(ptcf[i]);
+  }
+  const patchName = nameBytes.map(b => String.fromCharCode(b)).join('').trim();
+
+  // After separator: [label 2 bytes][00 00][06=num_slots][flags 4 bytes]
+  // then: [slot][00][effectId] triplets
+  const dataStart = sepPos + 5; // skip label(2) + 00 00(2) + 06(1)
+  const flagsStart = dataStart;
+  const tripletStart = flagsStart + 4; // skip 4 flag bytes
+
+  const slots = [];
+  let i = tripletStart;
+  while (i + 2 < ptcf.length) {
+    const slotNum = ptcf[i];
+    const zero = ptcf[i+1];
+    const effectId = ptcf[i+2];
+
+    // Valid slot entry: slotNum in 0-5, followed by 00, then non-zero effectId
+    if (slotNum <= 5 && zero === 0x00 && effectId !== 0x00) {
+      const effectName = PTCF_ID_MAP[effectId] || null;
+      const cat = effectName ? effectNameToCat(effectName) : null;
+      slots.push({ slot: slotNum, effectId, effectName, cat });
+      i += 4; // skip [slot][00][effectId][00]
+    } else {
+      i++;
+    }
+    // Stop when we hit TXJ chunk (0x54 0x58 0x4A)
+    if (i + 2 < ptcf.length && ptcf[i] === 0x54 && ptcf[i+1] === 0x58 && ptcf[i+2] === 0x4A) break;
+  }
+
+  return { patchName, slots };
+}
+
+// Apply parsed PTCF to the patch UI
+function applyPTCF(bytes) {
+  const result = parsePTCF(bytes);
+  if (!result) return;
+
+  const { patchName, slots } = result;
+
+  // Update patch name display
+  const nameInput = document.getElementById('patchName');
+  if (nameInput && patchName) nameInput.value = patchName;
+
+  // Clear all slots
+  patch.slots = Array(5).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
+
+  // Apply known slots
+  for (const { slot, effectId, effectName, cat } of slots) {
+    if (slot >= 0 && slot < 5) {
+      if (effectName && cat) {
+        patch.slots[slot] = { cat, effect: effectName, on: true, params: {}, page: 0 };
+        // Apply defaults
+        const paramDefs = EFFECTS[cat]?.[effectName] || [];
+        paramDefs.forEach(p => {
+          patch.slots[slot].params[p.n] = p.labels ? 0 : Math.round((p.min + p.max) / 2);
+        });
+      } else {
+        // Unknown effect — show raw ID
+        patch.slots[slot] = {
+          cat: 'UNKNOWN', effect: `0x${effectId.toString(16).toUpperCase().padStart(2,'0')}`,
+          on: true, params: {}, page: 0, _unknownId: effectId
+        };
+      }
+    }
+  }
+
+  patch.activeSlot = null;
+  buildSlots();
+  renderEditor();
+
+  // Show unknown ID hint if any
+  const unknowns = slots.filter(s => !s.effectName);
+  if (unknowns.length > 0) {
+    const ids = unknowns.map(s => `0x${s.effectId.toString(16).toUpperCase().padStart(2,'0')}`).join(', ');
+    setMidiStatus('connected', `${midiOut?.name} — unknown IDs: ${ids}`);
+    setTimeout(() => setMidiStatus('connected', midiOut?.name), 5000);
+  }
+}
+
+// ── Find which category an effect belongs to ─────────────────────────────
 function effectNameToCat(name) {
   for (const [cat, effects] of Object.entries(EFFECTS)) {
     if (effects[name]) return cat;
@@ -1171,7 +1233,7 @@ function effectNameToCat(name) {
   return null;
 }
 
-// ── Effect ID → Name lookup (from ToneLib APK) ───────────────────────────
+// ── MIDI Engine ───────────────────────────────────────────────────────────
 const ZOOM = [0x52, 0x00, 0x6e];
 let midiOut = null, midiIn = null, midiAccess = null;
 let editorMode = false;
@@ -1222,6 +1284,7 @@ async function connectMIDI() {
     document.getElementById('midiBpRow').style.display = 'flex';
     buildBankProg();
     enterEditorMode();
+    setTimeout(requestPatch, 300);
   } else {
     setMidiStatus('error', 'No device found');
   }
@@ -1239,70 +1302,42 @@ async function connectMIDI() {
 
 function onMidiMessage(e) {
   const d = Array.from(e.data);
-  // Only handle Zoom SysEx: F0 52 00 6E ...
   if (d[0] !== 0xF0 || d[1] !== 0x52 || d[2] !== 0x00 || d[3] !== 0x6E) return;
   const cmd = d[4];
 
-  // Editor mode param change: F0 52 00 6E 64 03 00 [slot] [param] [lo] [hi] ... F7
+  // PTCF dump from pedal (auto on effect change, or response to our 0x64 0x13 request)
+  if ((cmd === 0x64 && d[5] === 0x12) || cmd === 0x45) {
+    applyPTCF(d);
+    return;
+  }
+
+  // Editor mode param update: F0 52 00 6E 64 03 00 [slot] [param] [lo] [hi] ...
   if (cmd === 0x64 && d[5] === 0x03 && d[6] === 0x00) {
     const slot  = d[7];
     const param = d[8];
     const lo    = d[9]  ?? 0;
     const hi    = d[10] ?? 0;
-    // Decode 7-bit little-endian, handle negatives (values >= 8192 are negative)
     let val = lo | (hi << 7);
-    if (val >= 8192) val = val - 16384;
-
+    if (val >= 8192) val -= 16384;
     if (slot < 0 || slot > 4) return;
 
     if (param === 0) {
-      // on/off
       patch.slots[slot].on = val === 1;
       buildSlots();
-    } else if (param === 1) {
-      // effect type ID — look up name
-      const effectName = EFFECT_ID_MAP[val];
-      if (effectName) {
-        const cat = effectNameToCat(effectName);
-        patch.slots[slot].effect = effectName;
-        patch.slots[slot].cat = cat;
-        patch.slots[slot].params = {};
-        patch.slots[slot].page = 0;
-        // Apply any buffered raw params
-        if (patch.slots[slot]._rawParams) {
-          const paramDefs = EFFECTS[cat]?.[effectName] || [];
-          for (const [idx, v] of Object.entries(patch.slots[slot]._rawParams)) {
-            const pd = paramDefs[parseInt(idx)];
-            if (pd) patch.slots[slot].params[pd.n] = v;
-          }
-          delete patch.slots[slot]._rawParams;
-        }
-        buildSlots();
-        if (patch.activeSlot === slot) renderEditor();
-      } else {
-        patch.slots[slot]._effectId = val;
-        patch.slots[slot].effect = `0x${val.toString(16).toUpperCase()}`;
-        patch.slots[slot].cat = null;
-      }
-    } else {
-      // dial param (param 2 = dial 1, param 3 = dial 2, etc.)
+    } else if (param >= 2) {
       const dialIndex = param - 2;
       const s = patch.slots[slot];
-      if (s.cat && s.effect) {
-        const paramDef = (EFFECTS[s.cat]?.[s.effect] || [])[dialIndex];
+      if (s.cat && s.effect && EFFECTS[s.cat]?.[s.effect]) {
+        const paramDef = EFFECTS[s.cat][s.effect][dialIndex];
         if (paramDef) {
           s.params[paramDef.n] = val;
-          // If this slot is currently open in the editor, re-render knobs
           if (patch.activeSlot === slot) renderKnobs();
         }
       } else {
-        // Store by index until we know the effect
         if (!s._rawParams) s._rawParams = {};
         s._rawParams[dialIndex] = val;
       }
     }
-
-    // Flash the slot to show it received data
     flashSlot(slot);
   }
 }
@@ -1316,15 +1351,20 @@ function flashSlot(slotIndex) {
   }
 }
 
-// Clear patch UI when switching to a new bank/prog
+// Request current patch state from pedal
+function requestPatch() {
+  if (!midiOut) return;
+  midiSend(sysex(0x64, 0x13));
+}
+
+// Clear patch UI and request fresh state from pedal
 function clearPatchUI() {
   patch.slots = Array(5).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
   patch.activeSlot = null;
   buildSlots();
   renderEditor();
-  // Show sync hint
-  setMidiStatus('connected', midiOut?.name + ' — touch a knob to sync');
-  setTimeout(() => setMidiStatus('connected', midiOut?.name), 3000);
+  // Small delay to let the bank/prog switch settle, then request patch
+  setTimeout(requestPatch, 200);
 }
 
 function setMidiStatus(state, text) {
