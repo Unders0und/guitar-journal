@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Guitar Practice Journal</title>
 <style>
@@ -789,6 +792,8 @@ button.ghost{background:none;color:var(--muted)}
 .modal-content input,.modal-content textarea{width:100%;padding:.4rem;border-radius:6px;border:none;background:#222;color:#fff;margin-top:.2rem;font-family:inherit}
 #splitView label{display:block;font-size:.7rem;color:var(--muted);margin-top:.6rem}
 #splitView input,#splitView textarea{width:100%;padding:.4rem;border-radius:6px;border:none;background:#222;color:#fff;margin-top:.2rem;font-family:inherit;box-sizing:border-box;}
+#songModal{ align-items: flex-start; padding: 1vh 5%; box-sizing: border-box; }
+#songModal .modal-content{ max-height: 98vh; overflow-y: auto; width: 100%; }
 .modal-actions{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-top:1rem}
 .modal-actions-left{display:flex;gap:.5rem;}
 .modal-actions-right{display:flex;gap:.5rem;}
@@ -833,7 +838,7 @@ button.danger:hover{background:#a00000;}
   max-height: 150px;
   overflow-y: auto;
   display: none;
-  z-index: 1000;
+  z-index: 99999;
   margin-bottom: 2px;
 }
 
@@ -1794,6 +1799,7 @@ body.player-active #techniquesBottomBar,
 body.player-active #practiceBottomBar { bottom: 52px; }
 body.player-active .home-hamburger { bottom: 66px; }
 body.player-active .app { padding-bottom: 68px; }
+body.player-active #songViewer .modal-content { max-height: calc(85vh - 52px); }
 
 /* ── Home keyboard navigation ───────────────────────── */
 .tile:focus, .square-playlist:focus {
@@ -1969,6 +1975,8 @@ body.player-active .app { padding-bottom: 68px; }
   z-index: 100;
 }
 #toast.show { opacity: 1; }
+#timerDoneOverlay { display: none; }
+#timerDoneOverlay.active { display: flex; }
 </style>
 <!-- PWA -->
 <meta name="theme-color" content="#0f0f0f">
@@ -1978,6 +1986,9 @@ body.player-active .app { padding-bottom: 68px; }
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Capacitor Native Bridge -->
+  <script src="capacitor.js"></script>
+  <script src="capacitor-bridge.js"></script>
 </head>
 <body>
 
@@ -2032,9 +2043,10 @@ body.player-active .app { padding-bottom: 68px; }
           <option>SPEED</option><option>TAPPING</option><option>IMPROVISATION</option>
           <option>CREATION</option><option>FRETBOARD</option>
         </select>
-        <div class="gc-notes-wrap">
-          <textarea class="gc-notes" id="goalNotes-t1" placeholder="What you worked on…"></textarea>
-          <button class="gc-notes-expand" onclick="openGoalNotesModal('t1')">⤢</button>
+        <div class="gc-notes-wrap" onclick="openGoalNotesModal('t1')" style="cursor:pointer;">
+          <div class="gc-notes notes-display" id="goalNotesDisplay-t1" style="min-height:52px;font-size:.78rem;line-height:1.35;padding:.38rem .55rem;"></div>
+          <textarea class="gc-notes" id="goalNotes-t1" placeholder="What you worked on…" style="display:none;"></textarea>
+          <button class="gc-notes-expand" onclick="event.stopPropagation();openGoalNotesModal('t1')">⤢</button>
         </div>
         <div class="gc-warn" id="goalWarn-t1"></div>
         <div class="gc-links-row" id="goalLinks-t1">
@@ -2065,9 +2077,10 @@ body.player-active .app { padding-bottom: 68px; }
           <option>REI</option><option>JACK WHITE</option><option>RHYTHM HEAVY</option>
           <option>SPEED</option><option>TAPPING</option>
         </select>
-        <div class="gc-notes-wrap">
-          <textarea class="gc-notes" id="goalNotes-t2" placeholder="Progress, challenges…"></textarea>
-          <button class="gc-notes-expand" onclick="openGoalNotesModal('t2')">⤢</button>
+        <div class="gc-notes-wrap" onclick="openGoalNotesModal('t2')" style="cursor:pointer;">
+          <div class="gc-notes notes-display" id="goalNotesDisplay-t2" style="min-height:52px;font-size:.78rem;line-height:1.35;padding:.38rem .55rem;"></div>
+          <textarea class="gc-notes" id="goalNotes-t2" placeholder="Progress, challenges…" style="display:none;"></textarea>
+          <button class="gc-notes-expand" onclick="event.stopPropagation();openGoalNotesModal('t2')">⤢</button>
         </div>
         <div class="gc-warn" id="goalWarn-t2"></div>
         <div class="gc-links-row" id="goalLinks-t2">
@@ -2097,9 +2110,10 @@ body.player-active .app { padding-bottom: 68px; }
           <option value="">— category —</option>
           <option>maintenance</option><option>listening</option>
         </select>
-        <div class="gc-notes-wrap">
-          <textarea class="gc-notes" id="goalNotes-t3" placeholder="Ear training, theory, gear…"></textarea>
-          <button class="gc-notes-expand" onclick="openGoalNotesModal('t3')">⤢</button>
+        <div class="gc-notes-wrap" onclick="openGoalNotesModal('t3')" style="cursor:pointer;">
+          <div class="gc-notes notes-display" id="goalNotesDisplay-t3" style="min-height:52px;font-size:.78rem;line-height:1.35;padding:.38rem .55rem;"></div>
+          <textarea class="gc-notes" id="goalNotes-t3" placeholder="Ear training, theory, gear…" style="display:none;"></textarea>
+          <button class="gc-notes-expand" onclick="event.stopPropagation();openGoalNotesModal('t3')">⤢</button>
         </div>
         <div class="gc-warn" id="goalWarn-t3"></div>
         <div class="gc-links-row" id="goalLinks-t3">
@@ -2118,7 +2132,7 @@ body.player-active .app { padding-bottom: 68px; }
 
   <!-- Tile grid -->
   <div class="home-header" style="margin-top:.35rem;margin-bottom:.3rem;padding-left:.35rem;">
-    <span id="libraryToggleLabel" onclick="toggleLibrarySection()" style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;cursor:pointer;padding:4px 10px 4px 2px;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='var(--muted)'">Library ›</span>
+    <span style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;padding:4px 10px 4px 2px;">Library</span>
     <div class="home-header-actions">
       <button class="ghost" onclick="exportData()" style="font-size:.7rem;padding:3px 8px;">Export</button>
       <button class="ghost" onclick="importData()" style="font-size:.7rem;padding:3px 8px;">Import</button>
@@ -2130,6 +2144,12 @@ body.player-active .app { padding-bottom: 68px; }
     <div class="tile-cards-wrap">
       <div class="tile-cards-scroll" id="tileCarouselTrack">
         <div class="tile-cards-page">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:.3rem;">
+            <button class="ghost" onclick="openManagePlaylists()" style="font-size:.7rem;padding:3px 8px;">Manage</button>
+          </div>
+          <div id="myPlaylistsTiles" style="display:flex;flex-wrap:wrap;gap:.5rem;padding:.25rem 0;"></div>
+        </div>
+        <div class="tile-cards-page">
           <div class="grid" id="systemTiles"></div>
         </div>
         <div class="tile-cards-page">
@@ -2138,8 +2158,9 @@ body.player-active .app { padding-bottom: 68px; }
       </div>
     </div>
     <div class="tile-carousel-dots" id="tileCarouselDots">
-      <div class="tile-carousel-dot active" onclick="goTilePage(0)"></div>
-      <div class="tile-carousel-dot" onclick="goTilePage(1)"></div>
+      <div class="tile-carousel-dot" onclick="goTilePage(0)"></div>
+      <div class="tile-carousel-dot active" onclick="goTilePage(1)"></div>
+      <div class="tile-carousel-dot" onclick="goTilePage(2)"></div>
     </div>
   </div>
 
@@ -2172,18 +2193,30 @@ body.player-active .app { padding-bottom: 68px; }
     <button class="sdn-btn" onclick="homeNavDate(1)">▶</button>
   </div>
 
+  <!-- Preset / Split / Mode — collapsible -->
+  <div style="margin-bottom:.5rem;">
+    <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.setup-arrow').textContent=this.nextElementSibling.style.display==='none'?'▶':'▼';"
+      style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:3px 0;margin-bottom:.3rem;">
+      <span style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Session Setup</span>
+      <span class="setup-arrow" style="font-size:.6rem;color:var(--muted);">▶</span>
+    </div>
+    <div id="sessionSetupCollapse" style="display:none;">
+
   <!-- Preset selector -->
   <div style="margin-bottom:.5rem;">
     <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem;">Session Preset</div>
-    <div style="display:flex;gap:5px;">
-      <button id="presetBtn-1" onclick="setHomePreset(1)" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">Auto</button>
-      <button id="presetBtn-2" onclick="setHomePreset(2)" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">Until…</button>
-      <button id="presetBtn-3" onclick="setHomePreset(3)" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">Manual</button>
+    <div style="display:flex;gap:6px;">
+      <button id="presetBtn-2" onclick="setHomePreset(2)" style="flex:1;font-size:.68rem;padding:5px 8px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">Until…</button>
+      <button id="presetBtn-3" onclick="setHomePreset(3)" style="flex:1;font-size:.68rem;padding:5px 8px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">Manual</button>
     </div>
-    <div id="preset2EndTimeRow" style="display:none;margin-top:.4rem;display:none;">
-      <input type="time" id="preset2EndTime" step="300"
-        style="width:100%;background:#1a1a1a;border:1px solid #333;color:#eee;border-radius:7px;padding:.3rem .5rem;font-size:.85rem;box-sizing:border-box;"
-        onchange="updatePreset2Countdown()" />
+    <div id="untilTimeRow" style="display:none;margin-top:.4rem;position:relative;">
+      <div onclick="openUntilTimePicker()" style="display:flex;align-items:center;justify-content:space-between;background:#1a1a1a;border:1px solid #333;border-radius:7px;padding:7px 10px;cursor:pointer;transition:border-color .15s;"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='#333'">
+        <span style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Target time</span>
+        <span id="untilTimeDisplay" style="font-size:.85rem;font-weight:600;color:var(--accent);">--:--</span>
+      </div>
+      <input type="time" id="untilTimeNativeInput" style="position:absolute;opacity:0;pointer-events:none;top:0;left:0;width:100%;height:100%;"
+        onchange="onUntilTimeNativeChange(this.value)" />
     </div>
   </div>
 
@@ -2209,6 +2242,8 @@ body.player-active .app { padding-bottom: 68px; }
       <button id="modeBtn-posterior" onclick="setPosteriorMode(true)" style="flex:1;font-size:.68rem;padding:5px 4px;border-radius:7px;background:#1a1a1a;border:1px solid #333;color:#aaa;cursor:pointer;">↩ Posterior</button>
     </div>
   </div>
+
+  </div></div><!-- /sessionSetupCollapse -->
 
   <!-- Setup / Reset -->
   <div class="sidebar-actions">
@@ -2270,12 +2305,17 @@ body.player-active .app { padding-bottom: 68px; }
 <!-- GOAL NOTES EXPAND MODAL -->
 <div class="modal" id="goalNotesModal">
   <div class="modal-content" style="height:68vh;display:flex;flex-direction:column;max-width:520px;width:95vw;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-shrink:0;">
       <span id="goalNotesModalTitle" style="font-size:.85rem;color:#ccc;">Notes</span>
       <button class="ghost" onclick="closeGoalNotesModal()" style="font-size:.75rem;">✕</button>
     </div>
-    <textarea id="goalNotesModalArea" style="flex:1;width:100%;background:#111;color:#eee;border:1px solid #333;border-radius:8px;padding:10px;font-size:.9rem;resize:none;"></textarea>
-    <button onclick="closeGoalNotesModal()" style="margin-top:8px;background:var(--accent);color:#fff;padding:8px;border-radius:7px;width:100%;font-size:.82rem;">✓ Done</button>
+    <div id="goalNotesViewDisplay" onclick="goalNotesEnterEditMode()"
+      style="flex:1;min-height:0;overflow-y:auto;font-family:Georgia,serif;font-size:.85rem;line-height:1.7;color:#ddd;padding:.75rem .5rem;background:#111;border:1px solid #2a2a2a;border-radius:8px;cursor:text;white-space:pre-wrap;word-break:break-word;"></div>
+    <textarea id="goalNotesModalArea" style="display:none;flex:1;min-height:0;resize:none;width:100%;box-sizing:border-box;font-family:Georgia,serif;font-size:.85rem;line-height:1.7;background:#111;border:1px solid var(--accent);border-radius:8px;padding:.75rem .5rem;color:#ddd;" oninput="goalNotesAutoSave()"></textarea>
+    <div style="display:flex;justify-content:space-between;margin-top:.4rem;flex-shrink:0;">
+      <button class="ghost" onclick="closeGoalNotesModal()">Cancel</button>
+      <button onclick="closeGoalNotesModal()">✓ Done</button>
+    </div>
   </div>
 </div>
 
@@ -2493,9 +2533,9 @@ body.player-active .app { padding-bottom: 68px; }
     </div>
     <div class="filter-group">
       <span>BPM</span>
-      <input id="filterBpmMin" type="number" placeholder="min" oninput="renderSongs()" />
+      <input id="filterBpmMin" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="min" oninput="renderSongs()" />
       <span>–</span>
-      <input id="filterBpmMax" type="number" placeholder="max" oninput="renderSongs()" />
+      <input id="filterBpmMax" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="max" oninput="renderSongs()" />
     </div>
     <div class="filter-group">
       <span>State</span>
@@ -2578,7 +2618,7 @@ body.player-active .app { padding-bottom: 68px; }
     <!-- Current input stays accessible -->
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:.75rem;">
       <label style="font-size:.72rem;color:var(--muted);flex-shrink:0;margin:0;">Current</label>
-      <input id="bpmHistoryCurInput" type="number" placeholder="—"
+      <input id="bpmHistoryCurInput" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="—"
         style="flex:1;background:#222;border:none;border-radius:6px;color:#fff;padding:.35rem .4rem;font-size:1rem;text-align:center;"
         oninput="updateBpmFromHistory(this.value)" />
       <button onclick="logBpmEntry()" style="font-size:.72rem;padding:4px 12px;border-radius:7px;flex-shrink:0;">Log</button>
@@ -2618,12 +2658,12 @@ body.player-active .app { padding-bottom: 68px; }
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.6rem;">
       <div>
         <label>BPM — Current <span id="tqBpmHistoryLink" style="font-size:.6rem;color:var(--accent);cursor:pointer;" onclick="event.stopPropagation();openBpmHistory()">📋 history</span></label>
-        <input id="tqEntryBpmCur" type="number" placeholder="—"
+        <input id="tqEntryBpmCur" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="—"
           oninput="saveTqEntry('bpmCurrent',this.value)" />
       </div>
       <div>
         <label>BPM — Goal</label>
-        <input id="tqEntryBpmGoal" type="number" placeholder="—" oninput="saveTqEntry('bpmGoal',this.value)" />
+        <input id="tqEntryBpmGoal" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="—" oninput="saveTqEntry('bpmGoal',this.value)" />
       </div>
     </div>
 
@@ -2631,19 +2671,19 @@ body.player-active .app { padding-bottom: 68px; }
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.6rem;">
       <div>
         <label>Speed % — Current</label>
-        <input id="tqEntrySpeedCur" type="number" placeholder="—" min="0" max="200" oninput="saveTqEntry('speedCurrent',this.value)" />
+        <input id="tqEntrySpeedCur" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="—" min="0" max="200" oninput="saveTqEntry('speedCurrent',this.value)" />
       </div>
       <div>
         <label>Speed % — Goal</label>
-        <input id="tqEntrySpeedGoal" type="number" placeholder="—" min="0" max="200" oninput="saveTqEntry('speedGoal',this.value)" />
+        <input id="tqEntrySpeedGoal" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="—" min="0" max="200" oninput="saveTqEntry('speedGoal',this.value)" />
       </div>
     </div>
 
     <!-- Notes -->
     <label>Notes</label>
-    <textarea id="tqEntryNotes" rows="4" placeholder="Practice tips, focus points…"
-      oninput="saveTqEntry('notes',this.value)"
-      style="width:100%;background:#111;border:none;border-top:1px solid #2a2a2a;border-radius:6px;color:#ddd;font-family:Georgia,serif;font-size:.82rem;line-height:1.7;padding:.6rem .5rem;resize:none;margin-top:.2rem;"></textarea>
+    <div id="tqEntryNotesDisplay" class="notes-display" onclick="openExerciseNotesModal()"
+      style="min-height:80px;font-family:Georgia,serif;font-size:.82rem;line-height:1.7;padding:.6rem .5rem;margin-top:.2rem;cursor:text;"></div>
+    <textarea id="tqEntryNotes" style="display:none;" oninput="saveTqEntry('notes',this.value)"></textarea>
 
     <!-- Switch to song view (shown only for song entries) -->
     <div id="tqEntrySongViewRow" style="display:none;margin-top:.6rem;">
@@ -2691,13 +2731,15 @@ body.player-active .app { padding-bottom: 68px; }
 <div class="modal" id="songModal">
   <div class="modal-content">
     <h3>Add Song</h3>
-    <label>Artist</label><input id="artistInput" />
-	<div class="suggestions" id="artistSuggestions"></div>
-    <label>Title</label><input id="titleInput" />
-	<div class="suggestions" id="titleSuggestions"></div>
+    <label>Artist</label>
+    <div style="position:relative;"><input id="artistInput" autocapitalize="words" style="width:100%;box-sizing:border-box;" />
+    <div class="suggestions" id="artistSuggestions"></div></div>
+    <label>Title</label>
+    <div style="position:relative;"><input id="titleInput" autocapitalize="words" style="width:100%;box-sizing:border-box;" />
+    <div class="suggestions" id="titleSuggestions"></div></div>
     <label>Key</label><input id="keyInput" />
-    <label>BPM</label><input id="bpmInput" type="number" />
-    <label>Duration (mm:ss)</label><input id="durationInput" />
+    <label>BPM</label><input id="bpmInput" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
+    <label>Duration (mm:ss)</label><input id="durationInput" inputmode="numeric" pattern="[0-9:]*" />
     <div class="modal-actions">
       <button class="ghost" onclick="closeSongModal()">Cancel</button>
       <button onclick="saveSong()">Save</button>
@@ -2772,7 +2814,7 @@ body.player-active .app { padding-bottom: 68px; }
           </div>
           <div>
             <label>BPM</label>
-            <input id="viewerBpm" type="number" oninput="autoSaveField('bpm', this.value)" />
+            <input id="viewerBpm" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="autoSaveField('bpm', this.value)" />
           </div>
           <div>
             <label>Duration</label>
@@ -2783,12 +2825,13 @@ body.player-active .app { padding-bottom: 68px; }
             </div>
           </div>
           <div>
-            <label>Tuning <span onclick="event.stopPropagation();openTuningsModal();" style="font-size:.65rem;color:var(--accent);cursor:pointer;float:right;">manage</span></label>
-            <div style="display:flex;gap:4px;align-items:center;position:relative;">
-              <input id="viewerTuning" placeholder="EADGBE" autocomplete="off" oninput="autoSaveField('tuning', this.value); updateTuningClearBtn();" style="flex:1;" />
-              <button id="tuningClearBtn" onclick="clearTuning()" title="Clear tuning" style="background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:0 2px;line-height:1;display:none;">✕</button>
-              <div class="suggestions" id="tuningSuggestions"></div>
+            <label>Tuning</label>
+            <div onclick="openTuningsModal()" style="background:#222;border-radius:6px;padding:.4rem .5rem;font-size:.85rem;cursor:pointer;min-height:32px;display:flex;align-items:center;justify-content:space-between;border:1px solid transparent;transition:border-color .15s;"
+              onmouseover="this.style.borderColor='#555'" onmouseout="this.style.borderColor='transparent'">
+              <span id="viewerTuningDisplay" style="color:#ccc;">EADGBE</span>
+              <span style="font-size:.65rem;color:var(--accent);">manage ›</span>
             </div>
+            <input id="viewerTuning" style="display:none;" />
           </div>
           <div class="full-width">
             <label>Genre <span style="font-size:.6rem;color:var(--muted);">separate with ;</span></label>
@@ -2821,7 +2864,8 @@ body.player-active .app { padding-bottom: 68px; }
       <!-- Tone tab -->
       <div id="vtab-tone" class="viewer-panel">
         <label>Tone Notes</label>
-        <textarea id="toneNotes" rows="6" oninput="autoSaveNotes()"></textarea>
+        <div id="toneNotesDisplay" class="notes-display" onclick="openToneNotesModal()" style="min-height:80px;cursor:text;"></div>
+        <textarea id="toneNotes" style="display:none;"></textarea>
       </div>
     </div>
 
@@ -2840,8 +2884,9 @@ body.player-active .app { padding-bottom: 68px; }
       <button class="danger" onclick="deleteSong()" style="font-size:.72rem;padding:4px 10px;border-radius:7px;">Delete</button>
     </div>
     <div style="display:flex;gap:5px;margin-top:.5rem;">
-      <button id="viewerYTBtn" onclick="openDeezerBot()" style="flex:1;font-size:.72rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:#00c300;cursor:pointer;">🎵 Deezer</button>
-      <button id="viewerLinkAudioBtn" onclick="linkOrLoadAudio()" style="flex:6;font-size:.75rem;padding:7px 9px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">🎵 Link audio</button>
+      <button id="viewerYTBtn" onclick="_audioMode==='backing'?openBackingTrackSite():openDeezerBot()" style="flex:1;font-size:.72rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:#00c300;cursor:pointer;">🎵 Deezer</button>
+      <button id="viewerSwapAudioBtn" onclick="_swapAudioMode()" style="flex:1;font-size:.72rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);cursor:pointer;" title="Swap audio mode">⇄</button>
+      <button id="viewerLinkAudioBtn" onclick="linkOrLoadAudio()" ondblclick="relinkAudio()" style="flex:6;font-size:.75rem;padding:7px 9px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">🎵 Link audio</button>
       <button onclick="openSplitView()" title="Split view" style="flex:1;font-size:.8rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);cursor:pointer;">⊞</button>
     </div>
     </div><!-- /viewer-footer-wrap -->
@@ -2869,15 +2914,16 @@ body.player-active .app { padding-bottom: 68px; }
 
 <!-- Expanded player -->
 <div id="expandedPlayer">
-  <div class="ep-handle" onclick="closeExpandedPlayer()"></div>
+  <div style="display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:.75rem;">
+    <div style="width:36px;height:4px;background:#333;border-radius:2px;cursor:pointer;" onclick="closeExpandedPlayer()"></div>
+    <button onclick="openSplitView()" title="Split view" style="position:absolute;right:0;background:none;border:1px solid #444;color:var(--muted);font-size:1.2rem;padding:2px 10px;border-radius:7px;cursor:pointer;line-height:1;">⊞</button>
+  </div>
   <div class="ep-header">
     <div style="min-width:0;flex:1;">
       <div class="ep-title" id="epTitle">—</div>
       <div class="ep-artist" id="epArtist"></div>
     </div>
     <span class="ep-time-display" id="epTimeDisplay">0:00 / 0:00</span>
-    <button class="ep-close" onclick="openSplitView()" title="Split view" style="margin-right:2px;font-size:.78rem;">⊞</button>
-    <button class="ep-close" onclick="closeExpandedPlayer()">∨</button>
   </div>
   <div class="ep-waveform-wrap" id="epWaveformWrap">
     <canvas id="waveformCanvas"></canvas>
@@ -2915,7 +2961,9 @@ body.player-active .app { padding-bottom: 68px; }
 <script>
 const STORAGE_KEY='guitarPracticeData';
 const artistInput = document.getElementById('artistInput');
+_attachAutoCap(artistInput);
 const titleInput = document.getElementById('titleInput');
+_attachAutoCap(titleInput);
 
 const artistSuggestions = document.getElementById('artistSuggestions');
 const titleSuggestions = document.getElementById('titleSuggestions');
@@ -2962,8 +3010,24 @@ function getTitlesByArtist(artistName) {
     .filter(Boolean);
 }
 
-artistInput.addEventListener('input', () => {
+function _autoCapWords(input){
+  const pos = input.selectionStart;
+  const val = input.value;
+  const capped = val.replace(/(^|\s)(\S)/g, (m,s,c) => s + c.toUpperCase());
+  if(capped !== val){
+    input._autoCapPending = true;
+    input.value = capped;
+    input._autoCapPending = false;
+    try { input.setSelectionRange(pos, pos); } catch(e){}
+  }
+}
+function _attachAutoCap(input){
+  input.addEventListener('keyup', () => _autoCapWords(input));
+}
 
+artistInput.addEventListener('input', () => {
+  if(artistInput._autoCapPending) return;
+  _autoCapWords(artistInput);
   const value = artistInput.value.trim().toLowerCase();
   artistSuggestions.innerHTML = '';
 
@@ -2999,7 +3063,8 @@ artistInput.addEventListener('input', () => {
 });
 
 titleInput.addEventListener('input', () => {
-
+  if(titleInput._autoCapPending) return;
+  _autoCapWords(titleInput);
   const value = titleInput.value.trim().toLowerCase();
   const artist = artistInput.value.trim();
 
@@ -3047,7 +3112,12 @@ const expandBtn=document.getElementById('expandBtn');
 const songModal=document.getElementById('songModal');
 const songViewer=document.getElementById('songViewer');
 
-function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+function saveState(){
+  // _audioFile/_audioFile2 are File objects — strip before serializing (File → {} via JSON)
+  const clean = JSON.parse(JSON.stringify(state, (k,v) => (k === '_audioFile' || k === '_audioFile2') ? undefined : v));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+  gdriveScheduleAutoSave();
+}
 function loadState(){
 
   const data = localStorage.getItem(STORAGE_KEY);
@@ -3056,12 +3126,39 @@ function loadState(){
     state = JSON.parse(data);
   }
 
+  // Clean up stale/empty blocks AND orphaned licks in all sections
+  (state.songs||[]).forEach(song => {
+    ((song.notes||{}).sections||[]).forEach(sec => {
+      if(!sec.blocks) sec.blocks = [];
+      // Remove empty/stale blocks
+      sec.blocks = sec.blocks.filter(b => {
+        if(b.type === 'chord') return b.chord && (b.chord.name || (b.chord.frets && b.chord.frets.some(f=>f!==null)));
+        if(b.type === 'lick') return (sec.licks||[])[b.lickIdx||0] && ((sec.licks||[])[b.lickIdx||0].beats||[]).some(row=>row.some(v=>v!==null));
+        if(b.type === 'notes') return b.text && b.text.trim().length > 0;
+        return true;
+      });
+      // Remove orphaned licks not referenced by any block
+      if(sec.licks && sec.licks.length > 0){
+        const usedIdxs = new Set(sec.blocks.filter(b=>b.type==='lick').map(b=>b.lickIdx||0));
+        sec.licks = sec.licks.filter((_,i) => usedIdxs.has(i));
+        // Also remove licks with no content even if referenced
+        sec.licks = sec.licks.filter(l => (l.beats||[]).some(row=>row.some(v=>v!==null)));
+        // Re-index
+        let idx = 0;
+        sec.blocks.forEach(b => { if(b.type==='lick') b.lickIdx = idx++; });
+      }
+    });
+  });
+
   // ensure base arrays exist
   if (!state.personalPlaylists) state.personalPlaylists = [];
   if (!state.techniquePlaylists) state.techniquePlaylists = [];
   if (!state.songs) state.songs = [];
   if (!state.tunings) state.tunings = ['EADGBE', 'Drop D', 'DADGBE', 'Open G', 'Half Step Down'];
   if (!state.practiceLog) state.practiceLog = {};
+
+  // _audioFile/_audioFile2 are File objects — never survive JSON serialization, clear any stale refs
+  (state.songs || []).forEach(s => { delete s._audioFile; delete s._audioFile2; });
 
   // Migrate old standalone practice app data (guitarJournalEntries → state.practiceLog)
   const oldPractice = localStorage.getItem('guitarJournalEntries');
@@ -3152,7 +3249,7 @@ const SYSTEM_TILES_2 = [
   { id:'fretboard',    icon:'🎯',  label:'Fretboard',     cls:'unknown', action:'openFretboardNotes'  },
 ];
 
-let _tilePageIdx = 0;
+let _tilePageIdx = 1;
 
 function goTilePage(idx){
   _tilePageIdx = idx;
@@ -3170,6 +3267,8 @@ function _updateTileDots(idx){
 document.addEventListener('DOMContentLoaded', () => {
   const track = document.getElementById('tileCarouselTrack');
   if(!track) return;
+  // Start on page 1 (library)
+  setTimeout(() => { track.scrollLeft = track.offsetWidth; }, 50);
   track.addEventListener('scroll', () => {
     const idx = Math.round(track.scrollLeft / track.offsetWidth);
     if(idx !== _tilePageIdx){ _tilePageIdx = idx; _updateTileDots(idx); }
@@ -3253,7 +3352,10 @@ function saveGlobalToneNotes(){
 }
 function closeCreationNotes(){ document.getElementById('creationNotesModal').classList.remove('active'); }
 function closeFretboardNotes(){ document.getElementById('fretboardNotesModal').classList.remove('active'); }
-function closeGlobalToneNotes(){ document.getElementById('globalToneNotesModal').classList.remove('active'); }
+function closeGlobalToneNotes(){
+  toneNotesAutoSave();
+  document.getElementById('globalToneNotesModal').classList.remove('active');
+}
 
 // ══ Split View ════════════════════════════════════════════
 let _splitViewOpen = false;
@@ -3261,6 +3363,7 @@ let _svCurrentTab  = 'notes';
 
 function openSplitView(){
   if(!activeSong) return;
+  if(_splitViewOpen) return; // already open — don't push another history entry
 
   // Force expanded player open — it will sit on top (z-index 190 > split view 185)
   openExpandedPlayer(true);
@@ -3303,6 +3406,7 @@ function openSplitView(){
   // Populate right panel — sections
   _renderSvSections();
   _syncSvLoopBtn();
+  _updateViewerAudioBtns();
 
   // Update YT link
   const svYT = document.getElementById('svYTBtn');
@@ -3419,7 +3523,7 @@ function _renderSvSections(){
     } else {
       nameEl = document.createElement('span');
       nameEl.className = 'sec-name';
-      const hasNotes = sec.notes && sec.notes.trim().length > 0;
+      const hasNotes = (sec.blocks && sec.blocks.some(b => (b.type==='lick' && (sec.licks||[])[b.lickIdx||0] && ((sec.licks||[])[b.lickIdx||0].beats||[]).some(row=>row.some(v=>v!==null))) || (b.type==='chord' && b.chord) || (b.type==='notes' && b.text && b.text.trim()))) || (sec.licks && sec.licks.some(l => (l.beats||[]).some(row=>row.some(v=>v!==null)))) || (sec.notes && sec.notes.trim().length > 0);
       nameEl.innerHTML = (sec.name || `Section ${idx+1}`) +
         (hasNotes ? ' <span style="font-size:.65rem;opacity:.7;">📄</span>' : '');
     }
@@ -3477,11 +3581,10 @@ function _renderSvSections(){
 
     if(!sectionEditMode){
       row.onclick = () => {
-        const audio = document.getElementById('playerAudio');
-        if(!audio || !audio.src){ openSectionNotes(idx); return; }
+        if(!_audio || !_audio.src){ openSectionNotes(idx); return; }
         if(!_sectionLoopMode){ openSectionNotes(idx); return; }
         if(_activeSectionIdx === idx){ openSectionNotes(idx); return; }
-        setSectionAsLoop(sec.from, row);
+        setSectionAsLoop(sec, row);
       };
     }
 
@@ -3493,12 +3596,12 @@ function _renderSvSections(){
 function _syncSvLoopBtn(){
   const btn = document.getElementById('svSectionJumpLoopBtn');
   if(!btn) return;
-  const audio = document.getElementById('playerAudio');
-  const hasAudio = audio && audio.src && audio.readyState > 0;
+  const hasAudio = _audio && _audio.src;
   btn.disabled = !hasAudio;
   btn.style.cursor = hasAudio ? 'pointer' : 'default';
   btn.style.color = _sectionLoopMode ? 'var(--accent)' : (hasAudio ? '#888' : '#555');
-  btn.style.borderColor = _sectionLoopMode ? 'var(--accent)' : '#333';
+  btn.style.borderColor = _sectionLoopMode ? 'var(--accent)' : (hasAudio ? '#444' : '#333');
+  btn.style.background = _sectionLoopMode ? 'rgba(155,89,182,.15)' : 'none';
 }
 
 // Hook renderSections to also update split view sections when open
@@ -3515,35 +3618,40 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function renderPlaylists(){
-  state.personalPlaylists.forEach((p, i)=>{
-    const count = getSongCountForPlaylist(p);
-    const el=document.createElement('div');
-    el.className='square-playlist'+(editMode?' editing':'');
-    el.dataset.navGroup = 'personal';
-    el.dataset.navIdx   = i;
-    el.tabIndex = 0;
-    el.innerHTML = `<div class="pl-name">${escHtml(p.name)}</div><div class="pl-count">${count} song${count!==1?'s':''}</div>`;
+  // Render into both the old playlist-row AND the new carousel page
+  const containers = [pp, document.getElementById('myPlaylistsTiles')].filter(Boolean);
+  containers.forEach(container => {
+    container.innerHTML = '';
+    state.personalPlaylists.forEach((p, i)=>{
+      const count = getSongCountForPlaylist(p);
+      const el=document.createElement('div');
+      el.className='square-playlist'+(editMode?' editing':'');
+      el.dataset.navGroup = 'personal';
+      el.dataset.navIdx   = i;
+      el.tabIndex = 0;
+      el.innerHTML = `<div class="pl-name">${escHtml(p.name)}</div><div class="pl-count">${count} song${count!==1?'s':''}</div>`;
 
-    el.onmousedown=el.ontouchstart=()=>{
-      pressTimer=setTimeout(()=>{
-        editMode=true;
-        renderPlaylists();
-      },600);
-    };
-    el.onmouseup=el.ontouchend=()=>clearTimeout(pressTimer);
-    el.onclick=()=>{ if(!editMode) openPlaylist(p); };
+      el.onmousedown=el.ontouchstart=()=>{
+        pressTimer=setTimeout(()=>{
+          editMode=true;
+          renderPlaylists();
+        },600);
+      };
+      el.onmouseup=el.ontouchend=()=>clearTimeout(pressTimer);
+      el.onclick=()=>{ if(!editMode) openPlaylist(p); };
 
-    pp.appendChild(el);
+      container.appendChild(el);
+    });
+
+    const add=document.createElement('div');
+    add.className='square-playlist add-btn';
+    add.dataset.navGroup = 'personal';
+    add.dataset.navIdx   = state.personalPlaylists.length;
+    add.tabIndex = 0;
+    add.innerHTML='＋ Playlist';
+    add.onclick=addPlaylist;
+    container.appendChild(add);
   });
-
-  const add=document.createElement('div');
-  add.className='square-playlist add-btn';
-  add.dataset.navGroup = 'personal';
-  add.dataset.navIdx   = state.personalPlaylists.length;
-  add.tabIndex = 0;
-  add.innerHTML='＋ Playlist';
-  add.onclick=addPlaylist;
-  pp.appendChild(add);
 }
 
 function toggleExpand(){
@@ -4080,10 +4188,9 @@ function renderSongPickerList(query){
   newRow.style.cssText = 'padding:9px 0;border-bottom:1px solid #2a2a2a;cursor:pointer;display:flex;align-items:center;gap:6px;';
   newRow.innerHTML = `<span style="color:var(--accent);font-size:.85rem;">＋</span><span style="font-size:.85rem;color:var(--accent);">Create new song…</span>`;
   newRow.onclick = () => {
+    const q = document.getElementById('songPickerSearch')?.value.trim() || '';
     closeSongPicker();
-    // Open the create form directly
-    openModal('songModal');
-    setTimeout(() => document.getElementById('artistInput').focus(), 50);
+    openAddSongFromSearch(q);
   };
   list.appendChild(newRow);
 
@@ -4409,8 +4516,7 @@ function openSongViewer(id){
   if(song.want === undefined) song.want = false;
 
   activeSong = song;
-
-  // Hide back-to-exercise button (shown only when entering from tqEntryViewer)
+  _audioMode = 'ref';
   document.getElementById('viewerBackToExerciseBtn').style.display = 'none';
 
   // Header
@@ -4423,7 +4529,10 @@ function openSongViewer(id){
   // duration shown via updateDurationDisplay()
   // document.getElementById('viewerDuration').value = song.duration || '';
   document.getElementById('viewerTuning').value   = song.tuning   || 'EADGBE';
-  setTimeout(updateTuningClearBtn, 0);
+  const _tvd = document.getElementById('viewerTuningDisplay');
+  if(_tvd) _tvd.textContent = song.tuning || 'EADGBE';
+  const _svtvd = document.getElementById('svViewerTuningDisplay');
+  if(_svtvd) _svtvd.textContent = song.tuning || 'EADGBE';
   // genre chips initialised below after viewer opens
   // document.getElementById('viewerGenre').value    = song.genre    || '';
   // personalNotes now rendered via renderNotesDisplay()
@@ -4496,12 +4605,33 @@ function openSongViewer(id){
   _updateViewerAudioBtns();
   updateViewerTqBtn();
   updateSectionJumpBtn();
+  renderToneNotesDisplay();
+  // Native: auto-load audio from persistent storage if available
+  if(window.IS_NATIVE && activeSong.audioPath){
+    (async () => {
+      try {
+        const Filesystem = Capacitor.Plugins.Filesystem || window.Filesystem; const Directory = { Data: "DATA", Documents: "DOCUMENTS", Cache: "CACHE" };
+        const result = await Filesystem.readFile({ path: activeSong.audioPath, directory: Directory.Data });
+        const ext = activeSong.audioFilename ? activeSong.audioFilename.split('.').pop() : 'mp3';
+        const blob = _base64ToBlob(result.data, 'audio/' + ext);
+        const file = new File([blob], activeSong.audioFilename || 'audio', { type: blob.type });
+        activeSong._audioFile = file;
+        _playerSong = activeSong;
+        _loadFileIntoAudio(file);
+        _updateViewerAudioBtns();
+      } catch(e){ /* file not found or not yet linked */ }
+    })();
+  }
 }
 
 function openDeezerBot(){
   if(!activeSong) return;
   const text = encodeURIComponent((activeSong.artist ? activeSong.artist + ' - ' : '') + activeSong.title);
   window.open('https://t.me/DeezerMusicBot?text=' + text, '_blank');
+}
+
+function openBackingTrackSite(){
+  window.open('https://x-minus.pro/ai', '_blank');
 }
 
 function updateViewerTqBtn(){
@@ -4519,6 +4649,11 @@ function updateViewerTqBtn(){
   btn._tqs = tqs;
   btn.style.opacity = tqs.length ? '1' : '0.35';
   btn.title = tqs.length ? tqs.map(t=>t.name).join(', ') : 'Not in any technique';
+}
+
+function closeSongTqListModal(){
+  const m = document.getElementById('songTqListModal');
+  if(m) m.classList.remove('active');
 }
 
 function viewSongTechniques(){
@@ -4541,7 +4676,7 @@ function viewSongTechniques(){
   if(existing) existing.remove();
   const modal = document.createElement('div');
   modal.id = 'songTqListModal';
-  modal.className = 'modal active';
+  modal.className = 'modal';
   modal.style.cssText = 'z-index:900;';
   const inner = document.createElement('div');
   inner.className = 'modal-content';
@@ -4549,11 +4684,17 @@ function viewSongTechniques(){
   inner.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
       <strong style="font-size:.9rem;">In Technique Playlists</strong>
-      <button class="ghost" onclick="document.getElementById('songTqListModal').remove()" style="font-size:.8rem;padding:2px 8px;">✕</button>
+      <button class="ghost" onclick="closeSongTqListModal()" style="font-size:.8rem;padding:2px 8px;">✕</button>
     </div>
     <div id="songTqListRows"></div>`;
   modal.appendChild(inner);
   document.body.appendChild(modal);
+  const m2 = document.getElementById('songTqListModal');
+  if(m2){
+    m2.classList.add('active');
+    m2.setAttribute('tabindex','-1');
+    history.pushState({ nav: 'modal', id: 'songTqListModal' }, '');
+  }
   const rows = document.getElementById('songTqListRows');
   matches.forEach(({ tq, entry, idx }) => {
     const row = document.createElement('div');
@@ -4566,7 +4707,9 @@ function viewSongTechniques(){
       </div>
       <span style="font-size:.75rem;color:var(--muted);">⚡ Open</span>`;
     row.onclick = () => {
-      document.getElementById('songTqListModal').remove();
+      // Hide (not remove) so it reappears when back is pressed from tqEntryViewer
+      const m = document.getElementById('songTqListModal');
+      if(m) m.classList.remove('active');
       activeTechniquePlaylist = tq;
       _tqEntryFromEye = true;
       openTqEntryViewer(entry, idx);
@@ -4812,10 +4955,14 @@ function setSectionAsLoop(sec, row){
     _renderWaveform();
     _audio.currentTime = a;
   }
-  const rows = document.querySelectorAll('.section-row');
-  rows.forEach((r, idx) => {
-    r.classList.remove('loop-active');
-    if(r === row){ _activeSectionIdx = idx; r.classList.add('loop-active'); }
+  // Find the index by matching within whichever panel the row lives in
+  const panel = row.closest('#sections, #svSections');
+  const panelRows = panel ? [...panel.querySelectorAll('.section-row')] : [];
+  const clickedIdx = panelRows.indexOf(row);
+  _activeSectionIdx = clickedIdx >= 0 ? clickedIdx : null;
+  // Apply highlight to both panels
+  document.querySelectorAll('.section-row').forEach((r, idx) => {
+    r.classList.toggle('loop-active', idx === _activeSectionIdx);
   });
 }
 
@@ -4850,6 +4997,7 @@ function updateSectionJumpBtn(){
     btn.style.background = 'none';
     btn.style.cursor = 'pointer';
   }
+  _syncSvLoopBtn();
 }
 
 function toggleSectionEdit(){
@@ -4900,7 +5048,7 @@ function renderSections(){
     } else {
       nameEl = document.createElement('span');
       nameEl.className = 'sec-name';
-      const hasNotes = sec.notes && sec.notes.trim().length > 0;
+      const hasNotes = (sec.blocks && sec.blocks.some(b => (b.type==='lick' && (sec.licks||[])[b.lickIdx||0] && ((sec.licks||[])[b.lickIdx||0].beats||[]).some(row=>row.some(v=>v!==null))) || (b.type==='chord' && b.chord) || (b.type==='notes' && b.text && b.text.trim()))) || (sec.licks && sec.licks.some(l => (l.beats||[]).some(row=>row.some(v=>v!==null)))) || (sec.notes && sec.notes.trim().length > 0);
       nameEl.innerHTML = (sec.name || `Section ${i+1}`) +
         (hasNotes ? ' <span style="font-size:.65rem;opacity:.7;" title="Has notes">📄</span>' : '');
       nameEl.title = '';
@@ -5076,6 +5224,7 @@ function setupSectionDrag(row, index){
 
 function openSectionNotes(index){
   activeSectionIndex = index;
+  const sec = activeSong?.notes?.sections?.[index];
   _loadSectionNotes(index);
   openModal('sectionNotesModal');
 }
@@ -5146,6 +5295,8 @@ function renderSectionFeed(){
   if(!sec.blocks) sec.blocks = [];
   const feed = document.getElementById('sectionContentFeed');
   feed.innerHTML = '';
+  // Always sync the section list icons when feed updates
+  setTimeout(renderSections, 0);
 
   if(!sec.blocks.length){
     const empty = document.createElement('div');
@@ -5225,8 +5376,20 @@ function addSectionNoteBlock(){
 
 function removeSectionBlock(bi){
   const sec = activeSong.notes.sections[activeSectionIndex];
+  const block = sec.blocks[bi];
+  // If removing a lick block, also delete the lick from sec.licks
+  if(block && block.type === 'lick' && sec.licks){
+    const lickIdx = block.lickIdx || 0;
+    sec.licks.splice(lickIdx, 1);
+    // Re-index remaining lick blocks
+    sec.blocks.forEach(b => {
+      if(b.type === 'lick' && b.lickIdx > lickIdx) b.lickIdx--;
+    });
+  }
   sec.blocks.splice(bi, 1);
+  saveState();
   renderSectionFeed();
+  renderSections();
 }
 
 // Keep addNewLick working — adds lick to sec.licks and a block reference
@@ -5786,6 +5949,7 @@ function saveLick(){
   saveState();
   closeLickEditor();
   renderSectionFeed();
+  renderSections();
 }
 
 function deleteLick(){
@@ -6167,6 +6331,8 @@ function deleteSong(){
 // Maps modal id → close function name (string, called via window[fn]())
 const MODAL_CLOSE_FNS = {
   'goalNotesModal':       'closeGoalNotesModal',
+  'timerPickerModal':     'closeTimerPicker',
+  'exerciseNotesModal':   'closeExerciseNotesModal',
   'practiceLinkModal':    'closePracticeLinkModal',
   'practiceTextModal':    'closePracticeTextModal',
   'tqSongPickerModal':    'closeTqSongPicker',
@@ -6178,6 +6344,7 @@ const MODAL_CLOSE_FNS = {
   'sectionNotesModal':    'closeSectionNotes',
   'lickEditorModal':      'closeLickEditor',
   'tuningsModal':         'closeTuningsModal',
+  'songTqListModal':      'closeSongTqListModal',
   'placementPickerModal': 'closePlacementPicker',
   'manageTqModal':        'closeManageTechniques',
   'managePlModal':        'closeManagePlaylists',
@@ -6199,7 +6366,6 @@ const MODAL_FOCUS_SELECTOR = {
   'exerciseModal':        '#exerciseName',
   'songModal':            '#artistInput',
   'bpmHistoryModal':      '#bpmHistoryCurInput',
-  'notesEditModal':       '#notesEditModalText',
   'goalNotesModal':       '#goalNotesModalArea',
   'creationNotesModal':   '#creationNotesText',
   'fretboardNotesModal':  '#fretboardNotesText',
@@ -6245,17 +6411,18 @@ document.addEventListener('keydown', e => {
 }, true); // capture phase so it runs before other handlers
 
 function closeTopmostModal(){
+  // Use history state id if available — more reliable than DOM order
+  const stateId = history.state?.id;
+  const byState = stateId ? document.getElementById(stateId) : null;
   const active = [...document.querySelectorAll('.modal.active')];
   if(!active.length) return false;
-  const top = active[active.length - 1];
+  const top = (byState && byState.classList.contains('active')) ? byState : active[active.length - 1];
   const closeFn = MODAL_CLOSE_FNS[top.id];
   if(closeFn && typeof window[closeFn] === 'function'){
     window[closeFn]();
   } else {
     top.classList.remove('active');
   }
-  // If more modals are still stacked, re-push so the next back closes them too.
-  // Otherwise do nothing — the underlying view's history entry is already in the stack.
   const stillActive = [...document.querySelectorAll('.modal.active')];
   if(stillActive.length > 0){
     history.replaceState({ nav: 'modal', id: stillActive[stillActive.length-1].id }, '');
@@ -6610,9 +6777,33 @@ function showToast(msg){
 function openNotesModal(){
   const txt = activeSong?.notes?.personal || '';
   document.getElementById('notesEditModalText').value = txt;
+  // Show view mode first — no keyboard on open
+  const view = document.getElementById('notesViewDisplay');
+  const edit = document.getElementById('notesEditModalText');
+  view.textContent = txt || '';
+  view.style.display = 'block';
+  view.style.color = txt ? '#ddd' : '#555';
+  if(!txt) view.textContent = 'Tap to add notes…';
+  edit.style.display = 'none';
   const sections = activeSong?.notes?.sections || [];
   document.getElementById('pnNextBtn').style.opacity = sections.length ? '1' : '.2';
   openModal('notesEditModal');
+}
+
+function notesEnterEditMode(){
+  const view = document.getElementById('notesViewDisplay');
+  const edit = document.getElementById('notesEditModalText');
+  view.style.display = 'none';
+  edit.style.display = 'block';
+  edit.style.flex = '1';
+  setTimeout(() => { edit.focus(); edit.setSelectionRange(edit.value.length, edit.value.length); }, 50);
+}
+
+function notesAutoSave(){
+  if(!activeSong) return;
+  activeSong.notes.personal = document.getElementById('notesEditModalText').value;
+  saveState();
+  renderNotesDisplay();
 }
 
 function closeNotesModal(){
@@ -6951,11 +7142,9 @@ function renderTqSongPicker(query){
   newRow.style.cssText = 'padding:9px 0;border-bottom:1px solid #2a2a2a;cursor:pointer;display:flex;align-items:center;gap:6px;';
   newRow.innerHTML = `<span style="color:var(--accent);font-size:.85rem;">＋</span><span style="font-size:.85rem;color:var(--accent);">Create new song…</span>`;
   newRow.onclick = () => {
+    const q = document.getElementById('tqSongPickerSearch')?.value.trim() || '';
     document.getElementById('tqSongPickerModal').classList.remove('active');
-    pendingTqSongAdd = true;
-    // Open normal song modal (bypassing the technique redirect)
-    openModal('songModal');
-    setTimeout(() => document.getElementById('artistInput').focus(), 50);
+    openAddSongFromSearch(q);
   };
   list.appendChild(newRow);
 
@@ -7042,6 +7231,7 @@ function openTqEntryViewer(entry, index){
   document.getElementById('tqEntrySpeedCur').value  = entry.speedCurrent || '';
   document.getElementById('tqEntrySpeedGoal').value = entry.speedGoal    || '';
   document.getElementById('tqEntryNotes').value     = entry.notes        || '';
+  setTimeout(renderExerciseNotesDisplay, 0);
   // Nickname row: only for song entries
   const isSong = entry.type === 'song';
   document.getElementById('tqEntryNicknameRow').style.display = isSong ? 'block' : 'none';
@@ -7082,6 +7272,12 @@ function closeTqEntryViewer(){
   if(_tqEntryFromEye){
     _tqEntryFromEye = false;
     activeTechniquePlaylist = null;
+    // Restore the technique list modal that was hidden when we navigated in
+    const m = document.getElementById('songTqListModal');
+    if(m){
+      m.classList.add('active');
+      history.replaceState({ nav: 'modal', id: 'songTqListModal' }, '');
+    }
   } else if(activeTechniquePlaylist){
     renderTechniqueEntries();
   }
@@ -7995,6 +8191,18 @@ function openTuningsModal(){
 
 function closeTuningsModal(){
   document.getElementById('tuningsModal').classList.remove('active');
+  // Refresh tuning display in viewer
+  if(activeSong){
+    const t = activeSong.tuning || 'EADGBE';
+    const d1 = document.getElementById('viewerTuningDisplay');
+    const d2 = document.getElementById('svViewerTuningDisplay');
+    const i1 = document.getElementById('viewerTuning');
+    const i2 = document.getElementById('svViewerTuning');
+    if(d1) d1.textContent = t;
+    if(d2) d2.textContent = t;
+    if(i1) i1.value = t;
+    if(i2) i2.value = t;
+  }
 }
 
 function renderTuningsList(){
@@ -8032,7 +8240,15 @@ function useTuning(tuning){
   if(!activeSong) return;
   activeSong.tuning = tuning;
   document.getElementById('viewerTuning').value = tuning;
-  updateTuningClearBtn();
+  saveState();
+  renderViewerMeta();
+  closeTuningsModal();
+}
+
+function clearTuningField(){
+  if(!activeSong) return;
+  activeSong.tuning = '';
+  document.getElementById('viewerTuning').value = '';
   saveState();
   renderViewerMeta();
   closeTuningsModal();
@@ -8165,11 +8381,12 @@ function addTuning(){
   const input = document.getElementById('newTuningInput');
   const val = input.value.trim();
   if(!val) return;
-  if(state.tunings.includes(val)){ input.value = ''; return; }
-  state.tunings.push(val);
-  saveState();
+  if(!state.tunings.includes(val)){
+    state.tunings.push(val);
+    saveState();
+  }
   input.value = '';
-  renderTuningsList();
+  useTuning(val); // auto-select the new tuning
 }
 
 function deleteTuning(index){
@@ -8948,7 +9165,9 @@ function toggleGoalTimer(k){
 
   // PURPLE: tap → pause → red
   if(st === 'purple'){
+    _timerManualStop = true;
     stopGoalTimer(k);
+    _timerManualStop = false;
     updateGoalTimerDisplay(k);
     return;
   }
@@ -9050,13 +9269,19 @@ function startGoalTimer(k){
   t.interval=setInterval(()=>{
     t.remaining=Math.max(0,Math.floor((t.endTime-Date.now())/1000));
     updateGoalTimerDisplay(k);
-    if(t.remaining<=0){ stopGoalTimer(k); _setClockState(k,'green'); clearTimerState(); showToast('Session complete 🔥'); }
+    if(t.remaining<=0){ stopGoalTimer(k); _setClockState(k,'green'); clearTimerState(); showTimerDoneOverlay(); }
   },1000);
   t.running=true;
   _setClockState(k,'purple');
   saveTimerState();
   renderHomeCalendar();
   updateHeadClockState();
+  // Start native foreground service for notification
+  if(window.IS_NATIVE && window.AndroidBridge){
+    const sel = document.getElementById(`goalSelect-${k}`);
+    const label = (sel && sel.value) ? sel.value : ('Timer ' + k.toUpperCase());
+    window.AndroidBridge.startTimerService(label, t.endTime);
+  }
 }
 
 function stopGoalTimer(k){
@@ -9066,6 +9291,12 @@ function stopGoalTimer(k){
   saveTimerState();
   renderHomeCalendar();
   updateHeadClockState();
+  // Only stop native service if manually stopped (not when timer completes naturally)
+  // The Java service handles its own completion and done notification
+  if(window.IS_NATIVE && window.AndroidBridge && _timerManualStop){
+    const anyRunning = ['t1','t2','t3'].some(x => homeGoalTimers[x].running);
+    if(!anyRunning) window.AndroidBridge.stopTimerService();
+  }
 }
 
 // Auto-save timer state every 30s
@@ -9087,9 +9318,12 @@ document.addEventListener('visibilitychange', ()=>{
       if(t.running && t.endTime){
         t.remaining = Math.max(0, Math.floor((t.endTime - Date.now()) / 1000));
         updateGoalTimerDisplay(k);
-        if(t.remaining <= 0){ stopGoalTimer(k); showToast('Session complete 🔥'); }
+        if(t.remaining <= 0){ stopGoalTimer(k); showTimerDoneOverlay(); }
       }
     });
+    // Only reload day if no timers running — prevents killing active timers
+    const anyRunning = ['t1','t2','t3'].some(k => homeGoalTimers[k].running);
+    if(!anyRunning) homeLoadDay(homeViewDate);
   }
 });
 
@@ -9104,7 +9338,9 @@ function initHomeGoalCards(){
   updateMonthlyGoalHeader();
 }
 function resetGoalTimer(k){
+  _timerManualStop = true;
   stopGoalTimer(k);
+  _timerManualStop = false;
   const dec=Number(document.getElementById(`goalVal-${k}`).value)||0;
   homeGoalTimers[k].initial=homeDeclToSec(dec);
   homeGoalTimers[k].remaining=homeGoalTimers[k].initial;
@@ -9116,22 +9352,18 @@ function goalTimerSetTime(k){
     showToast('Pause the timer first');
     return;
   }
-  const picker=document.getElementById(`goalPicker-${k}`);
-  if(!picker) return;
-  picker.showPicker?.(); picker.focus(); picker.click();
-  picker.onchange=()=>{
-    const dec=homeTimeToDecimal(picker.value);
-    document.getElementById(`goalVal-${k}`).value=dec.toFixed(2);
-    const sec=homeDeclToSec(dec);
+  const currentSec = homeGoalTimers[k].initial || 0;
+  const titles={t1:'今週',t2:'今月',t3:'その他'};
+  openTimerPicker(titles[k]||'Timer', currentSec, sec => {
+    const dec = sec/3600;
+    document.getElementById(`goalVal-${k}`).value=dec.toFixed(6);
     const elapsedKey={t1:'elapsedT1',t2:'elapsedT2',t3:'elapsedT3'}[k];
     if(_posteriorMode || _clockState[k] === 'green'){
-      // Posterior mode OR already green: set elapsed directly
       if(!state.practiceLog) state.practiceLog = {};
       if(!state.practiceLog[homeViewDate]) state.practiceLog[homeViewDate] = {};
       const data = state.practiceLog[homeViewDate];
       data[elapsedKey]=sec;
       data.elapsedTotal=(data.elapsedT1||0)+(data.elapsedT2||0)+(data.elapsedT3||0);
-      // Mark as unsaved since elapsed changed
       if(data.finished) data.finished = false;
       homeGoalTimers[k].initial=sec;
       homeGoalTimers[k].remaining=0;
@@ -9141,7 +9373,6 @@ function goalTimerSetTime(k){
       renderHomeCalendar();
       homeValidate();
     } else {
-      // Normal mode, not green: set allocation/remaining
       homeGoalTimers[k].initial=sec;
       homeGoalTimers[k].remaining=sec;
       if(_clockState[k] === 'white') _setClockState(k, 'red');
@@ -9149,7 +9380,7 @@ function goalTimerSetTime(k){
       if(data && data.finished) _setClockState(k, 'red');
       updateGoalTimerDisplay(k); homeValidate();
     }
-  };
+  });
 }
 function updateHeadClockState(){
   const el = document.getElementById('homeTotalDisplay');
@@ -9190,28 +9421,24 @@ function updateHeadClockState(){
 }
 
 function homeTotalSetTime(){
-  const picker=document.getElementById('homeTotalPicker');
-  if(!picker) return;
-  picker.showPicker?.(); picker.focus(); picker.click();
-  picker.onchange=()=>{
-    const dec=homeTimeToDecimal(picker.value);
-    const sec=homeDeclToSec(dec);
+  const currentSec = homeDeclToSec(Number(document.getElementById('homeTotalVal').value)||0);
+  openTimerPicker('Total Session', currentSec, sec => {
+    const dec = sec/3600;
     const data=(state.practiceLog||{})[homeViewDate];
     if(_posteriorMode || (data && data.finished)){
-      // Posterior or green: set total elapsed directly
       if(!state.practiceLog) state.practiceLog = {};
       if(!state.practiceLog[homeViewDate]) state.practiceLog[homeViewDate] = {};
       const d = state.practiceLog[homeViewDate];
       d.elapsedTotal = sec;
       if(d.finished) d.finished = false;
-      document.getElementById('homeTotalVal').value=dec.toFixed(2);
+      document.getElementById('homeTotalVal').value=(sec/3600).toFixed(6);
       updateHeadClockState();
       renderHomeCalendar();
     } else {
-      document.getElementById('homeTotalVal').value=dec.toFixed(2);
+      document.getElementById('homeTotalVal').value=(sec/3600).toFixed(6);
       updateHomeTotalDisplay();
     }
-  };
+  });
 }
 
 function updateGoalLabel(k){
@@ -9258,6 +9485,9 @@ function updateHomeLeftInfo(){
 }
 
 function homeLoadDay(date){
+  // Don't overwrite timers if they've been set but not yet started
+  const timersActive = ['t1','t2','t3'].some(k => homeGoalTimers[k].remaining > 0 && !homeGoalTimers[k].running);
+  if(timersActive && date === homeViewDate) return;
   const data=(state.practiceLog||{})[date]||null;
   const todayStr=new Date().toISOString().split('T')[0];
   const isToday=date===todayStr;
@@ -9298,7 +9528,7 @@ function homeLoadDay(date){
     _setClockState(k, dec > 0 ? 'red' : 'white');
     updateGoalTimerDisplay(k);
   });
-  updateHomeTotalDisplay(); updateAllGoalLabels();
+  updateHomeTotalDisplay(); updateAllGoalLabels(); renderAllGoalNotesDisplays();
   const linksMap={t1:'linksW',t2:'linksM',t3:'linksO'};
   ['t1','t2','t3'].forEach(k=>renderGoalLinks(k,(data&&data[linksMap[k]])||[]));
   homeValidate();
@@ -9452,6 +9682,8 @@ function onGoalCardTap(e, k){
   // Don't expand if tapping interactive elements
   const tag=e.target.tagName;
   if(['BUTTON','SELECT','TEXTAREA','INPUT','A'].includes(tag)) return;
+  // Don't expand if tapping the notes display or its wrap
+  if(e.target.closest('.gc-notes-wrap')) return;
   toggleCardsExpanded();
 }
 
@@ -9483,26 +9715,15 @@ function practiceSessionSetupHome(){
     return;
   }
 
-  // Presets 1 & 2: calculate total minutes then split
+  // Calculate total minutes until chosen time
   let totalMin = 0;
-
-  if(_homePreset === 2){
-    const input = document.getElementById('preset2EndTime');
-    if(!input || !input.value){ showToast('Set an end time first'); return; }
-    const [hh,mm] = input.value.split(':').map(Number);
-    const now = new Date();
-    let target = new Date(now);
-    target.setHours(hh, mm, 0, 0);
-    if(target <= now) target.setDate(target.getDate()+1);
-    totalMin = Math.max(0, Math.floor((target - now) / 60000));
-  } else {
-    // Preset 1: until 3am
-    const now = new Date();
-    let target = new Date(now);
-    target.setHours(3,0,0,0);
-    if(now > target) target.setDate(target.getDate()+1);
-    totalMin = Math.max(0, Math.floor((target - now) / 60000));
-  }
+  if(!_untilTime){ showToast('Set an end time first (Until…)'); return; }
+  const [hh,mm] = _untilTime.split(':').map(Number);
+  const now = new Date();
+  let target = new Date(now);
+  target.setHours(hh, mm, 0, 0);
+  if(target <= now) target.setDate(target.getDate()+1);
+  totalMin = Math.max(0, Math.floor((target - now) / 60000));
 
   const totalHours = totalMin / 60;
   document.getElementById('homeTotalVal').value = totalHours.toFixed(2);
@@ -9521,15 +9742,21 @@ function practiceSessionSetupHome(){
     updateGoalTimerDisplay(k);
   });
 
-  document.getElementById('goalSelect-t1').value=HOME_WEEKLY_CYCLE[(homeGetWeekNumber()-1)%HOME_WEEKLY_CYCLE.length];
-  document.getElementById('goalSelect-t2').value=HOME_MONTHLY_CYCLE[new Date().getMonth()%HOME_MONTHLY_CYCLE.length];
+  const _monthGoal1 = HOME_MONTHLY_CYCLE[new Date().getMonth()%HOME_MONTHLY_CYCLE.length];
+  let _weekIdx1 = (homeGetWeekNumber()-1)%HOME_WEEKLY_CYCLE.length;
+  if(HOME_WEEKLY_CYCLE[_weekIdx1] === _monthGoal1) _weekIdx1 = (_weekIdx1+1)%HOME_WEEKLY_CYCLE.length;
+  document.getElementById('goalSelect-t1').value=HOME_WEEKLY_CYCLE[_weekIdx1];
+  document.getElementById('goalSelect-t2').value=_monthGoal1;
   document.getElementById('goalSelect-t3').value='listening';
   updateAllGoalLabels(); homeValidate();
 }
 
 function setCurrentGoals(){
-  document.getElementById('goalSelect-t1').value = HOME_WEEKLY_CYCLE[(homeGetWeekNumber()-1) % HOME_WEEKLY_CYCLE.length];
-  document.getElementById('goalSelect-t2').value = HOME_MONTHLY_CYCLE[new Date().getMonth() % HOME_MONTHLY_CYCLE.length];
+  const _monthGoal2 = HOME_MONTHLY_CYCLE[new Date().getMonth()%HOME_MONTHLY_CYCLE.length];
+  let _weekIdx2 = (homeGetWeekNumber()-1)%HOME_WEEKLY_CYCLE.length;
+  if(HOME_WEEKLY_CYCLE[_weekIdx2] === _monthGoal2) _weekIdx2 = (_weekIdx2+1)%HOME_WEEKLY_CYCLE.length;
+  document.getElementById('goalSelect-t1').value = HOME_WEEKLY_CYCLE[_weekIdx2];
+  document.getElementById('goalSelect-t2').value = _monthGoal2;
   document.getElementById('goalSelect-t3').value = 'listening';
   updateAllGoalLabels();
 }
@@ -9567,7 +9794,10 @@ function openCurrentGoalsModal(){
   const weekNum = homeGetWeekNumber();
   const monthNum = now.getMonth(); // 0-indexed
 
-  const weekGoal  = HOME_WEEKLY_CYCLE[(weekNum-1) % HOME_WEEKLY_CYCLE.length];
+  const _monthGoalTmp = HOME_MONTHLY_CYCLE[monthNum % HOME_MONTHLY_CYCLE.length];
+  let _weekIdxTmp = (weekNum-1) % HOME_WEEKLY_CYCLE.length;
+  if(HOME_WEEKLY_CYCLE[_weekIdxTmp] === _monthGoalTmp) _weekIdxTmp = (_weekIdxTmp+1)%HOME_WEEKLY_CYCLE.length;
+  const weekGoal  = HOME_WEEKLY_CYCLE[_weekIdxTmp];
   const monthGoal = HOME_MONTHLY_CYCLE[monthNum % HOME_MONTHLY_CYCLE.length];
 
   // Week date range (Mon–Sun)
@@ -9612,9 +9842,37 @@ function closeCurrentGoalsModal(){
 }
 
 // ── Presets ──────────────────────────────────────────────
-let _homePreset = 1; // 1=auto, 2=until, 3=manual
+let _homePreset = 2; // always "until" now
+let _untilTime = ''; // "HH:MM" string
 let _preset2Interval = null;
 let _posteriorMode = false;
+
+function openUntilTimePicker(){
+  const inp = document.getElementById('untilTimeNativeInput');
+  if(!inp) return;
+  if(_untilTime) inp.value = _untilTime;
+  inp.style.pointerEvents = 'auto';
+  inp.focus();
+  inp.click();
+  inp.showPicker?.();
+  setTimeout(() => { inp.style.pointerEvents = 'none'; }, 5000);
+}
+
+function onUntilTimeNativeChange(val){
+  if(!val) return;
+  _untilTime = val;
+  if(state) state.homePreset2EndTime = _untilTime;
+  saveState();
+  _renderPresetUI();
+  updatePreset2Countdown();
+  const inp = document.getElementById('untilTimeNativeInput');
+  if(inp) inp.style.pointerEvents = 'none';
+}
+
+function _renderUntilDisplay(){
+  const el = document.getElementById('untilTimeDisplay');
+  if(el) el.textContent = _untilTime || '--:--';
+}
 
 function setHomePreset(n){
   _homePreset = n;
@@ -9624,7 +9882,7 @@ function setHomePreset(n){
 }
 
 function _renderPresetUI(){
-  [1,2,3].forEach(n => {
+  [2,3].forEach(n => {
     const btn = document.getElementById(`presetBtn-${n}`);
     if(!btn) return;
     const active = _homePreset === n;
@@ -9632,19 +9890,14 @@ function _renderPresetUI(){
     btn.style.borderColor = active ? 'var(--accent)' : '#333';
     btn.style.color       = active ? 'var(--accent)' : '#aaa';
   });
-  const row = document.getElementById('preset2EndTimeRow');
+  const row = document.getElementById('untilTimeRow');
   if(row) row.style.display = _homePreset === 2 ? 'block' : 'none';
-  // Dim head clock 🕒 on preset 2 (countdown controls display)
-  const htsBtn = document.querySelector('.hts-btn');
-  if(htsBtn){
-    htsBtn.disabled = (_homePreset === 2);
-    htsBtn.style.opacity = (_homePreset === 2) ? '0.3' : '';
-  }
-  // restart countdown if preset 2 active
-  if(_homePreset === 2){
-    _startPreset2Countdown();
-  } else {
+  _renderUntilDisplay();
+  if(_homePreset === 2) _startPreset2Countdown();
+  else {
     _stopPreset2Countdown();
+    const display = document.getElementById('homeTotalDisplay');
+    if(display){ display.textContent = '00:00:00'; display.style.color = ''; }
   }
   homeValidate();
 }
@@ -9655,15 +9908,12 @@ function _stopPreset2Countdown(){
 
 function _startPreset2Countdown(){
   _stopPreset2Countdown();
-  updatePreset2Countdown(); // immediate tick
-  _preset2Interval = setInterval(updatePreset2Countdown, 1000);
+  updatePreset2Countdown(); // update once — no live countdown
 }
 
 function updatePreset2Countdown(){
-  if(_homePreset !== 2) return;
-  const input = document.getElementById('preset2EndTime');
-  if(!input || !input.value) return;
-  const [hh, mm] = input.value.split(':').map(Number);
+  if(!_untilTime) return;
+  const [hh, mm] = _untilTime.split(':').map(Number);
   const now = new Date();
   let end = new Date(now);
   end.setHours(hh, mm, 0, 0);
@@ -9680,10 +9930,11 @@ function updatePreset2Countdown(){
 }
 
 function initHomePreset(){
-  _homePreset = (state && state.homePreset) || 1;
-  if(_homePreset === 2 && state && state.homePreset2EndTime){
-    const input = document.getElementById('preset2EndTime');
-    if(input) input.value = state.homePreset2EndTime;
+  _homePreset = (state && state.homePreset) || 2;
+  if(_homePreset === 1) _homePreset = 2; // migrate old "auto" to "until"
+  _untilTime = (state && (state.defaultUntilTime || state.homePreset2EndTime)) || '';
+  if(_untilTime){
+    // untilTime loaded above
   }
   _renderPresetUI();
 }
@@ -9852,8 +10103,9 @@ function setTimeSplit(split){
 
 function saveDefaultTimeSplit(){
   state.defaultTimeSplit = _timeSplit;
+  state.defaultUntilTime = _untilTime;
   saveState();
-  showToast(`Default split saved: ${_timeSplit}`);
+  showToast(`Defaults saved: until ${_untilTime || '--:--'}, split ${_timeSplit}`);
 }
 
 function _renderSplitUI(){
@@ -10135,17 +10387,46 @@ function homeYearJumpToday(){
 function openGoalNotesModal(k){
   activeGoalNotesKey=k;
   const ta=document.getElementById(`goalNotes-${k}`);
+  const txt=ta?ta.value:'';
   const titles={t1:'今週の目標 — Notes',t2:'今月の目標 — Notes',t3:'その他 — Notes'};
   document.getElementById('goalNotesModalTitle').textContent=titles[k]||'Notes';
-  document.getElementById('goalNotesModalArea').value=ta?ta.value:'';
+  document.getElementById('goalNotesModalArea').value=txt;
+  const view=document.getElementById('goalNotesViewDisplay');
+  const edit=document.getElementById('goalNotesModalArea');
+  view.textContent=txt||'Tap to add notes…';
+  view.style.color=txt?'#ddd':'#555';
+  view.style.display='block';
+  edit.style.display='none';
   openModal('goalNotesModal');
-  setTimeout(()=>document.getElementById('goalNotesModalArea').focus(),60);
+}
+function goalNotesEnterEditMode(){
+  document.getElementById('goalNotesViewDisplay').style.display='none';
+  const edit=document.getElementById('goalNotesModalArea');
+  edit.style.display='block';
+  edit.style.flex='1';
+  setTimeout(()=>{edit.focus();edit.setSelectionRange(edit.value.length,edit.value.length);},50);
+}
+function goalNotesAutoSave(){
+  if(!activeGoalNotesKey) return;
+  const val=document.getElementById('goalNotesModalArea').value;
+  const ta=document.getElementById(`goalNotes-${activeGoalNotesKey}`);
+  if(ta) ta.value=val;
+  renderGoalNotesDisplay(activeGoalNotesKey);
+}
+function renderGoalNotesDisplay(k){
+  const ta=document.getElementById(`goalNotes-${k}`);
+  const el=document.getElementById(`goalNotesDisplay-${k}`);
+  if(!el) return;
+  const txt=ta?ta.value:'';
+  const placeholders={t1:'What you worked on…',t2:'Progress, challenges…',t3:'Ear training, theory, gear…'};
+  if(txt){el.textContent=txt;el.classList.remove('empty');}
+  else{el.textContent=placeholders[k]||'Tap to add notes…';el.classList.add('empty');}
+}
+function renderAllGoalNotesDisplays(){
+  ['t1','t2','t3'].forEach(k=>renderGoalNotesDisplay(k));
 }
 function closeGoalNotesModal(){
-  if(activeGoalNotesKey){
-    const ta=document.getElementById(`goalNotes-${activeGoalNotesKey}`);
-    if(ta) ta.value=document.getElementById('goalNotesModalArea').value;
-  }
+  goalNotesAutoSave();
   document.getElementById('goalNotesModal').classList.remove('active');
   activeGoalNotesKey=null;
 }
@@ -10407,49 +10688,181 @@ function toggleCardsExpanded(){
 
 
 // ── Google Drive Sync ─────────────────────────────────
-const GDRIVE_CLIENT_ID = '550181738594-acuc7336far1ju0414hipacaq5peauvv.apps.googleusercontent.com';
-const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-const GDRIVE_FILENAME = 'guitar-journal-data.json';
+const GDRIVE_WEB_CLIENT_ID = '550181738594-acuc7336far1ju0414hipacaq5peauvv.apps.googleusercontent.com';
+const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FILENAME  = 'guitar-journal-data.json';
 let gdriveToken = null;
+let _autoSaveTimer = null;
+let _timerManualStop = false;
+
+function _gdriveStatus(msg, color){
+  let el = document.getElementById('gdriveStatus');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'gdriveStatus';
+    el.style.cssText = 'position:fixed;bottom:72px;right:12px;font-size:.7rem;padding:3px 10px;border-radius:20px;z-index:9999;transition:opacity .5s;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = color === 'ok' ? '#1a3a1a' : color === 'err' ? '#3a1a1a' : '#1a1a3a';
+  el.style.color = color === 'ok' ? '#4caf50' : color === 'err' ? '#ff6b6b' : '#7a9fff';
+  el.style.opacity = '1';
+  clearTimeout(el._hide);
+  el._hide = setTimeout(() => el.style.opacity = '0', 3000);
+}
 
 function _gdriveTokenValid(){
   const stored = localStorage.getItem('gdriveToken');
   const expiry = parseInt(localStorage.getItem('gdriveTokenExpiry') || '0', 10);
-  if(stored && Date.now() < expiry - 60000){ // 1 min buffer
-    gdriveToken = stored;
-    return true;
-  }
+  if(stored && Date.now() < expiry - 60000){ gdriveToken = stored; return true; }
   gdriveToken = null;
   return false;
 }
 
-function gdriveGetToken(callback){
-  if(_gdriveTokenValid()){
-    callback(gdriveToken);
+function gdriveGetToken(callback, pendingAction){
+  if(_gdriveTokenValid()){ callback(gdriveToken); return; }
+  if(window.IS_NATIVE){
+    // Store pending action so we can resume after OAuth page reload
+    if(pendingAction) localStorage.setItem('gdrivePendingAction', pendingAction);
+    window._gdriveGetTokenNative(token => {
+      if(!token){ showToast('Google sign-in failed'); return; }
+      gdriveToken = token;
+      localStorage.removeItem('gdrivePendingAction');
+      callback(token);
+    });
     return;
   }
   const client = google.accounts.oauth2.initTokenClient({
-    client_id: GDRIVE_CLIENT_ID,
+    client_id: GDRIVE_WEB_CLIENT_ID,
     scope: GDRIVE_SCOPE,
     callback: (resp) => {
       if(resp.error){ showToast('Google sign-in failed'); return; }
       gdriveToken = resp.access_token;
-      // tokens last 3600s — store with expiry
       localStorage.setItem('gdriveToken', gdriveToken);
       localStorage.setItem('gdriveTokenExpiry', Date.now() + (resp.expires_in || 3600) * 1000);
       callback(gdriveToken);
     }
   });
-  client.requestAccessToken();
+  client.requestAccessToken({ prompt: '' });
 }
 
 async function gdriveFindFile(token){
   const res = await fetch(
-    'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27guitar-journal-data.json%27&fields=files(id,name)',
+    'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27guitar-journal-data.json%27&fields=files(id,name,modifiedTime)',
     { headers: { Authorization: 'Bearer ' + token } }
   );
   const data = await res.json();
-  return data.files && data.files.length ? data.files[0].id : null;
+  return (data.files && data.files.length) ? data.files[0] : null;
+}
+
+async function _gdriveUpload(token){
+  const json = JSON.stringify({ ...state, _lastModified: Date.now() }, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const fileInfo = await gdriveFindFile(token);
+  const fileId = fileInfo ? fileInfo.id : null;
+  const url = fileId
+    ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
+    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+  const method = fileId ? 'PATCH' : 'POST';
+  const form = new FormData();
+  form.append('metadata', new Blob(
+    [fileId ? '{}' : JSON.stringify({ name: GDRIVE_FILENAME, parents: ['appDataFolder'] })],
+    { type: 'application/json' }
+  ));
+  form.append('file', blob);
+  return fetch(url, { method, headers: { Authorization: 'Bearer ' + token }, body: form });
+}
+
+function _showConflictModal(localTs, driveTs, onKeepLocal, onKeepDrive){
+  const fmt = ts => ts ? new Date(ts).toLocaleString() : 'Unknown';
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:1.2rem;max-width:340px;width:92vw;">
+      <h4 style="margin:0 0 .5rem;font-size:.9rem;color:#fff;">⚠️ Sync Conflict</h4>
+      <p style="font-size:.75rem;color:#888;margin:0 0 1rem;">Both this device and Google Drive have changes. Which do you want to keep?</p>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <button id="_conflictLocal" style="background:#1a2e1a;border:1px solid #2a5a2a;color:#4caf50;padding:.55rem;border-radius:8px;font-size:.78rem;cursor:pointer;">
+          📱 Keep Local<br><span style="font-size:.68rem;color:#666;">Modified ${fmt(localTs)}</span>
+        </button>
+        <button id="_conflictDrive" style="background:#1a1a2e;border:1px solid #2a2a5a;color:#7a9fff;padding:.55rem;border-radius:8px;font-size:.78rem;cursor:pointer;">
+          ☁ Keep Drive<br><span style="font-size:.68rem;color:#666;">Modified ${fmt(driveTs)}</span>
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('_conflictLocal').onclick = () => { document.body.removeChild(modal); onKeepLocal(); };
+  document.getElementById('_conflictDrive').onclick = () => { document.body.removeChild(modal); onKeepDrive(); };
+}
+
+function gdriveScheduleAutoSave(){
+  if(!_gdriveTokenValid()) return;
+  clearTimeout(_autoSaveTimer);
+  _gdriveStatus('Unsaved…', 'info');
+  _autoSaveTimer = setTimeout(async () => {
+    try {
+      _gdriveStatus('Saving…', 'info');
+      const res = await _gdriveUpload(gdriveToken);
+      if(res.ok){
+        localStorage.setItem('gdriveLastSync', Date.now());
+        _gdriveStatus('Saved ✓', 'ok');
+      } else {
+        _gdriveStatus('Save failed', 'err');
+      }
+    } catch(e){ _gdriveStatus('Offline', 'err'); }
+  }, 10000);
+}
+
+async function gdriveAutoSyncOnOpen(){
+  if(!_gdriveTokenValid()) return;
+  // Quick token check before doing anything
+  try {
+    const test = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', { headers: { Authorization: 'Bearer ' + gdriveToken } });
+    if(!test.ok){ localStorage.removeItem('gdriveToken'); localStorage.removeItem('gdriveTokenExpiry'); gdriveToken = null; return; }
+  } catch(e){ return; }
+  try {
+    const fileInfo = await gdriveFindFile(gdriveToken);
+    if(!fileInfo) return;
+    const driveTs = new Date(fileInfo.modifiedTime).getTime();
+    const localTs = state._lastModified || 0;
+    const lastSync = parseInt(localStorage.getItem('gdriveLastSync') || '0', 10);
+    const driveNewer = driveTs > lastSync;
+    const localNewer = localTs > lastSync;
+    if(driveNewer && !localNewer){
+      const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileInfo.id}?alt=media`,
+        { headers: { Authorization: 'Bearer ' + gdriveToken } }
+      );
+      if(res.ok){
+        state = await res.json();
+        saveState();
+        localStorage.setItem('gdriveLastSync', Date.now());
+        _gdriveStatus('Synced from Drive ✓', 'ok');
+        location.reload();
+      }
+    } else if(driveNewer && localNewer){
+      const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileInfo.id}?alt=media`,
+        { headers: { Authorization: 'Bearer ' + gdriveToken } }
+      );
+      const driveData = await res.json();
+      _showConflictModal(
+        localTs, driveTs,
+        async () => {
+          await _gdriveUpload(gdriveToken);
+          localStorage.setItem('gdriveLastSync', Date.now());
+          _gdriveStatus('Kept local, uploaded to Drive ✓', 'ok');
+        },
+        () => {
+          state = driveData;
+          saveState();
+          localStorage.setItem('gdriveLastSync', Date.now());
+          _gdriveStatus('Loaded from Drive ✓', 'ok');
+          location.reload();
+        }
+      );
+    }
+  } catch(e){ /* offline, ignore */ }
 }
 
 async function gdriveSync(){
@@ -10457,43 +10870,24 @@ async function gdriveSync(){
   btn.textContent = '☁ Saving…'; btn.disabled = true;
   gdriveGetToken(async token => {
     try {
-      const json = JSON.stringify(state, null, 2);
-      const blob = new Blob([json], {type:'application/json'});
-      const fileId = await gdriveFindFile(token);
-      let url, method;
-      const meta = JSON.stringify({ name: GDRIVE_FILENAME, parents: fileId ? undefined : ['appDataFolder'] });
-
-      if(fileId){
-        url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
-        method = 'PATCH';
-      } else {
-        url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-        method = 'POST';
-      }
-      const form = new FormData();
-      form.append('metadata', new Blob([fileId ? '{}' : JSON.stringify({name:GDRIVE_FILENAME,parents:['appDataFolder']}), ], {type:'application/json'}));
-      form.append('file', blob);
-
-      const res = await fetch(url, { method, headers:{ Authorization:'Bearer '+token }, body: form });
+      const res = await _gdriveUpload(token);
       if(res.status === 401){
-        // Token expired — clear and retry once
-        localStorage.removeItem('gdriveToken');
-        localStorage.removeItem('gdriveTokenExpiry');
+        localStorage.removeItem('gdriveToken'); localStorage.removeItem('gdriveTokenExpiry');
         gdriveToken = null;
         btn.textContent = '☁ Save to Google Drive'; btn.disabled = false;
-        showToast('Session expired — please try again');
+        // Auto-retry with fresh token
+        setTimeout(gdriveSync, 300);
         return;
-      }
-      if(res.ok){
+      } else if(res.ok){
+        localStorage.setItem('gdriveLastSync', Date.now());
         showToast('Saved to Google Drive ✓');
-        localStorage.setItem('gdriveLastSync', new Date().toISOString());
       } else {
         const err = await res.json();
-        showToast('Drive save failed: ' + (err.error?.message||res.status));
+        showToast('Drive save failed: ' + (err.error?.message || res.status));
       }
     } catch(e){ showToast('Drive error: ' + e.message); }
     btn.textContent = '☁ Save to Google Drive'; btn.disabled = false;
-  });
+  }, 'sync');
 }
 
 async function gdriveLoad(){
@@ -10501,21 +10895,20 @@ async function gdriveLoad(){
   btn.textContent = '☁ Loading…'; btn.disabled = true;
   gdriveGetToken(async token => {
     try {
-      const fileId = await gdriveFindFile(token);
-      if(!fileId){ showToast('No backup found on Drive'); btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return; }
+      const fileInfo = await gdriveFindFile(token);
+      if(!fileInfo){ showToast('No backup found on Drive'); btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return; }
       const res = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-        { headers:{ Authorization:'Bearer '+token } }
+        `https://www.googleapis.com/drive/v3/files/${fileInfo.id}?alt=media`,
+        { headers: { Authorization: 'Bearer ' + token } }
       );
       if(!res.ok){
         if(res.status === 401){
-          localStorage.removeItem('gdriveToken');
-          localStorage.removeItem('gdriveTokenExpiry');
+          localStorage.removeItem('gdriveToken'); localStorage.removeItem('gdriveTokenExpiry');
           gdriveToken = null;
-          showToast('Session expired — please try again');
-        } else {
-          showToast('Drive load failed: ' + res.status);
-        }
+          btn.textContent='☁ Load from Google Drive'; btn.disabled=false;
+          setTimeout(gdriveLoad, 300);
+          return;
+        } else { showToast('Drive load failed: ' + res.status); }
         btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return;
       }
       const data = await res.json();
@@ -10523,14 +10916,221 @@ async function gdriveLoad(){
         { btn.textContent='☁ Load from Google Drive'; btn.disabled=false; return; }
       state = data;
       saveState();
+      localStorage.setItem('gdriveLastSync', Date.now());
       location.reload();
     } catch(e){ showToast('Drive error: ' + e.message); }
     btn.textContent = '☁ Load from Google Drive'; btn.disabled = false;
   });
 }
+
+
+// ── Tone Notes Modal (song-level) ─────────────────────────────────────────
+function renderToneNotesDisplay(){
+  const txt = activeSong?.notes?.tone || '';
+  ['toneNotesDisplay','svToneNotesDisplay'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(txt){ el.textContent = txt; el.classList.remove('empty'); }
+    else { el.textContent = 'Tap to add tone notes…'; el.classList.add('empty'); }
+  });
+}
+function openToneNotesModal(){
+  if(!activeSong) return;
+  const txt = activeSong.notes?.tone || '';
+  const view = document.getElementById('toneNotesViewDisplay');
+  const edit = document.getElementById('globalToneNotesText');
+  view.textContent = txt || 'Tap to edit…';
+  view.style.color = txt ? '#ddd' : '#555';
+  view.style.display = 'block';
+  edit.value = txt;
+  edit.style.display = 'none';
+  openModal('globalToneNotesModal');
+}
+function toneNotesEnterEditMode(){
+  document.getElementById('toneNotesViewDisplay').style.display = 'none';
+  const edit = document.getElementById('globalToneNotesText');
+  edit.style.display = 'block';
+  edit.style.flex = '1';
+  setTimeout(() => { edit.focus(); edit.setSelectionRange(edit.value.length, edit.value.length); }, 50);
+}
+function toneNotesAutoSave(){
+  if(!activeSong) return;
+  const val = document.getElementById('globalToneNotesText').value;
+  activeSong.notes.tone = val;
+  const t1 = document.getElementById('toneNotes');
+  const t2 = document.getElementById('svToneNotes');
+  if(t1) t1.value = val;
+  if(t2) t2.value = val;
+  saveState();
+  renderToneNotesDisplay();
+}
+
+
+// ── Exercise Notes Modal ──────────────────────────────────────────────────
+function renderExerciseNotesDisplay(){
+  const txt = activeTqEntry?.entry?.notes || '';
+  const el = document.getElementById('tqEntryNotesDisplay');
+  if(!el) return;
+  if(txt){ el.textContent = txt; el.classList.remove('empty'); }
+  else { el.textContent = 'Tap to add notes…'; el.classList.add('empty'); }
+}
+function openExerciseNotesModal(){
+  if(!activeTqEntry) return;
+  const txt = activeTqEntry.entry.notes || '';
+  const view = document.getElementById('exerciseNotesViewDisplay');
+  const edit = document.getElementById('exerciseNotesModalText');
+  view.textContent = txt || 'Tap to edit…';
+  view.style.color = txt ? '#ddd' : '#555';
+  view.style.display = 'block';
+  edit.value = txt;
+  edit.style.display = 'none';
+  openModal('exerciseNotesModal');
+}
+function exerciseNotesEnterEditMode(){
+  document.getElementById('exerciseNotesViewDisplay').style.display = 'none';
+  const edit = document.getElementById('exerciseNotesModalText');
+  edit.style.display = 'block';
+  edit.style.flex = '1';
+  setTimeout(() => { edit.focus(); edit.setSelectionRange(edit.value.length, edit.value.length); }, 50);
+}
+function exerciseNotesAutoSave(){
+  if(!activeTqEntry) return;
+  const val = document.getElementById('exerciseNotesModalText').value;
+  activeTqEntry.entry.notes = val;
+  const ta = document.getElementById('tqEntryNotes');
+  if(ta) ta.value = val;
+  saveTqEntryDirect();
+  renderExerciseNotesDisplay();
+}
+function closeExerciseNotesModal(){
+  exerciseNotesAutoSave();
+  document.getElementById('exerciseNotesModal').classList.remove('active');
+}
+
+
+// ── HH:MM:SS Timer Picker ─────────────────────────────────────────────────
+let _timerPickerCb = null;
+
+function openTimerPicker(label, currentSec, cb){
+  _timerPickerCb = cb;
+  const sec = currentSec || 0;
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  document.getElementById('timerPickerLabel').textContent = label;
+  document.getElementById('tpHr').value  = String(h).padStart(2,'0');
+  document.getElementById('tpMin').value = String(m).padStart(2,'0');
+  document.getElementById('tpSec').value = String(s).padStart(2,'0');
+  openModal('timerPickerModal');
+  // Setup auto-advance and numpad behavior
+  _setupTpInput('tpHr',  23, () => document.getElementById('tpMin').select());
+  _setupTpInput('tpMin', 59, () => document.getElementById('tpSec').select());
+  _setupTpInput('tpSec', 59, () => confirmTimerPicker());
+  setTimeout(() => { const el = document.getElementById('tpHr'); el.focus(); el.select(); }, 80);
+}
+
+function _setupTpInput(id, max, onComplete){
+  const el = document.getElementById(id);
+  // Remove old listeners by cloning
+  const fresh = el.cloneNode(true);
+  el.parentNode.replaceChild(fresh, el);
+  fresh.addEventListener('focus', () => setTimeout(() => fresh.select(), 0));
+  fresh.addEventListener('input', () => {
+    const digits = fresh.value.replace(/\D/g,'').slice(0,2);
+    fresh.value = digits;
+    if(digits.length === 2){
+      const n = parseInt(digits,10);
+      if(n > max) fresh.value = String(max).padStart(2,'0');
+      onComplete();
+    }
+  });
+  fresh.addEventListener('keydown', e => {
+    if(e.key === 'Enter') confirmTimerPicker();
+  });
+}
+
+function closeTimerPicker(){
+  document.getElementById('timerPickerModal').classList.remove('active');
+  _timerPickerCb = null;
+}
+
+function confirmTimerPicker(){
+  const h = Math.min(23, parseInt(document.getElementById('tpHr').value)||0);
+  const m = Math.min(59, parseInt(document.getElementById('tpMin').value)||0);
+  const s = Math.min(59, parseInt(document.getElementById('tpSec').value)||0);
+  const totalSec = h*3600 + m*60 + s;
+  const cb = _timerPickerCb;
+  closeTimerPicker();
+  if(cb) cb(totalSec);
+}
+
+
+// ── Timer Done Overlay ────────────────────────────────────────────────────
+function showTimerDoneOverlay(){
+  const overlay = document.getElementById('timerDoneOverlay');
+  if(overlay) overlay.classList.add('active');
+}
+function closeTimerDoneOverlay(){
+  const overlay = document.getElementById('timerDoneOverlay');
+  if(overlay) overlay.classList.remove('active');
+}
+
+
+
+// ── Swipe left on system tiles → My Playlists ────────────────────────────
+(function(){
+  let _tx = 0, _ty = 0;
+  function _addSwipe(el, onSwipeLeft, onSwipeRight){
+    el.addEventListener('touchstart', e => {
+      _tx = e.touches[0].clientX;
+      _ty = e.touches[0].clientY;
+    }, { passive: true });
+    el.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - _tx;
+      const dy = e.changedTouches[0].clientY - _ty;
+      if(Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return; // not horizontal
+      // Only trigger if scrolled to edge
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 10;
+      const atStart = el.scrollLeft <= 10;
+      if(dx < -40 && atEnd && onSwipeLeft) onSwipeLeft();
+      if(dx > 40 && atStart && onSwipeRight) onSwipeRight();
+    }, { passive: true });
+  }
+  setTimeout(() => {
+    const sysTrack = document.getElementById('tileCarouselTrack');
+    const ppRow = document.getElementById('personalPlaylists');
+    // Swiping handled by carousel scroll — remove old swipe logic
+    if(sysTrack) {
+      // swipe left on page 1 → page 2, swipe right on page 1 → page 0
+      // handled natively by scroll-snap
+    }
+  }, 1000);
+})();
+
 loadState();
+if(window.IS_NATIVE){
+  // Reset button states in case app crashed mid-operation
+  setTimeout(() => {
+    const b1 = document.getElementById('gdriveBtn');
+    const b2 = document.getElementById('gdriveLoadBtn');
+    if(b1){ b1.textContent = '☁ Save to Google Drive'; b1.disabled = false; }
+    if(b2){ b2.textContent = '☁ Load from Google Drive'; b2.disabled = false; }
+  }, 500);
+}
+// Resume pending action after OAuth reload
+(async () => {
+  const pending = localStorage.getItem('gdrivePendingAction');
+  if(pending && _gdriveTokenValid()){
+    localStorage.removeItem('gdrivePendingAction');
+    if(pending === 'sync') setTimeout(gdriveSync, 500);
+    if(pending === 'load') setTimeout(gdriveLoad, 500);
+  }
+})();
+// gdriveAutoSyncOnOpen(); // temporarily disabled
 renderSystemTiles();
 renderPlaylists();
+// Start carousel on page 1 (library)
+setTimeout(()=>{ const t=document.getElementById("tileCarouselTrack"); if(t) t.scrollLeft=t.offsetWidth; },100);
 initHomeGoalCards();
 initHomePreset();
 initTimeSplit();
@@ -10551,39 +11151,162 @@ let _playerLoop   = false;
 let _waveData     = null;   // Float32Array peaks
 let _waveAnimId   = null;
 let _blobUrl      = null;   // current object URL
+let _audioMode    = 'ref';  // 'ref' or 'backing'
+let _loadedAudioMode = 'ref'; // which mode is currently loaded in the player
 
 function _fmt(s){ s=Math.max(0,s||0); return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
 function _loopA(){ return (_playerSong&&_playerSong.loopA!=null)?_playerSong.loopA:0; }
 function _loopB(){ return (_playerSong&&_playerSong.loopB!=null)?_playerSong.loopB:(_audio.duration||0); }
 
 // ── Link audio file ───────────────────────────────────────
-let _lastTapTime = 0;
-function linkOrLoadAudio(){
-  if(!activeSong) return;
-  // Always open file picker — pick & load regardless of existing file
-  _pickFile(activeSong, file => {
-    _playerSong = activeSong;
-    _loadFileIntoAudio(file);
+// Double-tap on audio button → relink file
+(()=>{
+  let _audioBtnLastTap = 0;
+  let _audioBtnSuppressClick = false;
+  function _audioBtnTap(e){
+    const now = Date.now();
+    if(now - _audioBtnLastTap < 400){
+      e.preventDefault();
+      e.stopPropagation();
+      _audioBtnSuppressClick = true;
+      relinkAudio();
+    }
+    _audioBtnLastTap = now;
+  }
+  function _audioBtnClick(e){
+    if(_audioBtnSuppressClick){ _audioBtnSuppressClick = false; e.stopImmediatePropagation(); return; }
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    ['viewerLinkAudioBtn','svLinkAudioBtn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if(!btn) return;
+      btn.addEventListener('touchend', _audioBtnTap);
+      btn.addEventListener('click', _audioBtnClick, true); // capture phase
+    });
   });
+})();
+async function linkOrLoadAudio(){
+  if(!activeSong) return;
+  const isBacking = _audioMode === 'backing';
+  const isLoaded = _audio && _audio.src && _playerSong && _playerSong.id === activeSong.id && _loadedAudioMode === _audioMode;
+  if(isLoaded) return; // already loaded in this mode — do nothing (double-tap to relink)
+
+  if(isBacking){
+    if(window.IS_NATIVE && activeSong.audioPath2){
+      try {
+        const Filesystem = Capacitor.Plugins.Filesystem || window.Filesystem; const Directory = { Data: "DATA", Documents: "DOCUMENTS", Cache: "CACHE" };
+        const result = await Filesystem.readFile({ path: activeSong.audioPath2, directory: Directory.Data });
+        const blob = _base64ToBlob(result.data, 'audio/' + activeSong.audioFilename2.split('.').pop());
+        const file = new File([blob], activeSong.audioFilename2, { type: blob.type });
+        activeSong._audioFile2 = file;
+        _playerSong = activeSong;
+        _loadFileIntoAudio(file);
+        _updateViewerAudioBtns();
+        return;
+      } catch(e){
+        showToast('Could not load backing track: ' + e.message);
+      }
+    }
+    if(activeSong._audioFile2){
+      _playerSong = activeSong;
+      _loadFileIntoAudio(activeSong._audioFile2);
+      _updateViewerAudioBtns();
+      return;
+    }
+    _pickFile(activeSong, 'backing', file => {
+      _playerSong = activeSong;
+      _loadFileIntoAudio(file);
+    });
+  } else {
+    if(window.IS_NATIVE && activeSong.audioPath){
+      try {
+        const Filesystem = Capacitor.Plugins.Filesystem || window.Filesystem; const Directory = { Data: "DATA", Documents: "DOCUMENTS", Cache: "CACHE" };
+        const result = await Filesystem.readFile({ path: activeSong.audioPath, directory: Directory.Data });
+        const blob = _base64ToBlob(result.data, 'audio/' + activeSong.audioFilename.split('.').pop());
+        const file = new File([blob], activeSong.audioFilename, { type: blob.type });
+        activeSong._audioFile = file;
+        _playerSong = activeSong;
+        _loadFileIntoAudio(file);
+        _updateViewerAudioBtns();
+        return;
+      } catch(e){
+        showToast('Could not load audio: ' + e.message);
+      }
+    }
+    if(activeSong._audioFile){
+      _playerSong = activeSong;
+      _loadFileIntoAudio(activeSong._audioFile);
+      _updateViewerAudioBtns();
+      return;
+    }
+    _pickFile(activeSong, 'ref', file => {
+      _playerSong = activeSong;
+      _loadFileIntoAudio(file);
+    });
+  }
+}
+
+function _base64ToBlob(base64, mimeType){
+  const byteChars = atob(base64);
+  const byteArr = new Uint8Array(byteChars.length);
+  for(let i=0;i<byteChars.length;i++) byteArr[i]=byteChars.charCodeAt(i);
+  return new Blob([byteArr], { type: mimeType });
 }
 
 function relinkAudio(){
   const song = activeSong || _playerSong;
   if(!song) return;
-  _pickFile(song, file => {
+  _pickFile(song, _audioMode, file => {
     _playerSong = song;
     _loadFileIntoAudio(file);
     _updateViewerAudioBtns();
   });
 }
 
-function _pickFile(song, cb){
+
+function _pickFile(song, mode, cb){
+  const isBacking = mode === 'backing';
   _filePicker.value = '';
-  _filePicker.onchange = () => {
+  _filePicker.onchange = async () => {
     const file = _filePicker.files[0];
     if(!file) return;
-    song.audioFilename = file.name;
-    song._audioFile    = file;
+    if(isBacking){
+      song.audioFilename2 = file.name;
+      song._audioFile2    = file;
+    } else {
+      song.audioFilename = file.name;
+      song._audioFile    = file;
+    }
+    if(window.IS_NATIVE){
+      try {
+        const Filesystem = Capacitor.Plugins.Filesystem || window.Filesystem; const Directory = { Data: "DATA", Documents: "DOCUMENTS", Cache: "CACHE" };
+        const oldPath = isBacking ? song.audioPath2 : song.audioPath;
+        if(oldPath){
+          try { await Filesystem.deleteFile({ path: oldPath, directory: Directory.Data }); } catch(e){}
+        }
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const base64 = e.target.result.split(',')[1];
+            const path = 'audio/' + song.id + (isBacking ? '_backing_' : '_') + file.name;
+            await Filesystem.writeFile({ path, data: base64, directory: Directory.Data, recursive: true });
+            if(isBacking) song.audioPath2 = path;
+            else song.audioPath = path;
+            saveState();
+            _updateViewerAudioBtns();
+            showToast('Linked: ' + file.name);
+            cb(file);
+          } catch(err) {
+            showToast('Write error: ' + err.message);
+            cb(file);
+          }
+        };
+        reader.readAsDataURL(file);
+        return;
+      } catch(e){
+        showToast('Storage error: ' + e.message);
+      }
+    }
     saveState();
     _updateViewerAudioBtns();
     showToast('Linked: ' + file.name);
@@ -10598,6 +11321,7 @@ function loadIntoPlayer(){
 
 function _loadFileIntoAudio(file){
   if(_blobUrl){ URL.revokeObjectURL(_blobUrl); _blobUrl=null; }
+  _loadedAudioMode = _audioMode;
   _blobUrl = URL.createObjectURL(file);
   _audio.src = _blobUrl;
   _audio.playbackRate = _playerSong.speed || 1.0;
@@ -10605,8 +11329,9 @@ function _loadFileIntoAudio(file){
   _waveData = null;
   _audio.oncanplay = () => {
     _showMiniPlayer();
-  updateSectionJumpBtn();
+    updateSectionJumpBtn();
     _updatePlayerUI();
+    _updateViewerAudioBtns();
     _decodeWaveform(file);
     _audio.oncanplay = null;
   };
@@ -10614,21 +11339,62 @@ function _loadFileIntoAudio(file){
 
 // ── Viewer buttons ────────────────────────────────────────
 function _updateViewerAudioBtns(){
-  const btn = document.getElementById('viewerLinkAudioBtn');
-  if(!btn) return;
-  if(activeSong && activeSong.audioFilename){
-    btn.textContent = '▶ ' + activeSong.audioFilename.replace(/\.[^.]+$/,'').slice(0,18);
-    btn.style.borderColor = 'var(--accent)';
-    btn.style.color = 'var(--accent)';
-    btn.style.background = 'rgba(155,89,182,.1)';
-    btn.title = 'Tap to load · Double-tap to change file';
-  } else {
-    btn.textContent = '🎵 Link audio';
-    btn.style.borderColor = '#444';
-    btn.style.color = 'var(--muted)';
-    btn.style.background = 'none';
-    btn.title = '';
+  const btn       = document.getElementById('viewerLinkAudioBtn');
+  const svBtn     = document.getElementById('svLinkAudioBtn');
+  const ytBtn     = document.getElementById('viewerYTBtn');
+  const svYtBtn   = document.getElementById('svYTBtn');
+  const swapBtn   = document.getElementById('viewerSwapAudioBtn');
+  const svSwapBtn = document.getElementById('svSwapAudioBtn');
+
+  const isBacking = _audioMode === 'backing';
+  const activeFile = activeSong && (isBacking ? activeSong._audioFile2 : activeSong._audioFile);
+  const isLoaded  = _audio && _audio.src && _playerSong && activeSong && _playerSong.id === activeSong.id && _loadedAudioMode === _audioMode && !!activeFile;
+  const hasFile   = !!activeFile;
+  const filename  = activeSong && (isBacking ? activeSong.audioFilename2 : activeSong.audioFilename);
+
+  // Deezer / Get backing track label
+  const ytLabel = isBacking ? '🎸 Backing' : '🎵 Deezer';
+  if(ytBtn)   ytBtn.textContent   = ytLabel;
+  if(svYtBtn) svYtBtn.textContent = ytLabel;
+
+  // Swap button highlight when in backing mode
+  const swapColor = isBacking ? 'var(--accent)' : 'var(--muted)';
+  if(swapBtn)   swapBtn.style.color = swapColor;
+  if(svSwapBtn) svSwapBtn.style.color = swapColor;
+
+  function _applyBtn(b){
+    if(!b) return;
+    if(isLoaded){
+      b.textContent = (isBacking ? '▶🎸 ' : '▶ ') + (filename||'').replace(/\.[^.]+$/,'').slice(0,18);
+      b.style.borderColor = 'var(--accent)';
+      b.style.color       = 'var(--accent)';
+      b.style.background  = 'rgba(155,89,182,.1)';
+    } else if(hasFile){
+      b.textContent = (isBacking ? '🎸 ' : '🎵 ') + (filename||'').replace(/\.[^.]+$/,'').slice(0,18);
+      b.style.borderColor = '#555';
+      b.style.color       = '#aaa';
+      b.style.background  = 'none';
+    } else {
+      b.textContent = isBacking ? '🎸 Link backing' : '🎵 Link audio';
+      b.style.borderColor = '#444';
+      b.style.color       = 'var(--muted)';
+      b.style.background  = 'none';
+    }
   }
+
+  _applyBtn(btn);
+  _applyBtn(svBtn);
+}
+
+function _swapAudioMode(){
+  if(!activeSong) return;
+  _audioMode = (_audioMode === 'ref') ? 'backing' : 'ref';
+  const file = (_audioMode === 'backing') ? activeSong._audioFile2 : activeSong._audioFile;
+  if(file){
+    _playerSong = activeSong;
+    _loadFileIntoAudio(file);
+  }
+  _updateViewerAudioBtns();
 }
 
 // ── Mini-player ───────────────────────────────────────────
@@ -10915,24 +11681,33 @@ _audio.addEventListener('seeked',()=> _renderWaveform());
 
 
 // ── Android back button / browser back ───────────────
-window.addEventListener('popstate', () => {
+window.addEventListener('popstate', (evt) => {
   // Sidebar
   const sidebar = document.getElementById('homeSidebar');
   if(sidebar && sidebar.classList.contains('open')){ closeHomeSidebar(); return; }
 
-  // Split view (before modals — songViewer is a .modal and would be caught first)
-  if(_splitViewOpen){
-    const exp = document.getElementById('expandedPlayer');
-    if(exp && exp.classList.contains('open')){ closeExpandedPlayer(); return; }
-    closeSplitView(); return;
+  // Modals that sit on top of split view (but not songViewer — that's part of split view's own back sequence)
+  const _topmostModal = [...document.querySelectorAll('.modal.active')].pop();
+  if(_topmostModal && _topmostModal.id !== 'songViewer'){
+    if(closeTopmostModal()) return;
   }
+
+  // Split view (songViewer is a .modal but is closed as part of split view sequence)
+  if(_splitViewOpen){
+    // Close split view. Also close expanded player — it was opened silently
+    // with no history entry of its own, so handle it here rather than consuming
+    // a separate back press for it.
+    closeSplitView();
+    if(document.getElementById('expandedPlayer')?.classList.contains('open')) closeExpandedPlayer();
+    return;
+  }
+
+  // Expanded player (opened explicitly via button — has its own history entry)
+  const expanded = document.getElementById('expandedPlayer');
+  if(expanded && expanded.classList.contains('open')){ closeExpandedPlayer(); return; }
 
   // Modals (includes songViewer via MODAL_CLOSE_FNS)
   if(closeTopmostModal()) return;
-
-  // Expanded player
-  const expanded = document.getElementById('expandedPlayer');
-  if(expanded && expanded.classList.contains('open')){ closeExpandedPlayer(); return; }
 
   // Practice view
   const practiceView = document.getElementById('practiceView');
@@ -10972,7 +11747,30 @@ window.addEventListener('popstate', () => {
     return;
   }
 
-  // Hit home or sentinel — re-push both so the stack never empties
+  // Hit home or sentinel — forcibly reset all UI to home state.
+  // Android Chrome can fire multiple rapid popstates consuming all stack entries,
+  // so we close everything and re-push rather than closing one layer at a time.
+  document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+  if(typeof _splitViewOpen !== 'undefined' && _splitViewOpen){
+    document.getElementById('splitView')?.classList.remove('open');
+    _splitViewOpen = false;
+  }
+  document.getElementById('expandedPlayer')?.classList.remove('open');
+  if(document.getElementById('songViewer')?.classList.contains('active')){
+    closeSongViewer();
+  }
+  if(document.getElementById('techniquesView')?.classList.contains('active')){
+    document.getElementById('techniquesView').classList.remove('active');
+    document.getElementById('techniquesBottomBar')?.classList.remove('visible');
+  }
+  if(document.getElementById('playlistView')?.classList.contains('active')){
+    goHome();
+  }
+  if(document.getElementById('practiceView')?.classList.contains('active')){
+    closePracticeView();
+  }
+
+  // Always re-push sentinel+home so the stack never empties
   history.replaceState({ nav: 'sentinel' }, '');
   history.pushState({ nav: 'home' }, '');
 });
@@ -11094,6 +11892,7 @@ window.addEventListener('popstate', () => {
       <button onclick="addTuning()">Add</button>
     </div>
     <div class="modal-actions">
+      <button class="ghost" onclick="clearTuningField()" style="color:#c0392b;">Clear</button>
       <button class="ghost" onclick="closeTuningsModal()">Done</button>
     </div>
   </div>
@@ -11172,7 +11971,13 @@ window.addEventListener('popstate', () => {
       <h4 id="notesEditModalTitle" style="margin:0;font-size:.85rem;flex:1;">Personal Notes</h4>
       <button class="ghost" onclick="closeNotesModal()" style="font-size:.75rem;">✕</button>
     </div>
-    <textarea id="notesEditModalText" placeholder="Add notes…" style="flex:1;min-height:0;resize:none;width:100%;box-sizing:border-box;font-family:Georgia,serif;font-size:.85rem;line-height:1.7;background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:.75rem .5rem;color:#ddd;"></textarea>
+    <!-- View mode -->
+    <div id="notesViewDisplay" onclick="notesEnterEditMode()"
+      style="flex:1;min-height:0;overflow-y:auto;font-family:Georgia,serif;font-size:.85rem;line-height:1.7;color:#ddd;padding:.75rem .5rem;background:#111;border:1px solid #2a2a2a;border-radius:8px;cursor:text;white-space:pre-wrap;word-break:break-word;"></div>
+    <!-- Edit mode (hidden initially) -->
+    <textarea id="notesEditModalText" placeholder="Add notes…"
+      style="display:none;flex:1;min-height:0;resize:none;width:100%;box-sizing:border-box;font-family:Georgia,serif;font-size:.85rem;line-height:1.7;background:#111;border:1px solid var(--accent);border-radius:8px;padding:.75rem .5rem;color:#ddd;"
+      oninput="notesAutoSave()"></textarea>
     <div class="modal-actions" style="flex-shrink:0;margin-top:.4rem;">
       <div class="modal-actions-left"><button class="ghost" onclick="closeNotesModal()">Cancel</button></div>
       <div style="display:flex;align-items:center;gap:.25rem;">
@@ -11289,7 +12094,8 @@ window.addEventListener('popstate', () => {
         <!-- Tone panel -->
         <div id="svtab-tone" class="viewer-panel">
           <label>Tone Notes</label>
-          <textarea id="svToneNotes" rows="6" oninput="if(activeSong){activeSong.notes.tone=this.value;var t=document.getElementById('toneNotes');if(t)t.value=this.value;saveState();}"></textarea>
+          <div id="svToneNotesDisplay" class="notes-display" onclick="openToneNotesModal()" style="min-height:80px;cursor:text;"></div>
+          <textarea id="svToneNotes" style="display:none;"></textarea>
         </div>
 
         <!-- Fields panel -->
@@ -11301,7 +12107,7 @@ window.addEventListener('popstate', () => {
             </div>
             <div>
               <label>BPM</label>
-              <input id="svViewerBpm" type="number" oninput="autoSaveField('bpm',this.value);var b=document.getElementById('viewerBpm');if(b)b.value=this.value;" />
+              <input id="svViewerBpm" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="autoSaveField('bpm',this.value);var b=document.getElementById('viewerBpm');if(b)b.value=this.value;" />
             </div>
             <div>
               <label>Duration</label>
@@ -11313,11 +12119,12 @@ window.addEventListener('popstate', () => {
             </div>
             <div>
               <label>Tuning</label>
-              <div style="display:flex;gap:4px;align-items:center;">
-                <input id="svViewerTuning" placeholder="EADGBE" autocomplete="off" style="flex:1;"
-                  oninput="autoSaveField('tuning',this.value);var t=document.getElementById('viewerTuning');if(t)t.value=this.value;updateSvTuningClearBtn();" />
-                <button id="svTuningClearBtn" onclick="clearSvTuning()" title="Clear tuning" style="background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:0 2px;line-height:1;display:none;">✕</button>
+              <div onclick="openTuningsModal()" style="background:#222;border-radius:6px;padding:.4rem .5rem;font-size:.85rem;cursor:pointer;min-height:32px;display:flex;align-items:center;justify-content:space-between;border:1px solid transparent;transition:border-color .15s;"
+                onmouseover="this.style.borderColor='#555'" onmouseout="this.style.borderColor='transparent'">
+                <span id="svViewerTuningDisplay" style="color:#ccc;">EADGBE</span>
+                <span style="font-size:.65rem;color:var(--accent);">manage ›</span>
               </div>
+              <input id="svViewerTuning" style="display:none;" />
             </div>
             <div class="full-width">
               <label>Genre <span style="font-size:.6rem;color:var(--muted);">separate with ;</span></label>
@@ -11331,7 +12138,8 @@ window.addEventListener('popstate', () => {
 
         <!-- Footer links -->
         <div style="display:flex;gap:5px;margin-top:auto;padding-top:.75rem;">
-          <button id="svYTBtn" onclick="openDeezerBot()" style="flex:1;font-size:.72rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:#00c300;cursor:pointer;">🎵 Deezer</button>
+          <button id="svYTBtn" onclick="_audioMode==='backing'?openBackingTrackSite():openDeezerBot()" style="flex:1;font-size:.72rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:#00c300;cursor:pointer;">🎵 Deezer</button>
+          <button id="svSwapAudioBtn" onclick="_swapAudioMode()" style="flex:1;font-size:.72rem;padding:7px 6px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);cursor:pointer;" title="Swap audio mode">⇄</button>
           <button id="svLinkAudioBtn" onclick="linkOrLoadAudio()" style="flex:6;font-size:.75rem;padding:7px 9px;border-radius:7px;background:none;border:1px solid #444;color:var(--muted);">🎵 Link audio</button>
         </div>
       </div>
@@ -11340,10 +12148,8 @@ window.addEventListener('popstate', () => {
       <div class="sv-panel sv-right">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-shrink:0;">
           <span style="font-size:.78rem;font-weight:600;color:#ccc;">Sections<span id="svSectionDurationChip" style="margin-left:6px;font-size:.65rem;background:#252525;color:var(--muted);border-radius:4px;padding:1px 6px;display:none;"></span></span>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <button id="svSectionJumpLoopBtn" onclick="toggleSectionLoopMode()" style="font-size:.65rem;padding:3px 9px;border-radius:6px;background:none;border:1px solid #333;color:#555;cursor:default;" disabled>⟳ Loop</button>
-            <button class="ghost" id="svSectionEditToggleBtn" onclick="toggleSectionEdit()">Edit</button>
-          </div>
+          <button id="svSectionJumpLoopBtn" onclick="toggleSectionLoopMode()" style="font-size:.65rem;padding:3px 9px;border-radius:6px;background:none;border:1px solid #333;color:#555;cursor:default;" disabled>⟳ Jump</button>
+          <button class="ghost" id="svSectionEditToggleBtn" onclick="toggleSectionEdit()">Edit</button>
         </div>
         <div id="svSections" class="section-list" style="flex:1;min-height:0;max-height:none;"></div>
         <button class="ghost" onclick="addSection()" style="font-size:.7rem;margin-top:.3rem;flex-shrink:0;">＋ Add Section</button>
@@ -11397,7 +12203,9 @@ window.addEventListener('popstate', () => {
       <h4 style="margin:0;font-size:.85rem;">🎛 Tone Notes</h4>
       <button class="ghost" onclick="closeGlobalToneNotes()" style="font-size:.75rem;">✕</button>
     </div>
-    <textarea id="globalToneNotesText" style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#eee;padding:.6rem;font-size:.82rem;resize:none;font-family:inherit;" placeholder="Amp settings, pedal chains, tone recipes…"></textarea>
+    <div id="toneNotesViewDisplay" onclick="toneNotesEnterEditMode()"
+      style="flex:1;min-height:0;overflow-y:auto;font-family:Georgia,serif;font-size:.85rem;line-height:1.7;color:#ddd;padding:.75rem .5rem;background:#111;border:1px solid #2a2a2a;border-radius:8px;cursor:text;white-space:pre-wrap;word-break:break-word;"></div>
+    <textarea id="globalToneNotesText" style="display:none;flex:1;min-height:0;resize:none;width:100%;box-sizing:border-box;font-family:Georgia,serif;font-size:.85rem;line-height:1.7;background:#111;border:1px solid var(--accent);border-radius:8px;padding:.75rem .5rem;color:#ddd;" placeholder="Amp settings, pedal chains, tone recipes…" oninput="toneNotesAutoSave()"></textarea>
     <div class="modal-actions" style="flex-shrink:0;margin-top:.5rem;">
       <button class="ghost" onclick="closeGlobalToneNotes()">Cancel</button>
       <button onclick="saveGlobalToneNotes()">Save</button>
@@ -11441,6 +12249,66 @@ if('serviceWorker' in navigator){
 }
 </script>
 
+
+
+<!-- Exercise Notes Modal -->
+<div class="modal" id="exerciseNotesModal">
+  <div class="modal-content" style="height:86vh;display:flex;flex-direction:column;max-width:560px;width:95vw;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-shrink:0;">
+      <h4 style="margin:0;font-size:.85rem;flex:1;">📝 Notes</h4>
+      <button class="ghost" onclick="closeExerciseNotesModal()" style="font-size:.75rem;">✕</button>
+    </div>
+    <div id="exerciseNotesViewDisplay" onclick="exerciseNotesEnterEditMode()"
+      style="flex:1;min-height:0;overflow-y:auto;font-family:Georgia,serif;font-size:.85rem;line-height:1.7;color:#ddd;padding:.75rem .5rem;background:#111;border:1px solid #2a2a2a;border-radius:8px;cursor:text;white-space:pre-wrap;word-break:break-word;"></div>
+    <textarea id="exerciseNotesModalText" placeholder="Practice tips, focus points…"
+      style="display:none;flex:1;min-height:0;resize:none;width:100%;box-sizing:border-box;font-family:Georgia,serif;font-size:.85rem;line-height:1.7;background:#111;border:1px solid var(--accent);border-radius:8px;padding:.75rem .5rem;color:#ddd;"
+      oninput="exerciseNotesAutoSave()"></textarea>
+    <div style="display:flex;justify-content:space-between;margin-top:.4rem;flex-shrink:0;">
+      <button class="ghost" onclick="closeExerciseNotesModal()">Cancel</button>
+      <button onclick="closeExerciseNotesModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- HH:MM:SS Timer Picker Modal -->
+<div class="modal" id="timerPickerModal">
+  <div class="modal-content" style="max-width:320px;width:92vw;padding:1.2rem;">
+    <h4 id="timerPickerLabel" style="margin:0 0 1rem;font-size:.9rem;text-align:center;color:#ccc;">Set Time</h4>
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:1.2rem;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:.65rem;color:var(--muted);text-transform:uppercase;">hr</span>
+        <input id="tpHr" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="00" autocomplete="off"
+          style="width:64px;text-align:center;font-size:2rem;font-weight:700;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;padding:.3rem 0;" />
+      </div>
+      <span style="font-size:2rem;font-weight:700;color:#444;margin-top:18px;">:</span>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:.65rem;color:var(--muted);text-transform:uppercase;">min</span>
+        <input id="tpMin" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="00" autocomplete="off"
+          style="width:64px;text-align:center;font-size:2rem;font-weight:700;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;padding:.3rem 0;" />
+      </div>
+      <span style="font-size:2rem;font-weight:700;color:#444;margin-top:18px;">:</span>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:.65rem;color:var(--muted);text-transform:uppercase;">sec</span>
+        <input id="tpSec" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="00" autocomplete="off"
+          style="width:64px;text-align:center;font-size:2rem;font-weight:700;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;padding:.3rem 0;" />
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:.5rem;">
+      <button class="ghost" onclick="closeTimerPicker()">Cancel</button>
+      <button onclick="confirmTimerPicker()">Set</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Timer Done Overlay -->
+<div id="timerDoneOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:99999;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;">
+  <div style="font-size:4rem;">⏱</div>
+  <div style="font-size:1.4rem;font-weight:700;color:#fff;">Session Complete!</div>
+  <div style="font-size:.9rem;color:#888;">Your practice timer has ended.</div>
+  <button onclick="closeTimerDoneOverlay()" style="margin-top:.5rem;background:var(--accent);border:none;color:#fff;font-size:1rem;padding:.75rem 2.5rem;border-radius:10px;cursor:pointer;">Done 🔥</button>
+</div>
 
 </body>
 </html>
