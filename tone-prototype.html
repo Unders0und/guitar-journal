@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-14</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-16</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1165,13 +1165,22 @@ function parsePTCF(bytes) {
   const formatByte = ptcf[4];
   const numSlots = ptcf[13];
 
-  // Extract patch name (bytes 29 onward, filter nulls up to first non-printable run)
-  let nameBytes = [];
-  for (let i = 29; i < Math.min(50, ptcf.length); i++) {
-    if (ptcf[i] === 0x22 || ptcf[i] === 0x02) break;
-    if (ptcf[i] !== 0x00) nameBytes.push(ptcf[i]);
+  // Name: 10 chars stored as [10 bytes][0x22 sep][label...]
+  // The byte immediately after 0x22 is also part of the name (11th slot, often has char 3 of first pair)
+  // Read: bytes before sep (skip nulls) + 1 byte after sep, take first 10 printable chars
+  let sepPos = -1;
+  for (let i = 28; i < Math.min(55, ptcf.length); i++) {
+    if (ptcf[i] === 0x22 || ptcf[i] === 0x02) { sepPos = i; break; }
   }
-  const patchName = nameBytes.map(b => String.fromCharCode(b)).join('').trim();
+  let nameBytes = [];
+  if (sepPos >= 0) {
+    for (let i = 28; i < sepPos; i++) { if (ptcf[i] !== 0x00) nameBytes.push(ptcf[i]); }
+    // Include char right after separator (10th char often lives here)
+    if (ptcf[sepPos + 1] && ptcf[sepPos + 1] !== 0x00) nameBytes.push(ptcf[sepPos + 1]);
+  } else {
+    for (let i = 28; i < Math.min(50, ptcf.length); i++) { if (ptcf[i] !== 0x00) nameBytes.push(ptcf[i]); }
+  }
+  const patchName = nameBytes.slice(0, 10).map(b => String.fromCharCode(b)).join('').trim();
 
   const slots = [];
 
@@ -1214,16 +1223,16 @@ function parsePTCF(bytes) {
       if (ptcf[i]===0x54 && ptcf[i+1]===0x58 && ptcf[i+2]===0x4A) { txjPos = i; break; }
     }
 
-    // Entries: [slot_1based][eid][00][00] or [slot_1based][00][eid][00]
-    // For Format A we don't have full cat+eid decode yet — show unknown
+    // Entries: [slot_1based][eid][flags][00] — b3 must be 0x00
+    // flags byte (b2) may be non-zero (on/off state etc)
     const seen = new Set();
     let i = entriesStart;
     while (i + 3 < txjPos) {
       const s  = ptcf[i], b1 = ptcf[i+1], b2 = ptcf[i+2], b3 = ptcf[i+3];
-      if (s >= 1 && s <= 6 && !seen.has(s)) {
+      if (s >= 1 && s <= 6 && !seen.has(s) && b3 === 0) {
         let eid = null;
-        if (b1 !== 0 && b2 === 0 && b3 === 0) eid = b1;
-        else if (b1 === 0 && b2 !== 0 && b3 === 0) eid = b2;
+        if (b1 !== 0) eid = b1;              // eid in position 1 (most common)
+        else if (b2 !== 0) eid = b2;         // eid in position 2 (large-effect style)
         if (eid !== null) {
           seen.add(s);
           slots.push({ slot: s - 1, effectId: eid, catCode: null, effectName: null, cat: null });
