@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-13</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-14</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1111,15 +1111,40 @@ function fmtVal(val, param) {
   return val;
 }
 
-// ── PTCF Effect ID map (empirically discovered from G1X Four MIDI) ───────
-const PTCF_ID_MAP = {
-  0x01: 'FD DLXR',
-  0x20: 'MonoPitch',
-  0x28: 'FD B-MAN',
-  0x2D: 'TapeEcho',
-  0x30: 'FD-DX1x12',
-  // Add more as confirmed through testing
+// ── PTCF Effect Map ───────────────────────────────────────────────────────
+// Two PTCF format versions:
+// Format B (5-slot, ptcf[4]=0x54): [cat][eid] — eid = idx * 0x10 from base
+// Format A (6-slot, ptcf[4]=0x78): different encoding (to be handled separately)
+
+const PTCF_CATS = {
+  1:  ['DYNAMICS', ['Comp','RackComp','SlowATTCK','ZNR','MuteSW','GrayComp','NoiseGate','OptComp','BlackOpt','LMT-76']],
+  2:  ['FILTER',   ['AutoWah','Resonance','Cry','SeqFLTR','Gt GEQ','Gt GEQ7','St Gt GEQ','ParaEQ','RndmFLTR','LowPassFL','Exciter','Step','LFO FLTR']],
+  3:  ['DRIVE',    ['TS Drive','EP Stomp','RC Boost','GoldDrive','SweetDrv','DYN Drive','RedCrunch','MetalWRLD','TB MK1.5','OctFuzz','SpotBoost','Aco.Sim','NYC Muff','HG THRTTL','BG GRID','DIST 1','Squeak','UpOctBSTR','OutputBST','DIST Plus','Zen O.DRV','VioletDST']],
+  4:  ['AMP',      ['MS 800','MS 1959','MS 45os','FD TWNR','FD B-MAN','FD DLXR','FD MASTER','UK 30A','BG MK1','BG MK3','XtasyBlue','HW 100','Recti ORG','ORG120','DZ DRV','MATCH30']],
+  5:  ['CABINET',  ['MS4x12','MS4x12GB','MS4x12AL','FD2x12','FD-B4x10','FD-DX1x12','FD MA2x12','UK2x12','MK1 1x12','MK3 1x12','BGN4x12','HW4x12','RCT4x12','ORG4x12','DZ4x12F','MA2x12']],
+  6:  ['MOD',      ['Tremolo','Chorus','StereoCho','Phaser','VinFLNGR','TheVibe','Vibrato','Octave','RingMod','Detune','PitchSHFT','MonoPitch','HPS','Slicer','CloneCho','SuperCho','StonePha','CoronaTri','BendCho','AnalogCho','WarpPhase','Duo Phase']],
+  7:  ['SFX',      ['Bomber','AutoPan','LoopRoll','HotSpice']],
+  8:  ['DELAY',    ['Delay','AnalogDly','TapeEcho','ReverseDL','ModDelay','P-P Delay','FilterDly','Dual DLY','Pitch DLY','SlapBackD','A-Pan DLY','PhaseDly','TapeEcho3','ICE Delay','SlwAtkDly','SoftEcho']],
+  9:  ['REVERB',   ['Air','Room','Hall','HD Hall','Spring','FD Spring','Plate','EarlyRef','Church','Chamber','GateRev']],
+  11: ['PEDAL',    ['PDL Vol','BlackWah','ChromeWah','WAH100','PDL Pitch','PDL MnPit','PDL Vibe','PDL Drive','PDL PHSR','PDL Delay','PDL Rev','OSC Echo','VoiceWah','PDL Roto','P-BitCRSH','PDL FLNGR','PDL Reso']],
 };
+
+// AMP and CABINET have irregular spacing — explicit maps
+const PTCF_AMP_IDS = {0x11:'MS 800',0x19:'MS 1959',0x1B:'MS 45os',0x21:'FD TWNR',0x28:'FD B-MAN',0x2C:'FD DLXR',0x2D:'FD MASTER',0x31:'UK 30A',0x51:'BG MK1',0x61:'BG MK3',0x71:'XtasyBlue',0x01:'HW 100'};
+const PTCF_CAB_IDS = {0x10:'MS4x12',0x18:'MS4x12GB',0x1A:'MS4x12AL',0x20:'FD2x12',0x27:'FD-B4x10',0x2A:'FD-DX1x12',0x2B:'FD MA2x12',0x30:'UK2x12',0x42:'MK1 1x12',0x50:'MK3 1x12',0x60:'BGN4x12',0x70:'HW4x12'};
+
+function ptcfLookup(cat, eid) {
+  if (cat === 4) return PTCF_AMP_IDS[eid] || null;
+  if (cat === 5) return PTCF_CAB_IDS[eid] || null;
+  const entry = PTCF_CATS[cat];
+  if (!entry) return null;
+  const effects = entry[1];
+  const base = (cat === 7) ? 0x20 : 0x10;
+  // Handle wrap-around for categories with >15 effects
+  let idx = ((eid - base + 256) & 0xFF) / 0x10;
+  if (!Number.isInteger(idx) || idx < 0 || idx >= effects.length) return null;
+  return effects[idx];
+}
 
 // ── Parse a PTCF binary (array of bytes) into slot assignments ───────────
 function parsePTCF(bytes) {
@@ -1133,52 +1158,80 @@ function parsePTCF(bytes) {
   if (ptcfStart < 0) return null;
   const ptcf = bytes.slice(ptcfStart);
 
-  // Name field: FIXED 10 bytes at ptcf[29:39], filter nulls
-  const nameBytes = ptcf.slice(29, 39).filter(b => b > 31 && b < 127);
+  // Detect format version from ptcf[4]:
+  // 0x54 = Format B (5-slot): eid at ptcf[41], cat at ptcf[44], one active slot
+  // 0x78 = Format A (6-slot): slot entries after separator
+
+  const formatByte = ptcf[4];
+  const numSlots = ptcf[13];
+
+  // Extract patch name (bytes 29 onward, filter nulls up to first non-printable run)
+  let nameBytes = [];
+  for (let i = 29; i < Math.min(50, ptcf.length); i++) {
+    if (ptcf[i] === 0x22 || ptcf[i] === 0x02) break;
+    if (ptcf[i] !== 0x00) nameBytes.push(ptcf[i]);
+  }
   const patchName = nameBytes.map(b => String.fromCharCode(b)).join('').trim();
 
-  // Find '"' separator (0x22 = saved, 0x02 = unsaved/edited)
-  let sepPos = -1;
-  for (let i = 28; i < Math.min(65, ptcf.length); i++) {
-    if (ptcf[i] === 0x22 || ptcf[i] === 0x02) { sepPos = i; break; }
-  }
-  if (sepPos < 0) return null;
-
-  // entriesStart = after sep(1) + label(2) + 00 00(2) + num_slots(1) + flags(4) = sep+10
-  const entriesStart = sepPos + 10;
-
-  // Stop at TXJ chunk
-  let txjPos = ptcf.length;
-  for (let i = entriesStart; i < ptcf.length - 2; i++) {
-    if (ptcf[i]===0x54 && ptcf[i+1]===0x58 && ptcf[i+2]===0x4A) { txjPos = i; break; }
-  }
-
-  // Two entry formats:
-  // Format A: [slot][eid][00][00]  — eid at byte 1, used for most slots
-  // Format B: [slot][00][eid][00]  — eid at byte 2, used for slot 5 (large effect continuation)
   const slots = [];
-  const seen = new Set();
-  let i = entriesStart;
-  while (i + 3 < txjPos) {
-    const s  = ptcf[i];
-    const b1 = ptcf[i+1];
-    const b2 = ptcf[i+2];
-    const b3 = ptcf[i+3];
-    if (s >= 1 && s <= 6 && !seen.has(s)) {
-      let eid = null;
-      if (b1 !== 0 && b2 === 0 && b3 === 0) { eid = b1; }       // Format A
-      else if (b1 === 0 && b2 !== 0 && b3 === 0) { eid = b2; }   // Format B
-      if (eid !== null) {
-        const slotApp = s - 1;
-        const effectName = PTCF_ID_MAP[eid] || null;
-        const cat = effectName ? effectNameToCat(effectName) : null;
-        slots.push({ slot: slotApp, effectId: eid, effectName, cat });
-        seen.add(s);
-        i += 4;
-        continue;
+
+  if (formatByte === 0x54) {
+    // ── Format B (5-slot patches) ─────────────────────────────────────────
+    // Each PTCF dump = state of ONE slot being edited (the selected one)
+    // ptcf[41] = effect ID, ptcf[44] = category code
+    // The PTCF also stores all 5 slots — need to find their [cat][eid] pairs
+    //
+    // Slot entries are stored as [slot_1based][eid][00][cat] at fixed offsets
+    // Starting offset: after the name/header region around ptcf[40]
+    // For each slot: [slot_num 1-5][eid][00][cat_code]
+
+    // Scan for [slot 1-5][eid != 0][00][cat 1-11] pattern
+    for (let i = 38; i + 3 < Math.min(70, ptcf.length); i++) {
+      const s = ptcf[i];
+      const eid = ptcf[i+1];
+      const z = ptcf[i+2];
+      const cat = ptcf[i+3];
+      if (s >= 1 && s <= 5 && eid !== 0 && z === 0 && PTCF_CATS[cat]) {
+        const effectName = ptcfLookup(cat, eid);
+        const catName = (PTCF_CATS[cat] || [])[0] || null;
+        slots.push({ slot: s - 1, effectId: eid, catCode: cat, effectName, cat: catName });
+        i += 3;
       }
     }
-    i++;
+
+  } else {
+    // ── Format A (6-slot patches) ─────────────────────────────────────────
+    // Find separator (0x22 saved, 0x02 unsaved)
+    let sepPos = -1;
+    for (let i = 28; i < Math.min(65, ptcf.length); i++) {
+      if (ptcf[i] === 0x22 || ptcf[i] === 0x02) { sepPos = i; break; }
+    }
+    if (sepPos < 0) return { patchName, slots };
+
+    const entriesStart = sepPos + 10;
+    let txjPos = ptcf.length;
+    for (let i = entriesStart; i < ptcf.length - 2; i++) {
+      if (ptcf[i]===0x54 && ptcf[i+1]===0x58 && ptcf[i+2]===0x4A) { txjPos = i; break; }
+    }
+
+    // Entries: [slot_1based][eid][00][00] or [slot_1based][00][eid][00]
+    // For Format A we don't have full cat+eid decode yet — show unknown
+    const seen = new Set();
+    let i = entriesStart;
+    while (i + 3 < txjPos) {
+      const s  = ptcf[i], b1 = ptcf[i+1], b2 = ptcf[i+2], b3 = ptcf[i+3];
+      if (s >= 1 && s <= 6 && !seen.has(s)) {
+        let eid = null;
+        if (b1 !== 0 && b2 === 0 && b3 === 0) eid = b1;
+        else if (b1 === 0 && b2 !== 0 && b3 === 0) eid = b2;
+        if (eid !== null) {
+          seen.add(s);
+          slots.push({ slot: s - 1, effectId: eid, catCode: null, effectName: null, cat: null });
+          i += 4; continue;
+        }
+      }
+      i++;
+    }
   }
 
   return { patchName, slots };
