@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-18</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-19</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1165,23 +1165,26 @@ function parsePTCF(bytes) {
   const formatByte = ptcf[4];
   const numSlots = ptcf[13];
 
-  // Name: always 10 raw bytes at ptcf[32..41], may contain one embedded null.
-  // Filter nulls → usually 9 printable chars. The displaced 10th char is at ptcf[43].
-  // Layout: [28..31]=leading nulls [32..41]=10 name bytes [42]=label0 [43]=overflow/label1 [44]=0x30 [45..46]=0x00 0x00 [47]=numSlots
+  // Name: 10 bytes starting at first non-null after ptcf[28].
+  // One embedded null is common (displaces 10th char to nameStart+11).
+  let nameStart = 28;
+  while (nameStart < 45 && ptcf[nameStart] === 0x00) nameStart++;
   let nameBytes = [];
-  for (let i = 32; i < 42 && i < ptcf.length; i++) {
+  for (let i = nameStart; i < nameStart + 10 && i < ptcf.length; i++) {
     if (ptcf[i] !== 0x00) nameBytes.push(ptcf[i]);
   }
-  if (nameBytes.length < 10 && ptcf.length > 43 && ptcf[43] > 32 && ptcf[43] < 127) {
-    nameBytes.push(ptcf[43]);
+  // If embedded null displaced the 10th char, it lives at nameStart+11
+  const overflow = ptcf[nameStart + 11];
+  if (nameBytes.length < 10 && overflow > 32 && overflow < 127) {
+    nameBytes.push(overflow);
   }
   const patchName = nameBytes.slice(0, 10).map(b => String.fromCharCode(b)).join('').trim();
-  // Separator for Format A entriesStart: 0x22 or 0x02 somewhere in name area
+  // Separator (0x22 or 0x02) for Format A entriesStart
   let sepPos = -1;
-  for (let i = 28; i < Math.min(55, ptcf.length); i++) {
+  for (let i = 28; i < Math.min(60, ptcf.length); i++) {
     if (ptcf[i] === 0x22 || ptcf[i] === 0x02) { sepPos = i; break; }
   }
-  if (sepPos < 0) sepPos = 42; // fallback for patches using 0x20 as label byte
+  if (sepPos < 0) sepPos = nameStart + 10; // fallback
 
   const slots = [];
 
