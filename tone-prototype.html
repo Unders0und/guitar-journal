@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-16</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-17</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1165,22 +1165,25 @@ function parsePTCF(bytes) {
   const formatByte = ptcf[4];
   const numSlots = ptcf[13];
 
-  // Name: 10 chars stored as [10 bytes][0x22 sep][label...]
-  // The byte immediately after 0x22 is also part of the name (11th slot, often has char 3 of first pair)
-  // Read: bytes before sep (skip nulls) + 1 byte after sep, take first 10 printable chars
+  // Name is always 10 bytes at ptcf[32:42], with a possible embedded null.
+  // When a null is present, the displaced 10th char lives at ptcf[43].
+  // Structure: [4 leading nulls][10 name bytes at 32..41][label byte][overflow char at 43][0x30][00][00][numSlots]
+  let nameBytes = [];
+  for (let i = 32; i < 42 && i < ptcf.length; i++) {
+    if (ptcf[i] !== 0x00) nameBytes.push(ptcf[i]);
+  }
+  // If name is short (embedded null stole a slot), 10th char is at ptcf[43]
+  if (nameBytes.length < 10 && ptcf[43] > 32 && ptcf[43] < 127) {
+    nameBytes.push(ptcf[43]);
+  }
+  const patchName = nameBytes.slice(0, 10).map(b => String.fromCharCode(b)).join('').trim();
+  // Find separator for entriesStart calculation (used below in Format A)
   let sepPos = -1;
   for (let i = 28; i < Math.min(55, ptcf.length); i++) {
     if (ptcf[i] === 0x22 || ptcf[i] === 0x02) { sepPos = i; break; }
   }
-  let nameBytes = [];
-  if (sepPos >= 0) {
-    for (let i = 28; i < sepPos; i++) { if (ptcf[i] !== 0x00) nameBytes.push(ptcf[i]); }
-    // Include char right after separator (10th char often lives here)
-    if (ptcf[sepPos + 1] && ptcf[sepPos + 1] !== 0x00) nameBytes.push(ptcf[sepPos + 1]);
-  } else {
-    for (let i = 28; i < Math.min(50, ptcf.length); i++) { if (ptcf[i] !== 0x00) nameBytes.push(ptcf[i]); }
-  }
-  const patchName = nameBytes.slice(0, 10).map(b => String.fromCharCode(b)).join('').trim();
+  // If no 0x22/0x02 separator found (some patches use 0x20), compute from fixed offset
+  if (sepPos < 0) sepPos = 42;
 
   const slots = [];
 
