@@ -492,11 +492,9 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-22</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-23</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
-  <button class="midi-connect-btn" onclick="document.getElementById('backupFileInput').click()" title="Import ToneLib .zg1xf backup" style="background:var(--card2);font-size:.6rem;padding:4px 8px;">📂 Backup</button>
-  <input type="file" id="backupFileInput" accept=".zg1xf,.zip" style="display:none" onchange="handleBackupImport(event)">
-  <button class="midi-connect-btn" onclick="handleClipboardPaste()" title="Paste ToneLib clipboard export for current patch" style="background:var(--card2);font-size:.6rem;padding:4px 8px;">📋 Paste</button>
+
 </div>
 
 <!-- Bank / Program selector -->
@@ -1181,45 +1179,10 @@ function ptcfLookupByStormp(eid, stompN) {
   return null;
 }
 
-// In-memory patch database populated from ToneLib backup
-let patchDatabase = {}; // patchName → [{stomps: {1:effectName,...}}]
 
-function parseToneLibBackup(xmlText) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlText, 'text/xml');
-  const patchEls = doc.querySelectorAll('patch');
-  const db = {};
-  let count = 0;
-  patchEls.forEach(el => {
-    const name = el.getAttribute('name');
-    const dataEl = el.querySelector('data');
-    if (!name || !dataEl) return;
-    const dump = dataEl.getAttribute('dump');
-    if (!dump) return;
-    const nums = dump.split(',').map(h => parseInt(h, 16));
-    if (nums.length < 61) return;
-    const stomps = parseToneLibStomps(nums);
-    if (!db[name]) db[name] = [];
-    db[name].push(stomps);
-    count++;
-  });
-  patchDatabase = db;
-  try { localStorage.setItem('tonelib_db', JSON.stringify(db)); } catch(e) {}
   return count;
 }
 
-function parseToneLibStomps(nums) {
-  const stomps = {};
-  stomps[1] = ptcfLookupByStormp(nums[36], 1);
-  stomps[2] = ptcfLookupByStormp(nums[40], 2);
-  const entries = nums.slice(43, 61);
-  const allEntries = [];
-  let i = 0;
-  while (i + 3 < entries.length) {
-    const [t, eid, fl, z] = [entries[i], entries[i+1], entries[i+2], entries[i+3]];
-    if (!(t === 0x04 && eid === 0x01 && z === 0) && z === 0) allEntries.push([t, eid]);
-    i += 4;
-  }
   allEntries.forEach(([t, eid], idx) => {
     const sn = 3 + idx;
     const isLast = idx === allEntries.length - 1;
@@ -1228,18 +1191,10 @@ function parseToneLibStomps(nums) {
   return stomps;
 }
 
-function loadPatchDatabase() {
-  try {
-    const saved = localStorage.getItem('tonelib_db');
-    if (saved) { patchDatabase = JSON.parse(saved); return Object.keys(patchDatabase).length; }
   } catch(e) {}
   return 0;
 }
 
-function lookupPatchInDatabase(patchName) {
-  const entries = patchDatabase[patchName];
-  return (entries && entries.length > 0) ? entries[0] : null;
-}
 
 // ── Parse a PTCF binary (array of bytes) into slot assignments ───────────
 function parsePTCF(bytes) {
@@ -1368,13 +1323,6 @@ function applyPTCF(bytes) {
     if (nameInput) nameInput.value = patchName;
   }
 
-  // Check ToneLib database first — it has full 8-bit eids with no ambiguity
-  const dbEntry = patchName ? lookupPatchInDatabase(patchName) : null;
-  if (dbEntry) {
-    applyDatabaseStomps(patchName, dbEntry);
-    return;
-  }
-
   // Save existing slot params before clearing
   const existingSlots = patch.slots.slice();
 
@@ -1437,127 +1385,6 @@ function encode7bit(val) {
 }
 
 
-
-// ── ToneLib clipboard paste handler ──────────────────────────────────────
-async function handleClipboardPaste() {
-  let text;
-  try {
-    text = await navigator.clipboard.readText();
-  } catch(e) {
-    // Fallback: prompt
-    text = prompt('Paste ToneLib clipboard export here:');
-    if (!text) return;
-  }
-  const result = parseToneLibClipboard(text);
-  if (!result || !result.stomps.length) {
-    alert('No valid ToneLib patch data found in clipboard.');
-    return;
-  }
-  // Store in database
-  if (!patchDatabase[result.name]) patchDatabase[result.name] = [];
-  // Build stomps object keyed by stomp number
-  const stomps = {};
-  result.stomps.forEach((s, i) => { stomps[i + 1] = s.effect; });
-  patchDatabase[result.name].unshift(stomps); // prepend — clipboard data takes priority
-  try { localStorage.setItem('tonelib_db', JSON.stringify(patchDatabase)); } catch(e) {}
-  // Apply to current patch if names match
-  if (patch.name === result.name || !patch.name) {
-    patch.name = result.name;
-    const nameInput = document.getElementById('patchName');
-    if (nameInput) nameInput.value = result.name;
-    applyDatabaseStomps(result.name, stomps);
-    setMidiStatus('connected', `${midiOut?.name || 'No device'} — ${result.name} loaded`);
-    setTimeout(() => setMidiStatus(midiOut ? 'connected' : 'idle', midiOut?.name || 'Not connected'), 3000);
-  } else {
-    setMidiStatus('connected', `${midiOut?.name || 'No device'} — saved: ${result.name}`);
-    setTimeout(() => setMidiStatus(midiOut ? 'connected' : 'idle', midiOut?.name || 'Not connected'), 3000);
-  }
-}
-
-function parseToneLibClipboard(text) {
-  const nameMatch = text.match(/Patch name:\s*(.+)/);
-  if (!nameMatch) return null;
-  const name = nameMatch[1].trim();
-  const CAT_MAP = {
-    'Modulation': 'MOD', 'Overdrive / Distortion': 'DRIVE', 'Amp simulator': 'AMP',
-    'Cabinet': 'CAB', 'Reverb': 'REVERB', 'Delay': 'DELAY',
-    'Dynamics': 'DYNAMICS', 'Filter / EQ': 'FILTER', 'SFX': 'SFX', 'Pedal': 'PEDAL',
-  };
-  const stomps = [];
-  const effectRe = /Effect:\s*"([^"]+)"\s*\(([^)]+)\),\s*active\s*-\s*"(\w+)"([^]*?)(?=\s*Effect:|};)/g;
-  let m;
-  while ((m = effectRe.exec(text)) !== null) {
-    const effectName = m[1].trim();
-    const catRaw = m[2].trim();
-    const active = m[3].toLowerCase() === 'yes';
-    const cat = CAT_MAP[catRaw] || catRaw;
-    const params = {};
-    const paramRe = /"([^"]+)"\s*=\s*(.+)/g;
-    let pm;
-    while ((pm = paramRe.exec(m[4])) !== null) {
-      const val = pm[2].trim();
-      params[pm[1]] = isNaN(val) ? val : Number(val);
-    }
-    stomps.push({ effect: effectName, cat, active, params });
-  }
-  return stomps.length ? { name, stomps } : null;
-}
-
-// ── ToneLib backup import handler ────────────────────────────────────────
-async function handleBackupImport(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  event.target.value = ''; // reset so same file can be re-imported
-  try {
-    // .zg1xf is a ZIP file containing ToneLib.data (XML)
-    const { default: JSZip } = await Promise.resolve().then(() => {
-      // Use CDN jszip
-      return new Promise((res, rej) => {
-        if (window.JSZip) { res({ default: window.JSZip }); return; }
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-        s.onload = () => res({ default: window.JSZip });
-        s.onerror = rej;
-        document.head.appendChild(s);
-      });
-    });
-    const zip = await JSZip.loadAsync(file);
-    const dataFile = zip.file('ToneLib.data');
-    if (!dataFile) { alert('ToneLib.data not found in backup'); return; }
-    const xmlText = await dataFile.async('string');
-    const count = parseToneLibBackup(xmlText);
-    setMidiStatus('connected', `${midiOut?.name || 'No device'} — ${count} patches loaded`);
-    setTimeout(() => setMidiStatus(midiOut ? 'connected' : 'idle', midiOut?.name || 'Not connected'), 3000);
-    // Re-apply current patch if we have one
-    if (patch.name) {
-      const dbEntry = lookupPatchInDatabase(patch.name);
-      if (dbEntry) applyDatabaseStomps(patch.name, dbEntry);
-    }
-  } catch(e) {
-    alert('Failed to import backup: ' + e.message);
-  }
-}
-
-function applyDatabaseStomps(patchName, stomps) {
-  const existingSlots = patch.slots.slice();
-  patch.slots = Array(6).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
-  // Map stomp numbers (1-5) to internal slot indices (0-5, skipping internal slot 3)
-  // Stomp 1→slot0, Stomp2→slot1, Stomp3→slot2, Stomp4→slot4, Stomp5→slot5
-  const stompToSlot = {1:0, 2:1, 3:2, 4:4, 5:5};
-  Object.entries(stomps).forEach(([stompStr, effectName]) => {
-    const stompN = parseInt(stompStr);
-    const slotIdx = stompToSlot[stompN];
-    if (slotIdx === undefined || !effectName || effectName === 'bypass') return;
-    const cat = effectNameToCat(effectName);
-    const prev = existingSlots[slotIdx];
-    const sameEffect = prev?.effect === effectName;
-    const params = sameEffect ? (prev.params || {}) : {};
-    patch.slots[slotIdx] = { cat, effect: effectName, on: true, params, page: 0 };
-  });
-  patch.activeSlot = null;
-  buildSlots();
-  renderEditor();
-}
 
 async function connectMIDI() {
   setMidiStatus('searching', 'Connecting…');
@@ -1760,10 +1587,6 @@ function midiSendParam(slotIndex, paramIndex, value, paramDef) {
 document.getElementById('patchLevel').addEventListener('input', function() {
   document.getElementById('patchLevelVal').textContent = this.value;
 });
-
-// Load ToneLib patch database from previous import
-const _dbCount = loadPatchDatabase();
-if (_dbCount > 0) console.log(`ToneLib DB: ${_dbCount} patches loaded`);
 
 buildSlots();
 buildGuitarKnobs();
