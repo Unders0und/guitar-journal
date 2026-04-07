@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-23</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-24</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 
 </div>
@@ -1180,20 +1180,6 @@ function ptcfLookupByStormp(eid, stompN) {
 }
 
 
-  return count;
-}
-
-  allEntries.forEach(([t, eid], idx) => {
-    const sn = 3 + idx;
-    const isLast = idx === allEntries.length - 1;
-    stomps[sn] = ptcfLookupByStormp(eid, isLast ? 5 : sn);
-  });
-  return stomps;
-}
-
-  } catch(e) {}
-  return 0;
-}
 
 
 // ── Parse a PTCF binary (array of bytes) into slot assignments ───────────
