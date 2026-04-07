@@ -298,17 +298,19 @@ function onMidiMessage(e) {
     const hi    = bytes[10] || 0;
     let val = lo | (hi << 7);
     if (val >= 8192) val -= 16384;
+    const hexVal = `0x${(val & 0xFFFF).toString(16).toUpperCase().padStart(4,'0')}`;
 
-    if (param === 1 && capturing) {
-      // Effect type ID
+    // Log ALL param updates unconditionally
+    log(`64 03 → slot=${slot} param=${param} lo=0x${lo.toString(16).padStart(2,'0')} hi=0x${hi.toString(16).padStart(2,'0')} val=${val}(${hexVal})`, 'ok');
+
+    // Track effect type IDs (param=1) in capture display
+    if (param === 1) {
       capturedEffects[slot] = val;
-      const hexId = `0x${val.toString(16).toUpperCase().padStart(4,'0')}`;
       const cl = document.getElementById('captureLog');
       cl.innerHTML = Object.entries(capturedEffects)
         .sort(([a],[b]) => a-b)
-        .map(([s,v]) => `Slot ${parseInt(s)+1}: 0x${v.toString(16).toUpperCase().padStart(4,'0')}`)
+        .map(([s,v]) => `Slot ${parseInt(s)+1}: ${v} (0x${(v&0xFFFF).toString(16).toUpperCase().padStart(4,'0')})`)
         .join('<br>');
-      log(`Slot ${slot+1} effect type ID: ${hexId}`, 'ok');
     }
   }
 }
