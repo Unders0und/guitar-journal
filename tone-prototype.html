@@ -492,7 +492,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-25</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2025.04.05-27</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 
 </div>
@@ -1155,7 +1155,7 @@ const STOMP_CAT_PRIORITY = {
   2: [3,6,2,8,9,1,11,7],
   3: [3,4,8,6,2,9,1,11],
   4: [5,4,9,8,6,3,2,1,11],  // CAB > AMP > REVERB > ...
-  5: [9,5,8,6,4,3,2,1,11],  // REVERB > CAB > DELAY > ...
+  5: [5,9,8,6,4,3,2,1,11],  // CAB > REVERB > DELAY > ...
 };
 
 function ptcfLookupByStormp(eid, stompN) {
@@ -1257,37 +1257,55 @@ function parsePTCF(bytes) {
     }
     if (sepPos < 0) return { patchName, slots };
 
+    // Stomp 2 eid is stored at sepPos+6 (= nameStart+16) in the MIDI PTCF
+    // This is the flags[0] byte. Stomp 1 is not present in the MIDI PTCF.
+    const s2eid = ptcf[sepPos + 6];
+    if (s2eid) {
+      const s2name = ptcfLookupByStormp(s2eid, 2);
+      const s2cat  = s2name ? effectNameToCat(s2name) : null;
+      slots.push({ slot: 1, effectId: s2eid, effectName: s2name, cat: s2cat });
+    }
+
     const entriesStart = sepPos + 10;
     let txjPos = ptcf.length;
     for (let i = entriesStart; i < ptcf.length - 2; i++) {
       if (ptcf[i]===0x54 && ptcf[i+1]===0x58 && ptcf[i+2]===0x4A) { txjPos = i; break; }
     }
 
-    // Format A entries: [type][eid][00][00] collected in order → stomps 3,4,5...
-    // MIDI sometimes inserts an extra 0x00 after the separator, shifting entries.
-    // Disambiguation: type byte is always ≤ 0x0F, eid is the larger non-zero byte.
-    const allEntries = [];
-    let i = entriesStart;
-    while (i + 3 < txjPos) {
-      const t = ptcf[i], b1 = ptcf[i+1], b2 = ptcf[i+2], b3 = ptcf[i+3];
-      // Skip separator: [04][01][any][any]
-      if (t === 0x04 && b1 === 0x01) { i += 4; continue; }
-      // Extract eid: prefer larger non-zero value (type codes are ≤ 0x0F)
-      const nonzero = [b1, b2, b3].filter(v => v !== 0);
-      let eid = 0;
-      if (nonzero.length === 1) {
-        eid = nonzero[0];
-      } else if (nonzero.length > 1) {
-        const big = nonzero.filter(v => v > 0x0F);
-        eid = big.length > 0 ? big[0] : nonzero[0];
-      }
-      allEntries.push(eid);
-      i += 4;
+    // Format A entries: variable [type][eid][00][00] groups before/after [04 01] separator
+    // Strategy: find "04 01" separator in raw bytes, split before/after, parse each half.
+    // eid disambiguation: type byte ≤ 0x0F, eid is the larger non-zero value in b1/b2/b3.
+    const rawEntries = ptcf.slice(entriesStart, txjPos);
+    let sepIdx = -1;
+    for (let j = 0; j < rawEntries.length - 1; j++) {
+      if (rawEntries[j] === 0x04 && rawEntries[j+1] === 0x01) { sepIdx = j; break; }
     }
-    // Assign sequentially to stomps 3, 4, 5
+    const beforeRaw = sepIdx >= 0 ? rawEntries.slice(0, sepIdx) : rawEntries;
+    const afterRaw  = sepIdx >= 0 ? rawEntries.slice(sepIdx + 4) : [];
+
+    function extractEids(region) {
+      const eids = [];
+      for (let j = 0; j + 3 < region.length; j += 4) {
+        const t=region[j], b1=region[j+1], b2=region[j+2], b3=region[j+3];
+        if (t===0 && b1===0 && b2===0 && b3===0) continue; // all-zero = skip
+        const nz = [b1,b2,b3].filter(v => v !== 0);
+        if (nz.length === 0) continue; // type-only entry (e.g. [05][00][00][00]) = terminator
+        let eid;
+        if (nz.length === 1) { eid = nz[0]; }
+        else { const big = nz.filter(v => v > 0x0F); eid = big.length > 0 ? big[0] : nz[0]; }
+        eids.push(eid);
+      }
+      return eids;
+    }
+
+    const beforeEids = extractEids(beforeRaw);
+    const afterEids  = extractEids(afterRaw);
+    const allEids    = [...beforeEids, ...afterEids];
+
+    // Assign sequentially to stomps 3, 4, 5 (slot indices 2, 4, 5)
     const STOMP_MAP  = [2, 4, 5];
     const STOMP_NUMS = [3, 4, 5];
-    allEntries.forEach((eid, idx) => {
+    allEids.forEach((eid, idx) => {
       if (idx >= STOMP_MAP.length) return;
       const effectName = ptcfLookupByStormp(eid, STOMP_NUMS[idx]);
       const cat = effectName ? effectNameToCat(effectName) : null;
