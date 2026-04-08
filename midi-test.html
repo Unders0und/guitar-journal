@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>G1X Four — MIDI Test v4</title>
+<title>G1X Four — MIDI Test v5</title>
 <style>
   :root {
     --bg: #0d0d0d; --card: #161616; --border: #2a2a2a;
@@ -121,7 +121,7 @@
 </head>
 <body>
 
-<h1>🎛 G1X Four — MIDI Test <span style="font-size:.6rem;color:var(--muted);font-weight:400;letter-spacing:.05em;">v4 · 2026-04-07</span></h1>
+<h1>🎛 G1X Four — MIDI Test <span style="font-size:.6rem;color:var(--muted);font-weight:400;letter-spacing:.05em;">v5 · 2026-04-07</span></h1>
 
 <!-- Connection -->
 <div class="section">
@@ -167,6 +167,7 @@
     <button class="btn btn-ghost" onclick="requestEditBuffer()">Get Edit Buffer</button>
   </div>
   <button class="btn btn-ghost" onclick="requestCurrentPatch()">Get PTCF (0x64 13)</button>
+  <button class="btn btn-ghost" style="margin-top:6px;" onclick="requestEffectTypes()">Request Effect Types (0x64 02 param=1)</button>
   <div id="captureLog" style="margin-top:.6rem;font-family:monospace;font-size:.68rem;color:#a8e6cf;line-height:1.6;"></div>
 </div>
 <div class="section">
@@ -303,7 +304,6 @@ function onMidiMessage(e) {
     // Log ALL param updates unconditionally
     log(`64 03 → slot=${slot} param=${param} lo=0x${lo.toString(16).padStart(2,'0')} hi=0x${hi.toString(16).padStart(2,'0')} val=${val}(${hexVal})`, 'ok');
 
-    // Track effect type IDs (param=1) in capture display
     if (param === 1) {
       capturedEffects[slot] = val;
       const cl = document.getElementById('captureLog');
@@ -312,6 +312,11 @@ function onMidiMessage(e) {
         .map(([s,v]) => `Slot ${parseInt(s)+1}: ${v} (0x${(v&0xFFFF).toString(16).toUpperCase().padStart(4,'0')})`)
         .join('<br>');
     }
+  }
+
+  // Response to param request (64 02 → 64 03 response or other)
+  if (cmd === 0x64 && bytes[5] === 0x02) {
+    log(`64 02 response: ${bytes.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`, 'ok');
   }
 }
 
@@ -432,6 +437,17 @@ function requestCurrentPatch() {
   if (!midiOut) { log('Connect first', 'err'); return; }
   log('Requesting current patch...', 'info');
   send(sysex(0x64, 0x13));
+}
+
+function requestEffectTypes() {
+  if (!midiOut) { log('Connect first', 'err'); return; }
+  log('Requesting effect type (param=1) for all 6 slots...', 'info');
+  for (let slot = 0; slot < 6; slot++) {
+    setTimeout(() => {
+      send(sysex(0x64, 0x02, 0x00, slot, 0x01));
+      log(`→ Sent param request: slot=${slot} param=1`, 'info');
+    }, slot * 100);
+  }
 }
 
 function toggleSlot(i, togEl) {
