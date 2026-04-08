@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tone Patch Editor — Prototype</title>
-<meta name="version" content="2025-04-05-001">
+<meta name="version" content="2026-04-07-v28">
 <style>
   :root {
     --bg: #0d0d0d;
@@ -1113,78 +1113,9 @@ function fmtVal(val, param) {
   return val;
 }
 
-// ── PTCF Effect Map ───────────────────────────────────────────────────────
-// Two PTCF format versions:
-// Format B (5-slot, ptcf[4]=0x54): [cat][eid] — eid = idx * 0x10 from base
-// Format A (6-slot, ptcf[4]=0x78): different encoding (to be handled separately)
-
-const PTCF_CATS = {
-  1:  ['DYNAMICS', ['Comp','RackComp','SlowATTCK','ZNR','MuteSW','GrayComp','NoiseGate','OptComp','BlackOpt','LMT-76']],
-  2:  ['FILTER',   ['AutoWah','Resonance','Cry','SeqFLTR','Gt GEQ','Gt GEQ7','St Gt GEQ','ParaEQ','RndmFLTR','LowPassFL','Exciter','Step','LFO FLTR']],
-  3:  ['DRIVE',    ['TS Drive','EP Stomp','RC Boost','GoldDrive','SweetDrv','DYN Drive','RedCrunch','MetalWRLD','TB MK1.5','OctFuzz','SpotBoost','Aco.Sim','NYC Muff','HG THRTTL','BG GRID','DIST 1','Squeak','UpOctBSTR','OutputBST','DIST Plus','Zen O.DRV','VioletDST']],
-  4:  ['AMP',      ['MS 800','MS 1959','MS 45os','FD TWNR','FD B-MAN','FD DLXR','FD MASTER','UK 30A','BG MK1','BG MK3','XtasyBlue','HW 100','Recti ORG','ORG120','DZ DRV','MATCH30']],
-  5:  ['CABINET',  ['MS4x12','MS4x12GB','MS4x12AL','FD2x12','FD-B4x10','FD-DX1x12','FD MA2x12','UK2x12','MK1 1x12','MK3 1x12','BGN4x12','HW4x12','RCT4x12','ORG4x12','DZ4x12F','MA2x12']],
-  6:  ['MOD',      ['Tremolo','Chorus','StereoCho','Phaser','VinFLNGR','TheVibe','Vibrato','Octave','RingMod','Detune','PitchSHFT','MonoPitch','HPS','Slicer','CloneCho','SuperCho','StonePha','CoronaTri','BendCho','AnalogCho','WarpPhase','Duo Phase']],
-  7:  ['SFX',      ['Bomber','AutoPan','LoopRoll','HotSpice']],
-  8:  ['DELAY',    ['Delay','AnalogDly','TapeEcho','ReverseDL','ModDelay','P-P Delay','FilterDly','Dual DLY','Pitch DLY','SlapBackD','A-Pan DLY','PhaseDly','TapeEcho3','ICE Delay','SlwAtkDly','SoftEcho']],
-  9:  ['REVERB',   ['Air','Room','Hall','HD Hall','Spring','FD Spring','Plate','EarlyRef','Church','Chamber','GateRev']],
-  11: ['PEDAL',    ['PDL Vol','BlackWah','ChromeWah','WAH100','PDL Pitch','PDL MnPit','PDL Vibe','PDL Drive','PDL PHSR','PDL Delay','PDL Rev','OSC Echo','VoiceWah','PDL Roto','P-BitCRSH','PDL FLNGR','PDL Reso']],
-};
-
-// AMP and CABINET have irregular spacing — explicit maps
-const PTCF_AMP_IDS = {0x11:'MS 800',0x19:'MS 1959',0x1B:'MS 45os',0x21:'FD TWNR',0x28:'FD B-MAN',0x2C:'FD DLXR',0x2D:'FD MASTER',0x31:'UK 30A',0x51:'BG MK1',0x61:'BG MK3',0x71:'XtasyBlue',0x01:'HW 100',0x81:'Recti ORG',0x91:'DZ DRV',0xA1:'MATCH30'};
-const PTCF_CAB_IDS = {0x10:'MS4x12',0x18:'MS4x12GB',0x1A:'MS4x12AL',0x20:'FD2x12',0x27:'FD-B4x10',0x2A:'FD-DX1x12',0x2B:'FD MA2x12',0x30:'UK2x12',0x42:'MK1 1x12',0x50:'MK3 1x12',0x60:'BGN4x12',0x70:'HW4x12',0x90:'DZ4x12F'};
-
-function ptcfLookup(cat, eid) {
-  if (cat === 4) return PTCF_AMP_IDS[eid] || null;
-  if (cat === 5) return PTCF_CAB_IDS[eid] || null;
-  const entry = PTCF_CATS[cat];
-  if (!entry) return null;
-  const effects = entry[1];
-  const base = (cat === 7) ? 0x20 : 0x10;
-  // Handle wrap-around for categories with >15 effects
-  let idx = ((eid - base + 256) & 0xFF) / 0x10;
-  if (!Number.isInteger(idx) || idx < 0 || idx >= effects.length) return null;
-  return effects[idx];
-}
-
-// ── ToneLib backup parser ─────────────────────────────────────────────────
-// Stomp-position-based category priority for eid disambiguation
-const STOMP_CAT_PRIORITY = {
-  1: [6,3,2,8,9,1,11,7],
-  2: [3,6,2,8,9,1,11,7],
-  3: [3,4,8,6,2,9,1,11],
-  4: [5,4,9,8,6,3,2,1,11],  // CAB > AMP > REVERB > ...
-  5: [5,9,8,6,4,3,2,1,11],  // CAB > REVERB > DELAY > ...
-};
-
-function ptcfLookupByStormp(eid, stompN) {
-  if (eid === 0) return 'bypass';
-  if (PTCF_AMP_IDS[eid]) return PTCF_AMP_IDS[eid];
-  const priority = STOMP_CAT_PRIORITY[stompN] || [3,6,8,9,1,2,11,7];
-  for (const cat of priority) {
-    if (cat === 5) {
-      if (PTCF_CAB_IDS[eid]) return PTCF_CAB_IDS[eid];
-    } else if (PTCF_CATS[cat]) {
-      const effects = PTCF_CATS[cat][1];
-      const base = cat === 7 ? 0x20 : 0x10;
-      const wrapped = ((eid - base) + 256) & 0xFF;
-      if (wrapped % 0x10 === 0) {
-        const idx = wrapped / 0x10;
-        if (idx >= 0 && idx < effects.length) return effects[idx];
-      }
-    }
-  }
-  if (PTCF_CAB_IDS[eid]) return PTCF_CAB_IDS[eid];
-  return null;
-}
-
-
-
-
-// ── Parse a PTCF binary (array of bytes) into slot assignments ───────────
-function parsePTCF(bytes) {
-  // Find PTCF magic
+// ── Parse patch name from PTCF bytes ────────────────────────────────────
+// The PTCF dump (64 12 response) is still used for the patch name.
+function parsePTCFName(bytes) {
   let ptcfStart = -1;
   for (let i = 0; i < bytes.length - 3; i++) {
     if (bytes[i]===0x50 && bytes[i+1]===0x54 && bytes[i+2]===0x43 && bytes[i+3]===0x46) {
@@ -1193,174 +1124,78 @@ function parsePTCF(bytes) {
   }
   if (ptcfStart < 0) return null;
   const ptcf = bytes.slice(ptcfStart);
-
-  // Detect format version from ptcf[4]:
-  // 0x54 = Format B (5-slot): eid at ptcf[41], cat at ptcf[44], one active slot
-  // 0x78 = Format A (6-slot): slot entries after separator
-
-  const formatByte = ptcf[4];
-  const numSlots = ptcf[13];
-
-  // Name: 10 bytes starting at first non-null after ptcf[28].
-  // One embedded null is common (displaces 10th char to nameStart+11).
   let nameStart = 28;
   while (nameStart < 45 && ptcf[nameStart] === 0x00) nameStart++;
   let nameBytes = [];
   for (let i = nameStart; i < nameStart + 10 && i < ptcf.length; i++) {
     if (ptcf[i] !== 0x00) nameBytes.push(ptcf[i]);
   }
-  // If embedded null displaced the 10th char, it lives at nameStart+11
   const overflow = ptcf[nameStart + 11];
-  if (nameBytes.length < 10 && overflow > 32 && overflow < 127) {
-    nameBytes.push(overflow);
-  }
-  const patchName = nameBytes.slice(0, 10).map(b => String.fromCharCode(b)).join('').trim();
-  // Separator (0x22 or 0x02) for Format A entriesStart
-  let sepPos = -1;
-  for (let i = 28; i < Math.min(60, ptcf.length); i++) {
-    if (ptcf[i] === 0x22 || ptcf[i] === 0x02) { sepPos = i; break; }
-  }
-  if (sepPos < 0) sepPos = nameStart + 10; // fallback
-
-  const slots = [];
-
-  if (formatByte === 0x54) {
-    // ── Format B (5-slot patches) ─────────────────────────────────────────
-    // Each PTCF dump = state of ONE slot being edited (the selected one)
-    // ptcf[41] = effect ID, ptcf[44] = category code
-    // The PTCF also stores all 5 slots — need to find their [cat][eid] pairs
-    //
-    // Slot entries are stored as [slot_1based][eid][00][cat] at fixed offsets
-    // Starting offset: after the name/header region around ptcf[40]
-    // For each slot: [slot_num 1-5][eid][00][cat_code]
-
-    // Scan for [slot 1-5][eid != 0][00][cat 1-11] pattern
-    for (let i = 38; i + 3 < Math.min(70, ptcf.length); i++) {
-      const s = ptcf[i];
-      const eid = ptcf[i+1];
-      const z = ptcf[i+2];
-      const cat = ptcf[i+3];
-      if (s >= 1 && s <= 5 && eid !== 0 && z === 0 && PTCF_CATS[cat]) {
-        const effectName = ptcfLookup(cat, eid);
-        const catName = (PTCF_CATS[cat] || [])[0] || null;
-        slots.push({ slot: s - 1, effectId: eid, catCode: cat, effectName, cat: catName });
-        i += 3;
-      }
-    }
-
-  } else {
-    // ── Format A (6-slot patches) ─────────────────────────────────────────
-    // Find separator (0x22 saved, 0x02 unsaved)
-    let sepPos = -1;
-    for (let i = 28; i < Math.min(65, ptcf.length); i++) {
-      if (ptcf[i] === 0x22 || ptcf[i] === 0x02) { sepPos = i; break; }
-    }
-    if (sepPos < 0) return { patchName, slots };
-
-    // Stomp 2 eid is stored at sepPos+6 (= nameStart+16) in the MIDI PTCF
-    // This is the flags[0] byte. Stomp 1 is not present in the MIDI PTCF.
-    const s2eid = ptcf[sepPos + 6];
-    if (s2eid) {
-      const s2name = ptcfLookupByStormp(s2eid, 2);
-      const s2cat  = s2name ? effectNameToCat(s2name) : null;
-      slots.push({ slot: 1, effectId: s2eid, effectName: s2name, cat: s2cat });
-    }
-
-    const entriesStart = sepPos + 10;
-    let txjPos = ptcf.length;
-    for (let i = entriesStart; i < ptcf.length - 2; i++) {
-      if (ptcf[i]===0x54 && ptcf[i+1]===0x58 && ptcf[i+2]===0x4A) { txjPos = i; break; }
-    }
-
-    // Format A entries: variable [type][eid][00][00] groups before/after [04 01] separator
-    // Strategy: find "04 01" separator in raw bytes, split before/after, parse each half.
-    // eid disambiguation: type byte ≤ 0x0F, eid is the larger non-zero value in b1/b2/b3.
-    const rawEntries = ptcf.slice(entriesStart, txjPos);
-    let sepIdx = -1;
-    for (let j = 0; j < rawEntries.length - 1; j++) {
-      if (rawEntries[j] === 0x04 && rawEntries[j+1] === 0x01) { sepIdx = j; break; }
-    }
-    const beforeRaw = sepIdx >= 0 ? rawEntries.slice(0, sepIdx) : rawEntries;
-    const afterRaw  = sepIdx >= 0 ? rawEntries.slice(sepIdx + 4) : [];
-
-    function extractEids(region) {
-      const eids = [];
-      for (let j = 0; j + 3 < region.length; j += 4) {
-        const t=region[j], b1=region[j+1], b2=region[j+2], b3=region[j+3];
-        if (t===0 && b1===0 && b2===0 && b3===0) continue; // all-zero = skip
-        const nz = [b1,b2,b3].filter(v => v !== 0);
-        if (nz.length === 0) continue; // type-only entry (e.g. [05][00][00][00]) = terminator
-        let eid;
-        if (nz.length === 1) { eid = nz[0]; }
-        else { const big = nz.filter(v => v > 0x0F); eid = big.length > 0 ? big[0] : nz[0]; }
-        eids.push(eid);
-      }
-      return eids;
-    }
-
-    const beforeEids = extractEids(beforeRaw);
-    const afterEids  = extractEids(afterRaw);
-    const allEids    = [...beforeEids, ...afterEids];
-
-    // Assign sequentially to stomps 3, 4, 5 (slot indices 2, 4, 5)
-    const STOMP_MAP  = [2, 4, 5];
-    const STOMP_NUMS = [3, 4, 5];
-    allEids.forEach((eid, idx) => {
-      if (idx >= STOMP_MAP.length) return;
-      const effectName = ptcfLookupByStormp(eid, STOMP_NUMS[idx]);
-      const cat = effectName ? effectNameToCat(effectName) : null;
-      slots.push({ slot: STOMP_MAP[idx], effectId: eid, effectName, cat });
-    });
-  }
-
-  return { patchName, slots };
+  if (nameBytes.length < 10 && overflow > 32 && overflow < 127) nameBytes.push(overflow);
+  return nameBytes.slice(0, 10).map(b => String.fromCharCode(b)).join('').trim();
 }
 
-// Apply parsed PTCF to the patch UI
-function applyPTCF(bytes) {
-  const result = parsePTCF(bytes);
-  if (!result) return;
-
-  const { patchName, slots } = result;
-
-  if (patchName) {
-    patch.name = patchName;
-    const nameInput = document.getElementById('patchName');
-    if (nameInput) nameInput.value = patchName;
+// ── Parse 64 01 response — effect names + on/off per slot ───────────────
+// Request: F0 52 00 6E 64 02 00 [slot] 01 F7
+// Response: F0 52 00 6E 64 01 [entries...] F7
+// Each entry is 14 bytes: [slot][param][00][00][9-byte ASCII value][00]
+// param=0: on/off as "1" or "0"
+// param=1: effect name as null-terminated ASCII (up to 9 chars, e.g. "Recti ORG")
+function parse64_01(bytes) {
+  // Skip header: F0 52 00 6E 64 01
+  const payload = bytes.slice(6, bytes.length - 1); // strip F7
+  const results = {}; // slot -> { name, on }
+  const ENTRY_SIZE = 14;
+  for (let i = 0; i + ENTRY_SIZE <= payload.length; i += ENTRY_SIZE) {
+    const slot  = payload[i];
+    const param = payload[i + 1];
+    // bytes i+2, i+3 are always 00 00
+    const valBytes = payload.slice(i + 4, i + 13);
+    // Find null terminator
+    let end = valBytes.indexOf(0);
+    if (end < 0) end = valBytes.length;
+    const valStr = String.fromCharCode(...valBytes.slice(0, end)).trim();
+    if (slot < 0 || slot > 5) continue;
+    if (!results[slot]) results[slot] = { name: null, on: true };
+    if (param === 0) results[slot].on = (valStr === '1');
+    if (param === 1) results[slot].name = valStr || null;
   }
+  return results;
+}
 
-  // Save existing slot params before clearing
+// ── Apply 64 01 slot data to patch UI ────────────────────────────────────
+function apply64_01(bytes) {
+  const slotData = parse64_01(bytes);
   const existingSlots = patch.slots.slice();
 
-  // Reset slots
-  patch.slots = Array(6).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
-
-  for (const { slot, effectId, effectName, cat } of slots) {
+  for (const [slotStr, { name, on }] of Object.entries(slotData)) {
+    const slot = parseInt(slotStr);
     if (slot < 0 || slot > 5) continue;
-    if (effectName && cat) {
-      const prev = existingSlots[slot];
-      const sameEffect = prev?.effect === effectName && prev?.cat === cat;
-      const params = sameEffect ? (prev.params || {}) : {};
-      patch.slots[slot] = { cat, effect: effectName, on: true, params, page: 0 };
-    } else if (effectId !== undefined) {
-      patch.slots[slot] = {
-        cat: null,
-        effect: `?? 0x${effectId.toString(16).toUpperCase().padStart(2,'0')}`,
-        on: true, params: {}, page: 0, _unknownId: effectId
-      };
-    }
+    if (!name) continue;
+
+    const cat = effectNameToCat(name);
+    const prev = existingSlots[slot];
+    const sameEffect = prev?.effect === name && prev?.cat === cat;
+    const params = sameEffect ? (prev.params || {}) : {};
+
+    patch.slots[slot] = { cat, effect: name, on, params, page: 0 };
   }
 
   patch.activeSlot = null;
   buildSlots();
   renderEditor();
+}
 
-  const unknowns = slots.filter(s => !s.effectName);
-  if (unknowns.length > 0) {
-    const ids = unknowns.map(s => `0x${s.effectId.toString(16).toUpperCase().padStart(2,'0')}`).join(', ');
-    setMidiStatus('connected', `${midiOut?.name} — unknown: ${ids}`);
-    setTimeout(() => setMidiStatus('connected', midiOut?.name), 6000);
+// ── Apply PTCF — patch name only (effects come via 64 01) ────────────────
+function applyPTCF(bytes) {
+  const name = parsePTCFName(bytes);
+  if (name) {
+    patch.name = name;
+    const nameInput = document.getElementById('patchName');
+    if (nameInput) nameInput.value = name;
   }
+  // After receiving PTCF, request slot names via 64 02
+  requestSlotNames();
 }
 
 // ── Find which category an effect belongs to ─────────────────────────────
@@ -1445,9 +1280,15 @@ function onMidiMessage(e) {
   if (d[0] !== 0xF0 || d[1] !== 0x52 || d[2] !== 0x00 || d[3] !== 0x6E) return;
   const cmd = d[4];
 
-  // PTCF dump from pedal (auto on effect change, or response to our 0x64 0x13 request)
+  // PTCF dump — used for patch name only; triggers 64 02 slot name request
   if ((cmd === 0x64 && d[5] === 0x12) || cmd === 0x45) {
     applyPTCF(d);
+    return;
+  }
+
+  // 64 01 response — effect names + on/off per slot
+  if (cmd === 0x64 && d[5] === 0x01) {
+    apply64_01(d);
     return;
   }
 
@@ -1470,7 +1311,6 @@ function onMidiMessage(e) {
       if (s.cat && s.effect && EFFECTS[s.cat]?.[s.effect]) {
         const paramDef = EFFECTS[s.cat][s.effect][dialIndex];
         if (paramDef) {
-          // Pedal sends 0-based values; add param.min to get display value
           s.params[paramDef.n] = val + paramDef.min;
           if (patch.activeSlot === slot) renderKnobs();
         }
@@ -1495,10 +1335,16 @@ function flashSlot(slotIndex) {
   }
 }
 
-// Request current patch state from pedal
+// Request patch name from pedal (PTCF dump, which then triggers slot name request)
 function requestPatch() {
   if (!midiOut) return;
   midiSend(sysex(0x64, 0x13));
+}
+
+// Request slot names directly via 64 02 (one request gets all slots cumulatively)
+function requestSlotNames() {
+  if (!midiOut) return;
+  midiSend(sysex(0x64, 0x02, 0x00, 0x05, 0x01));
 }
 
 // Clear patch UI and request fresh state from pedal
@@ -1507,7 +1353,7 @@ function clearPatchUI() {
   patch.activeSlot = null;
   buildSlots();
   renderEditor();
-  // Small delay to let the bank/prog switch settle, then request patch
+  // Request patch name + slot names after bank/prog switch settles
   setTimeout(requestPatch, 200);
 }
 
