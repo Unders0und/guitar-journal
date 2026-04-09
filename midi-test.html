@@ -171,12 +171,21 @@
   <div id="captureLog" style="margin-top:.6rem;font-family:monospace;font-size:.68rem;color:#a8e6cf;line-height:1.6;"></div>
 </div>
 
-<!-- Set effect test -->
+<!-- Raw command probe -->
 <div class="section">
-  <div class="label">Set Effect (0x64 03 param=1)</div>
-  <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Try sending effect name to pedal. Enter editor mode first.</p>
-  <div style="display:flex;gap:6px;margin-bottom:6px;">
-    <select id="setEffectSlot" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
+  <div class="label">Raw SysEx Probe</div>
+  <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Probe unknown commands. Bytes after F0 52 00 6E, before F7.</p>
+  <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+    <select id="probeCmd" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
+      <option value="64 04">64 04 (unknown)</option>
+      <option value="64 05">64 05 (unknown)</option>
+      <option value="64 06">64 06 (unknown)</option>
+      <option value="64 07">64 07 (unknown)</option>
+      <option value="64 08">64 08 (unknown)</option>
+      <option value="64 10">64 10 (unknown)</option>
+      <option value="64 11">64 11 (unknown)</option>
+    </select>
+    <select id="probeSlot" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
       <option value="0">Slot 1</option>
       <option value="1">Slot 2</option>
       <option value="2">Slot 3</option>
@@ -184,11 +193,17 @@
       <option value="4">Slot 5</option>
       <option value="5">Slot 6</option>
     </select>
-    <input id="setEffectName" type="text" placeholder="Effect name e.g. Chorus" value="Chorus"
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:6px;">
+    <input id="probeEffect" type="text" placeholder="Effect name e.g. Chorus" value="Chorus"
       style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;outline:none;" />
   </div>
-  <button class="btn btn-ghost" onclick="sendSetEffect()">Send Effect Name to Slot</button>
-  <div id="setEffectLog" style="margin-top:.5rem;font-family:monospace;font-size:.68rem;color:#74b9ff;line-height:1.6;"></div>
+  <p style="font-size:.65rem;color:var(--muted);margin-bottom:.5rem;">Will send: F0 52 00 6E [cmd] 00 [slot] 01 [name 9 bytes] F7</p>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="sendRawProbe()">Send Probe</button>
+    <button class="btn btn-ghost" onclick="sendRawProbeNoSlot()">Send (no slot/param)</button>
+  </div>
+  <div id="probeLog" style="margin-top:.5rem;font-family:monospace;font-size:.68rem;color:#74b9ff;line-height:1.6;"></div>
 </div>
 <div class="section">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
@@ -484,22 +499,26 @@ function captureEffectTypes() {
   log('Effect type capture started', 'ok');
 }
 
-function sendSetEffect() {
+function sendRawProbe() {
   if (!midiOut) { log('Connect first', 'err'); return; }
-  const slot = parseInt(document.getElementById('setEffectSlot').value);
-  const name = document.getElementById('setEffectName').value.trim();
-  if (!name) { log('Enter an effect name', 'err'); return; }
-
-  const nameBytes = [];
-  for (let i = 0; i < 9; i++) {
-    nameBytes.push(i < name.length ? name.charCodeAt(i) : 0x00);
-  }
-
-  // F0 52 00 6E 64 03 00 [slot] 01 [9 name bytes] F7
-  const msg = sysex(0x64, 0x03, 0x00, slot, 0x01, ...nameBytes);
+  const cmdHex = document.getElementById('probeCmd').value;
+  const slot = parseInt(document.getElementById('probeSlot').value);
+  const name = document.getElementById('probeEffect').value.trim();
+  const cmdBytes = cmdHex.trim().split(' ').map(b => parseInt(b, 16));
+  const nameBytes = Array(9).fill(0);
+  for (let i = 0; i < Math.min(name.length, 9); i++) nameBytes[i] = name.charCodeAt(i);
+  const msg = [0xF0, 0x52, 0x00, 0x6E, ...cmdBytes, 0x00, slot, 0x01, ...nameBytes, 0xF7];
   send(msg);
-  document.getElementById('setEffectLog').textContent = `Sent to slot ${slot+1}: "${name}"`;
-  log(`Set effect → slot=${slot} name="${name}"`, 'info');
+  document.getElementById('probeLog').textContent = `Sent: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
+}
+
+function sendRawProbeNoSlot() {
+  if (!midiOut) { log('Connect first', 'err'); return; }
+  const cmdHex = document.getElementById('probeCmd').value;
+  const cmdBytes = cmdHex.trim().split(' ').map(b => parseInt(b, 16));
+  const msg = [0xF0, 0x52, 0x00, 0x6E, ...cmdBytes, 0xF7];
+  send(msg);
+  document.getElementById('probeLog').textContent = `Sent: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
 }
 
 function requestCurrentPatch() {
