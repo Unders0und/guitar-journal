@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tone Patch Editor — v28</title>
-<meta name="version" content="v2026.04.08-34">
+<meta name="version" content="v2026.04.09-35">
 <style>
   :root {
     --bg: #0d0d0d;
@@ -745,7 +745,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2026.04.08-34</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2026.04.09-35</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1476,7 +1476,7 @@ function parsePTCFName(bytes) {
 // param=2+: knob values as ASCII decimal strings (display values, no offset needed)
 function parse64_01(bytes) {
   const payload = bytes.slice(6, bytes.length - 1);
-  const results = {}; // slot -> { name, on, params: {dialIndex: numericVal} }
+  const results = {};
   const ENTRY_SIZE = 14;
   for (let i = 0; i + ENTRY_SIZE <= payload.length; i += ENTRY_SIZE) {
     const slot  = payload[i];
@@ -1491,8 +1491,8 @@ function parse64_01(bytes) {
     else if (param === 1) results[slot].name = valStr || null;
     else if (param >= 2) {
       const dialIndex = param - 2;
-      const numVal = parseFloat(valStr);
-      if (!isNaN(numVal)) results[slot].params[dialIndex] = numVal;
+      // Store as string — will be resolved to number in apply64_01
+      results[slot].params[dialIndex] = valStr;
     }
   }
   return results;
@@ -1503,26 +1503,38 @@ function apply64_01(bytes) {
   const slotData = parse64_01(bytes);
   const existingSlots = patch.slots.slice();
 
-  // Reset all slots first so stale state doesn't bleed through
   patch.slots = Array(6).fill(null).map(() => ({cat:null,effect:null,on:true,params:{},page:0}));
 
-  // Apply each slot from the response
   for (const [slotStr, { name, on, params }] of Object.entries(slotData)) {
     const slot = parseInt(slotStr);
     if (slot < 0 || slot > 5) continue;
-    if (!name) continue;
+
+    // "Bypass" = empty slot
+    if (!name || name === 'Bypass') {
+      patch.slots[slot] = { cat: null, effect: null, on, params: {}, page: 0 };
+      continue;
+    }
 
     const cat = effectNameToCat(name);
     const prev = existingSlots[slot];
     const sameEffect = prev?.effect === name && prev?.cat === cat;
     const slotParams = sameEffect ? (prev.params || {}) : {};
 
-    // Apply params from 64 01 (display values — no min offset needed)
+    // Resolve param values: numeric strings → numbers, label strings → label index
     if (cat && EFFECTS[cat]?.[name]) {
       const paramDefs = EFFECTS[cat][name];
-      for (const [dialIndex, rawVal] of Object.entries(params)) {
-        const paramDef = paramDefs[parseInt(dialIndex)];
-        if (paramDef) slotParams[paramDef.n] = rawVal;
+      for (const [dialIndexStr, valStr] of Object.entries(params)) {
+        const dialIndex = parseInt(dialIndexStr);
+        const paramDef = paramDefs[dialIndex];
+        if (!paramDef) continue;
+        if (paramDef.labels) {
+          // Find index of the label string
+          const labelIdx = paramDef.labels.indexOf(valStr);
+          slotParams[paramDef.n] = labelIdx >= 0 ? labelIdx : 0;
+        } else {
+          const numVal = parseFloat(valStr);
+          if (!isNaN(numVal)) slotParams[paramDef.n] = numVal;
+        }
       }
     }
 
