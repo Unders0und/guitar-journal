@@ -541,14 +541,13 @@ function getProbeBytes() {
 function sendZD2Probe() {
   if (!midiOut) { log('Connect first', 'err'); return; }
   const { slot, id32, cmdBytes } = getProbeBytes();
-  // 7-bit encode: split into 4 × 7-bit groups
   const b = [
     id32 & 0x7F,
     (id32 >> 7)  & 0x7F,
     (id32 >> 14) & 0x7F,
     (id32 >> 21) & 0x7F,
   ];
-  const msg = [0xF0, 0x52, 0x00, 0x6E, ...cmdBytes, 0x00, slot, 0x01, ...b, 0xF7];
+  const msg = [0xF0, 0x52, 0x00, 0x6E, ...cmdBytes, 0x00, slot, 0x01, ...b, 0x00, 0x00, 0x00, 0x00, 0xF7];
   send(msg);
   document.getElementById('probeLog').textContent =
     `7-bit encoded: [${b.map(x=>x.toString(16).padStart(2,'0')).join(', ')}]\n` +
