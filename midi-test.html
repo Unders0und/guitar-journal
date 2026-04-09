@@ -302,16 +302,35 @@ async function connectMIDI() {
 }
 
 // ── MIDI receive ─────────────────────────────────────────────────────────
+const lastSlotNames = {}; // slot -> { nameStr, rawBytes }
+
 function onMidiMessage(e) {
   const bytes = Array.from(e.data);
   const hex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
   log('RX: ' + hex, 'rx');
 
-  // Parse Zoom SysEx
   if (bytes[0] !== 0xF0 || bytes[1] !== 0x52 || bytes[2] !== 0x00 || bytes[3] !== 0x6E) return;
   const cmd = bytes[4];
 
-  // Editor mode param update: F0 52 00 6E 64 03 00 [slot] [param] [lo] [hi] ...
+  // 64 01 — effect names response, parse and show echo buttons
+  if (cmd === 0x64 && bytes[5] === 0x01) {
+    const payload = bytes.slice(6, bytes.length - 1);
+    const ENTRY = 14;
+    for (let i = 0; i + ENTRY <= payload.length; i += ENTRY) {
+      const slot  = payload[i];
+      const param = payload[i + 1];
+      if (param !== 1) continue;
+      const valBytes = payload.slice(i + 4, i + 13);
+      let end = valBytes.indexOf(0);
+      if (end < 0) end = valBytes.length;
+      const nameStr = String.fromCharCode(...valBytes.slice(0, end)).trim();
+      lastSlotNames[slot] = { nameStr, rawBytes: valBytes.slice(0, end) };
+    }
+    renderEchoPanel();
+    return;
+  }
+
+  // 64 03 — param update
   if (cmd === 0x64 && bytes[5] === 0x03 && bytes[6] === 0x00) {
     const slot  = bytes[7];
     const param = bytes[8];
@@ -320,24 +339,36 @@ function onMidiMessage(e) {
     let val = lo | (hi << 7);
     if (val >= 8192) val -= 16384;
     const hexVal = `0x${(val & 0xFFFF).toString(16).toUpperCase().padStart(4,'0')}`;
-
-    // Log ALL param updates unconditionally
     log(`64 03 → slot=${slot} param=${param} lo=0x${lo.toString(16).padStart(2,'0')} hi=0x${hi.toString(16).padStart(2,'0')} val=${val}(${hexVal})`, 'ok');
-
-    if (param === 1) {
-      capturedEffects[slot] = val;
-      const cl = document.getElementById('captureLog');
-      cl.innerHTML = Object.entries(capturedEffects)
-        .sort(([a],[b]) => a-b)
-        .map(([s,v]) => `Slot ${parseInt(s)+1}: ${v} (0x${(v&0xFFFF).toString(16).toUpperCase().padStart(4,'0')})`)
-        .join('<br>');
-    }
   }
+}
 
-  // Response to param request (64 02 → 64 03 response or other)
-  if (cmd === 0x64 && bytes[5] === 0x02) {
-    log(`64 02 response: ${bytes.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`, 'ok');
-  }
+function renderEchoPanel() {
+  const cl = document.getElementById('captureLog');
+  const slots = Object.keys(lastSlotNames).sort((a,b) => a-b);
+  if (!slots.length) { cl.innerHTML = 'No names received yet.'; return; }
+  cl.innerHTML = slots.map(slot => {
+    const { nameStr } = lastSlotNames[slot];
+    const opts = [0,1,2,4,5].map((s,i) =>
+      `<option value="${s}" ${s==slot?'selected':''}>→ Slot ${i+1}</option>`).join('');
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+      <span style="min-width:46px;color:var(--muted);font-size:.65rem;">Slot ${parseInt(slot)+1}</span>
+      <span style="flex:1;color:var(--ok);font-size:.72rem;">${nameStr}</span>
+      <select id="echoTarget_${slot}" style="background:#161616;border:1px solid #333;color:#bbb;border-radius:4px;font-size:.62rem;padding:2px 4px;">${opts}</select>
+      <button onclick="echoEffect(${slot})" style="font-size:.62rem;padding:2px 9px;border-radius:4px;border:1px solid #444;background:none;color:#74b9ff;cursor:pointer;">Send back</button>
+    </div>`;
+  }).join('');
+}
+
+function echoEffect(srcSlot) {
+  if (!midiOut) { log('Connect first', 'err'); return; }
+  const { nameStr, rawBytes } = lastSlotNames[srcSlot];
+  const targetSlot = parseInt(document.getElementById(`echoTarget_${srcSlot}`).value);
+  const nameBytes = Array(9).fill(0);
+  rawBytes.forEach((b, i) => { if (i < 9) nameBytes[i] = b; });
+  const msg = sysex(0x64, 0x03, 0x00, targetSlot, 0x01, ...nameBytes);
+  send(msg);
+  log(`Echo "${nameStr}" → slot ${targetSlot+1}`, 'info');
 }
 
 // ── Editor mode ──────────────────────────────────────────────────────────
