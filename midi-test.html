@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>G1X Four — MIDI Test v10</title>
+<title>G1X Four — MIDI Test v11</title>
 <style>
   :root {
     --bg: #0d0d0d; --card: #161616; --border: #2a2a2a;
@@ -121,7 +121,7 @@
 </head>
 <body>
 
-<h1>🎛 G1X Four — MIDI Test <span style="font-size:.6rem;color:var(--muted);font-weight:400;letter-spacing:.05em;">v10 · 2026-04-09</span></h1>
+<h1>🎛 G1X Four — MIDI Test <span style="font-size:.6rem;color:var(--muted);font-weight:400;letter-spacing:.05em;">v11 · 2026-04-09</span></h1>
 
 <!-- Connection -->
 <div class="section">
@@ -173,6 +173,25 @@
 
 <!-- Raw command probe -->
 <div class="section">
+  <div class="label">Set Effect by Index</div>
+  <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Try sending a raw integer index as the effect identifier. Enter editor mode first.</p>
+  <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+    <select id="idxSlot" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
+      <option value="0">Slot 1</option>
+      <option value="1">Slot 2</option>
+      <option value="2">Slot 3</option>
+      <option value="3">Slot 4</option>
+      <option value="4">Slot 5</option>
+      <option value="5">Slot 6</option>
+    </select>
+    <input id="idxValue" type="number" min="0" max="255" value="0"
+      style="width:80px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;outline:none;" />
+    <button class="btn btn-ghost" onclick="sendEffectIndex(-1)" style="width:auto;padding:4px 10px;">−</button>
+    <button class="btn btn-ghost" onclick="sendEffectIndex(1)"  style="width:auto;padding:4px 10px;">+</button>
+  </div>
+  <button class="btn btn-ghost" onclick="sendEffectIndex(0)">Send Index</button>
+  <div id="idxLog" style="margin-top:.5rem;font-family:monospace;font-size:.68rem;color:#74b9ff;line-height:1.6;"></div>
+</div>
   <div class="label">Set Effect via ZD2 ID</div>
   <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Try sending the ZD2 32-bit ID instead of the name string. Enter editor mode first.</p>
 
@@ -520,7 +539,21 @@ function captureEffectTypes() {
   log('Effect type capture started', 'ok');
 }
 
-let probeCmd = '64 03';
+function sendEffectIndex(delta) {
+  if (!midiOut) { log('Connect first', 'err'); return; }
+  const input = document.getElementById('idxValue');
+  let idx = parseInt(input.value) + delta;
+  if (idx < 0) idx = 0;
+  input.value = idx;
+  const slot = parseInt(document.getElementById('idxSlot').value);
+  const lo = idx & 0x7F;
+  const hi = (idx >> 7) & 0x7F;
+  const msg = sysex(0x64, 0x03, 0x00, slot, 0x01, lo, hi, 0x00, 0x00, 0x00, 0x00);
+  send(msg);
+  document.getElementById('idxLog').textContent =
+    `idx=${idx} → lo=0x${lo.toString(16).padStart(2,'0')} hi=0x${hi.toString(16).padStart(2,'0')}\n` +
+    `msg: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
+}
 
 function selectCmd(btn, cmd) {
   probeCmd = cmd;
