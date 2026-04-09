@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tone Patch Editor — v28</title>
-<meta name="version" content="v2026.04.08-33">
+<meta name="version" content="v2026.04.08-34">
 <style>
   :root {
     --bg: #0d0d0d;
@@ -745,7 +745,7 @@
 <div class="midi-bar">
   <div class="midi-dot" id="midiDot"></div>
   <div class="midi-status" id="midiStatus">Not connected</div>
-  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2026.04.08-33</span>
+  <span style="font-size:.55rem;color:var(--muted);flex-shrink:0;">v2026.04.08-34</span>
   <button class="midi-connect-btn" id="midiConnectBtn" onclick="connectMIDI()">Connect</button>
 </div>
 
@@ -1173,16 +1173,25 @@ function renderEditor() {
   const s = patch.slots[patch.activeSlot];
 
   const catSel = document.getElementById('editorCat');
-  catSel.innerHTML = Object.keys(EFFECTS).map(c =>
-    `<option value="${c}" ${s.cat===c?'selected':''}>${c}</option>`
-  ).join('');
-  if (!s.cat) { s.cat = Object.keys(EFFECTS)[0]; catSel.value = s.cat; }
+  catSel.innerHTML = '<option value="">— Bypass —</option>' +
+    Object.keys(EFFECTS).map(c =>
+      `<option value="${c}" ${s.cat===c?'selected':''}>${c}</option>`
+    ).join('');
+  if (!s.cat) { catSel.value = ''; }
   renderEffectSelect();
 }
 
 function renderEffectSelect() {
   const s = patch.slots[patch.activeSlot];
   const effSel = document.getElementById('editorEffect');
+  if (!s.cat) {
+    effSel.innerHTML = '<option value="">—</option>';
+    effSel.disabled = true;
+    document.getElementById('knobsGrid').innerHTML = '';
+    document.getElementById('pageTabs').innerHTML = '';
+    return;
+  }
+  effSel.disabled = false;
   const effects = Object.keys(EFFECTS[s.cat] || {});
   effSel.innerHTML = effects.map(e =>
     `<option value="${e}" ${s.effect===e?'selected':''}>${e}</option>`
@@ -1192,19 +1201,23 @@ function renderEffectSelect() {
   renderKnobs();
 }
 
+function onCatChange() {
+  const s = patch.slots[patch.activeSlot];
+  const val = document.getElementById('editorCat').value;
+  if (!val) {
+    s.cat = null; s.effect = null; s.params = {}; s.page = 0;
+  } else {
+    s.cat = val; s.effect = null; s.params = {}; s.page = 0;
+  }
+  renderEffectSelect(); buildSlots();
+}
+
 function initDefaults() {
   const s = patch.slots[patch.activeSlot];
   (EFFECTS[s.cat]?.[s.effect] || []).forEach(p => {
     if (s.params[p.n] === undefined)
       s.params[p.n] = p.labels ? 0 : Math.round((p.min + p.max) / 2);
   });
-}
-
-function onCatChange() {
-  const s = patch.slots[patch.activeSlot];
-  s.cat = document.getElementById('editorCat').value;
-  s.effect = null; s.params = {}; s.page = 0;
-  renderEffectSelect(); buildSlots();
 }
 
 function onEffectChange() {
