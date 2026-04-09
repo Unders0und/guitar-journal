@@ -173,18 +173,10 @@
 
 <!-- Raw command probe -->
 <div class="section">
-  <div class="label">Raw SysEx Probe</div>
-  <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Probe unknown commands. Bytes after F0 52 00 6E, before F7.</p>
+  <div class="label">Set Effect via ZD2 ID</div>
+  <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Try sending the ZD2 32-bit ID instead of the name string. Enter editor mode first.</p>
+
   <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
-    <select id="probeCmd" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
-      <option value="64 04">64 04 (unknown)</option>
-      <option value="64 05">64 05 (unknown)</option>
-      <option value="64 06">64 06 (unknown)</option>
-      <option value="64 07">64 07 (unknown)</option>
-      <option value="64 08">64 08 (unknown)</option>
-      <option value="64 10">64 10 (unknown)</option>
-      <option value="64 11">64 11 (unknown)</option>
-    </select>
     <select id="probeSlot" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
       <option value="0">Slot 1</option>
       <option value="1">Slot 2</option>
@@ -193,17 +185,46 @@
       <option value="4">Slot 5</option>
       <option value="5">Slot 6</option>
     </select>
+    <select id="probeEffect" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
+      <option value="0x82ba555c">Chorus</option>
+      <option value="0x3550c1a1">Phaser</option>
+      <option value="0x426072e7">PitchSHFT</option>
+      <option value="0x8325b26a">SuperCho</option>
+      <option value="0x8a84d28c">CloneCho</option>
+      <option value="0x1acd0b20">Octave</option>
+      <option value="0xd95a2a8f">Tremolo</option>
+      <option value="0xea6bc77f">AutoWah</option>
+      <option value="0xbc5d97b7">Hall</option>
+      <option value="0xc4d619d3">Air</option>
+      <option value="0x6db4388c">Delay</option>
+      <option value="0x3538f1c7">Delay (3S)</option>
+      <option value="0x23a991ac">Comp</option>
+      <option value="0xd6f9c761">ZNR</option>
+      <option value="0x79e0fad8">TS Drive</option>
+      <option value="0x10f93a89">MS 800</option>
+      <option value="0xb15e41f0">MS4x12</option>
+    </select>
   </div>
-  <div style="display:flex;gap:6px;margin-bottom:6px;">
-    <input id="probeEffect" type="text" placeholder="Effect name e.g. Chorus" value="Chorus"
-      style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;outline:none;" />
+
+  <div style="margin-bottom:.5rem;">
+    <div class="label" style="margin-bottom:.3rem;">Command to use</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;" id="cmdBtns">
+      <button class="bp-btn active" onclick="selectCmd(this,'64 03')">64 03</button>
+      <button class="bp-btn" onclick="selectCmd(this,'64 04')">64 04</button>
+      <button class="bp-btn" onclick="selectCmd(this,'64 05')">64 05</button>
+      <button class="bp-btn" onclick="selectCmd(this,'64 06')">64 06</button>
+      <button class="bp-btn" onclick="selectCmd(this,'64 07')">64 07</button>
+    </div>
   </div>
-  <p style="font-size:.65rem;color:var(--muted);margin-bottom:.5rem;">Will send: F0 52 00 6E [cmd] 00 [slot] 01 [name 9 bytes] F7</p>
+
+  <p style="font-size:.62rem;color:var(--muted);margin-bottom:.5rem;" id="probeDesc">
+    Will send: F0 52 00 6E 64 03 00 [slot] 01 [id 7-bit ×4] F7
+  </p>
   <div class="btn-row">
-    <button class="btn btn-ghost" onclick="sendRawProbe()">Send Probe</button>
-    <button class="btn btn-ghost" onclick="sendRawProbeNoSlot()">Send (no slot/param)</button>
+    <button class="btn btn-ghost" onclick="sendZD2Probe()">Send ZD2 ID</button>
+    <button class="btn btn-ghost" onclick="sendZD2ProbeLE()">Send ZD2 ID (LE 32-bit)</button>
   </div>
-  <div id="probeLog" style="margin-top:.5rem;font-family:monospace;font-size:.68rem;color:#74b9ff;line-height:1.6;"></div>
+  <div id="probeLog" style="margin-top:.5rem;font-family:monospace;font-size:.68rem;color:#74b9ff;line-height:1.6;word-break:break-all;"></div>
 </div>
 <div class="section">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
@@ -499,26 +520,56 @@ function captureEffectTypes() {
   log('Effect type capture started', 'ok');
 }
 
-function sendRawProbe() {
-  if (!midiOut) { log('Connect first', 'err'); return; }
-  const cmdHex = document.getElementById('probeCmd').value;
-  const slot = parseInt(document.getElementById('probeSlot').value);
-  const name = document.getElementById('probeEffect').value.trim();
-  const cmdBytes = cmdHex.trim().split(' ').map(b => parseInt(b, 16));
-  const nameBytes = Array(9).fill(0);
-  for (let i = 0; i < Math.min(name.length, 9); i++) nameBytes[i] = name.charCodeAt(i);
-  const msg = [0xF0, 0x52, 0x00, 0x6E, ...cmdBytes, 0x00, slot, 0x01, ...nameBytes, 0xF7];
-  send(msg);
-  document.getElementById('probeLog').textContent = `Sent: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
+let probeCmd = '64 03';
+
+function selectCmd(btn, cmd) {
+  probeCmd = cmd;
+  document.querySelectorAll('#cmdBtns .bp-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('probeDesc').textContent =
+    `Will send: F0 52 00 6E ${cmd} 00 [slot] 01 [id 7-bit ×4] F7`;
 }
 
-function sendRawProbeNoSlot() {
+function getProbeBytes() {
+  const slot = parseInt(document.getElementById('probeSlot').value);
+  const idHex = document.getElementById('probeEffect').value;
+  const id32 = parseInt(idHex, 16);
+  const cmdBytes = probeCmd.trim().split(' ').map(b => parseInt(b, 16));
+  return { slot, id32, cmdBytes };
+}
+
+function sendZD2Probe() {
   if (!midiOut) { log('Connect first', 'err'); return; }
-  const cmdHex = document.getElementById('probeCmd').value;
-  const cmdBytes = cmdHex.trim().split(' ').map(b => parseInt(b, 16));
-  const msg = [0xF0, 0x52, 0x00, 0x6E, ...cmdBytes, 0xF7];
+  const { slot, id32, cmdBytes } = getProbeBytes();
+  // 7-bit encode: split into 4 × 7-bit groups
+  const b = [
+    id32 & 0x7F,
+    (id32 >> 7)  & 0x7F,
+    (id32 >> 14) & 0x7F,
+    (id32 >> 21) & 0x7F,
+  ];
+  const msg = [0xF0, 0x52, 0x00, 0x6E, ...cmdBytes, 0x00, slot, 0x01, ...b, 0xF7];
   send(msg);
-  document.getElementById('probeLog').textContent = `Sent: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
+  document.getElementById('probeLog').textContent =
+    `7-bit encoded: [${b.map(x=>x.toString(16).padStart(2,'0')).join(', ')}]\n` +
+    `Full msg: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
+}
+
+function sendZD2ProbeLE() {
+  if (!midiOut) { log('Connect first', 'err'); return; }
+  const { slot, id32, cmdBytes } = getProbeBytes();
+  // Raw little-endian 32-bit (4 bytes, may contain values > 0x7F — invalid SysEx but worth trying)
+  const b = [
+    id32 & 0xFF,
+    (id32 >> 8)  & 0xFF,
+    (id32 >> 16) & 0xFF,
+    (id32 >> 24) & 0xFF,
+  ];
+  const msg = [0xF0, 0x52, 0x00, 0x6E, ...cmdBytes, 0x00, slot, 0x01, ...b, 0xF7];
+  send(msg);
+  document.getElementById('probeLog').textContent =
+    `LE bytes: [${b.map(x=>x.toString(16).padStart(2,'0')).join(', ')}]\n` +
+    `Full msg: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
 }
 
 function requestCurrentPatch() {
