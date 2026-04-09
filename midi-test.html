@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>G1X Four — MIDI Test v11</title>
+<title>G1X Four — MIDI Test v12</title>
 <style>
   :root {
     --bg: #0d0d0d; --card: #161616; --border: #2a2a2a;
@@ -121,7 +121,7 @@
 </head>
 <body>
 
-<h1>🎛 G1X Four — MIDI Test <span style="font-size:.6rem;color:var(--muted);font-weight:400;letter-spacing:.05em;">v11 · 2026-04-09</span></h1>
+<h1>🎛 G1X Four — MIDI Test <span style="font-size:.6rem;color:var(--muted);font-weight:400;letter-spacing:.05em;">v12 · 2026-04-09</span></h1>
 
 <!-- Connection -->
 <div class="section">
@@ -171,26 +171,65 @@
   <div id="captureLog" style="margin-top:.6rem;font-family:monospace;font-size:.68rem;color:#a8e6cf;line-height:1.6;"></div>
 </div>
 
-<!-- Raw command probe -->
+<!-- Set Effect by EID -->
 <div class="section">
-  <div class="label">Set Effect by Index</div>
-  <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Try sending a raw integer index as the effect identifier. Enter editor mode first.</p>
+  <div class="label">Set Effect by EID + Category</div>
+  <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Sends: F0 52 00 6E 64 03 00 [slot] 01 [eid_lo] [eid_hi] [cat] 00 00 00 00 F7</p>
   <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
-    <select id="idxSlot" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
-      <option value="0">Slot 1</option>
-      <option value="1">Slot 2</option>
-      <option value="2">Slot 3</option>
-      <option value="3">Slot 4</option>
-      <option value="4">Slot 5</option>
-      <option value="5">Slot 6</option>
+    <select id="eidSlot" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
+      <option value="0">Slot 1</option><option value="1">Slot 2</option>
+      <option value="2">Slot 3</option><option value="3">Slot 4</option>
+      <option value="4">Slot 5</option><option value="5">Slot 6</option>
     </select>
-    <input id="idxValue" type="number" min="0" max="255" value="0"
-      style="width:80px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;outline:none;" />
-    <button class="btn btn-ghost" onclick="sendEffectIndex(-1)" style="width:auto;padding:4px 10px;">−</button>
-    <button class="btn btn-ghost" onclick="sendEffectIndex(1)"  style="width:auto;padding:4px 10px;">+</button>
+    <select id="eidEffect" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;" onchange="updateEidDisplay()">
+      <optgroup label="DYNAMICS (cat=1)">
+        <option value="1,1">Comp</option><option value="2,1">RackComp</option>
+        <option value="3,1">SlowATTCK</option><option value="4,1">ZNR</option>
+        <option value="5,1">GrayComp</option><option value="6,1">NoiseGate</option><option value="7,1">OptComp</option>
+      </optgroup>
+      <optgroup label="FILTER (cat=2)">
+        <option value="1,2">AutoWah</option><option value="2,2">Resonance</option>
+        <option value="3,2">Cry</option><option value="4,2">SeqFLTR</option>
+        <option value="5,2">ParaEQ</option><option value="6,2">RndmFLTR</option>
+        <option value="7,2">Exciter</option><option value="8,2">Step</option>
+      </optgroup>
+      <optgroup label="DRIVE (cat=3)">
+        <option value="1,3">TS Drive</option><option value="2,3">RC Boost</option>
+        <option value="3,3">MetalWRLD</option><option value="4,3">TB MK1.5</option>
+        <option value="5,3">OctFuzz</option><option value="6,3">NYC Muff</option>
+        <option value="7,3">BG GRID</option><option value="8,3">DIST 1</option><option value="9,3">Squeak</option>
+      </optgroup>
+      <optgroup label="MOD (cat=6)">
+        <option value="1,6">Tremolo</option><option value="2,6">Chorus</option>
+        <option value="3,6">StereoCho</option><option value="4,6">Phaser</option>
+        <option value="5,6">VinFLNGR</option><option value="6,6">TheVibe</option>
+        <option value="7,6">Vibrato</option><option value="8,6">Octave</option>
+        <option value="9,6">RingMod</option><option value="10,6">Detune</option>
+        <option value="11,6">PitchSHFT</option><option value="12,6">MonoPitch</option>
+        <option value="13,6">HPS</option><option value="14,6">Slicer</option>
+        <option value="15,6">CloneCho</option><option value="16,6">SuperCho</option>
+        <option value="17,6">StonePha</option><option value="18,6">CoronaTri</option>
+        <option value="19,6">BendCho</option><option value="20,6">WarpPhase</option>
+      </optgroup>
+      <optgroup label="DELAY (cat=8)">
+        <option value="1,8">Delay</option><option value="2,8">AnalogDly</option>
+        <option value="3,8">TapeEcho</option><option value="4,8">ReverseDL</option>
+        <option value="5,8">ModDelay</option><option value="6,8">FilterDly</option>
+        <option value="7,8">PhaseDly</option><option value="8,8">TapeEcho3</option>
+        <option value="9,8">ICE Delay</option><option value="10,8">SlwAtkDly</option>
+      </optgroup>
+      <optgroup label="REVERB (cat=9)">
+        <option value="1,9">Air</option><option value="2,9">Room</option>
+        <option value="3,9">Hall</option><option value="4,9">HD Hall</option>
+        <option value="5,9">Spring</option><option value="6,9">Plate</option>
+        <option value="7,9">EarlyRef</option><option value="8,9">Church</option>
+        <option value="9,9">Chamber</option><option value="10,9">GateRev</option>
+      </optgroup>
+    </select>
   </div>
-  <button class="btn btn-ghost" onclick="sendEffectIndex(0)">Send Index</button>
-  <div id="idxLog" style="margin-top:.5rem;font-family:monospace;font-size:.68rem;color:#74b9ff;line-height:1.6;"></div>
+  <div id="eidDisplay" style="font-size:.65rem;color:var(--muted);margin-bottom:6px;font-family:monospace;"></div>
+  <button class="btn btn-ghost" onclick="sendEffectByEid()">Send</button>
+  <div id="eidLog" style="margin-top:.5rem;font-family:monospace;font-size:.68rem;color:#a8e6cf;line-height:1.6;"></div>
 </div>
   <div class="label">Set Effect via ZD2 ID</div>
   <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Try sending the ZD2 32-bit ID instead of the name string. Enter editor mode first.</p>
@@ -539,20 +578,28 @@ function captureEffectTypes() {
   log('Effect type capture started', 'ok');
 }
 
-function sendEffectIndex(delta) {
+function updateEidDisplay() {
+  const [idx, cat] = document.getElementById('eidEffect').value.split(',').map(Number);
+  const base = cat === 7 ? 0x20 : 0x10;
+  const eid = base + (idx - 1) * 0x10;
+  const lo = eid & 0x7F, hi = (eid >> 7) & 0x7F;
+  document.getElementById('eidDisplay').textContent =
+    `eid=0x${eid.toString(16).padStart(4,'0')} lo=0x${lo.toString(16).padStart(2,'0')} hi=0x${hi.toString(16).padStart(2,'0')} cat=${cat}`;
+}
+
+function sendEffectByEid() {
   if (!midiOut) { log('Connect first', 'err'); return; }
-  const input = document.getElementById('idxValue');
-  let idx = parseInt(input.value) + delta;
-  if (idx < 0) idx = 0;
-  input.value = idx;
-  const slot = parseInt(document.getElementById('idxSlot').value);
-  const lo = idx & 0x7F;
-  const hi = (idx >> 7) & 0x7F;
-  const msg = sysex(0x64, 0x03, 0x00, slot, 0x01, lo, hi, 0x00, 0x00, 0x00, 0x00);
+  const slot = parseInt(document.getElementById('eidSlot').value);
+  const [idx, cat] = document.getElementById('eidEffect').value.split(',').map(Number);
+  const base = cat === 7 ? 0x20 : 0x10;
+  const eid = base + (idx - 1) * 0x10;
+  const lo = eid & 0x7F, hi = (eid >> 7) & 0x7F;
+  const msg = sysex(0x64, 0x03, 0x00, slot, 0x01, lo, hi, cat, 0x00, 0x00, 0x00);
   send(msg);
-  document.getElementById('idxLog').textContent =
-    `idx=${idx} → lo=0x${lo.toString(16).padStart(2,'0')} hi=0x${hi.toString(16).padStart(2,'0')}\n` +
-    `msg: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
+  const name = document.getElementById('eidEffect').selectedOptions[0].text;
+  document.getElementById('eidLog').textContent =
+    `Sent "${name}" → slot ${slot+1}\neid=0x${eid.toString(16).padStart(4,'0')} cat=${cat}\nmsg: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
+  log(`Set effect "${name}" → slot ${slot+1}`, 'info');
 }
 
 function selectCmd(btn, cmd) {
