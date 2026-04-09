@@ -170,6 +170,26 @@
   <button class="btn btn-ghost" style="margin-top:6px;" onclick="requestEffectTypes()">Request Effect Types (0x64 02 param=1)</button>
   <div id="captureLog" style="margin-top:.6rem;font-family:monospace;font-size:.68rem;color:#a8e6cf;line-height:1.6;"></div>
 </div>
+
+<!-- Set effect test -->
+<div class="section">
+  <div class="label">Set Effect (0x64 03 param=1)</div>
+  <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;">Try sending effect name to pedal. Enter editor mode first.</p>
+  <div style="display:flex;gap:6px;margin-bottom:6px;">
+    <select id="setEffectSlot" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;">
+      <option value="0">Slot 1</option>
+      <option value="1">Slot 2</option>
+      <option value="2">Slot 3</option>
+      <option value="3">Slot 4</option>
+      <option value="4">Slot 5</option>
+      <option value="5">Slot 6</option>
+    </select>
+    <input id="setEffectName" type="text" placeholder="Effect name e.g. Chorus" value="Chorus"
+      style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:.75rem;font-family:inherit;outline:none;" />
+  </div>
+  <button class="btn btn-ghost" onclick="sendSetEffect()">Send Effect Name to Slot</button>
+  <div id="setEffectLog" style="margin-top:.5rem;font-family:monospace;font-size:.68rem;color:#74b9ff;line-height:1.6;"></div>
+</div>
 <div class="section">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
     <div class="label" style="margin:0;">MIDI Log</div>
@@ -431,6 +451,24 @@ function captureEffectTypes() {
   Object.keys(capturedEffects).forEach(k => delete capturedEffects[k]);
   document.getElementById('captureLog').innerHTML = 'Listening... touch each knob on the pedal once per slot.';
   log('Effect type capture started', 'ok');
+}
+
+function sendSetEffect() {
+  if (!midiOut) { log('Connect first', 'err'); return; }
+  const slot = parseInt(document.getElementById('setEffectSlot').value);
+  const name = document.getElementById('setEffectName').value.trim();
+  if (!name) { log('Enter an effect name', 'err'); return; }
+
+  const nameBytes = [];
+  for (let i = 0; i < 9; i++) {
+    nameBytes.push(i < name.length ? name.charCodeAt(i) : 0x00);
+  }
+
+  // F0 52 00 6E 64 03 00 [slot] 01 [9 name bytes] F7
+  const msg = sysex(0x64, 0x03, 0x00, slot, 0x01, ...nameBytes);
+  send(msg);
+  document.getElementById('setEffectLog').textContent = `Sent to slot ${slot+1}: "${name}"`;
+  log(`Set effect → slot=${slot} name="${name}"`, 'info');
 }
 
 function requestCurrentPatch() {
