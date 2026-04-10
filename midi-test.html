@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>G1X Four — MIDI Test v12</title>
+<title>G1X Four — MIDI Test v13</title>
 <style>
   :root {
     --bg: #0d0d0d; --card: #161616; --border: #2a2a2a;
@@ -121,7 +121,7 @@
 </head>
 <body>
 
-<h1>🎛 G1X Four — MIDI Test <span style="font-size:.6rem;color:var(--muted);font-weight:400;letter-spacing:.05em;">v12 · 2026-04-09</span></h1>
+<h1>🎛 G1X Four — MIDI Test <span style="font-size:.6rem;color:var(--muted);font-weight:400;letter-spacing:.05em;">v13 · 2026-04-09</span></h1>
 
 <!-- Connection -->
 <div class="section">
@@ -228,7 +228,12 @@
     </select>
   </div>
   <div id="eidDisplay" style="font-size:.65rem;color:var(--muted);margin-bottom:6px;font-family:monospace;"></div>
-  <button class="btn btn-ghost" onclick="sendEffectByEid()">Send</button>
+  <div class="btn-row" style="flex-wrap:wrap;gap:5px;">
+    <button class="btn btn-ghost" onclick="sendEffectByEid('eid_cat')">Send [eid, cat]</button>
+    <button class="btn btn-ghost" onclick="sendEffectByEid('cat_eid')">Send [cat, eid]</button>
+    <button class="btn btn-ghost" onclick="sendEffectByEid('cat_eid_16')">Send cat&lt;&lt;8|eid</button>
+    <button class="btn btn-ghost" onclick="sendEffectByEid('eid_only')">Send eid only</button>
+  </div>
   <div id="eidLog" style="margin-top:.5rem;font-family:monospace;font-size:.68rem;color:#a8e6cf;line-height:1.6;"></div>
 </div>
   <div class="label">Set Effect via ZD2 ID</div>
@@ -583,23 +588,43 @@ function updateEidDisplay() {
   const base = cat === 7 ? 0x20 : 0x10;
   const eid = base + (idx - 1) * 0x10;
   const lo = eid & 0x7F, hi = (eid >> 7) & 0x7F;
+  const val16 = (cat << 8) | eid;
+  const lo16 = val16 & 0x7F, hi16 = (val16 >> 7) & 0x7F;
   document.getElementById('eidDisplay').textContent =
-    `eid=0x${eid.toString(16).padStart(4,'0')} lo=0x${lo.toString(16).padStart(2,'0')} hi=0x${hi.toString(16).padStart(2,'0')} cat=${cat}`;
+    `eid=0x${eid.toString(16).padStart(4,'0')} cat=${cat} | cat<<8|eid=0x${val16.toString(16).padStart(4,'0')} (lo=0x${lo16.toString(16).padStart(2,'0')} hi=0x${hi16.toString(16).padStart(2,'0')})`;
 }
 
-function sendEffectByEid() {
+function sendEffectByEid(variant) {
   if (!midiOut) { log('Connect first', 'err'); return; }
   const slot = parseInt(document.getElementById('eidSlot').value);
   const [idx, cat] = document.getElementById('eidEffect').value.split(',').map(Number);
   const base = cat === 7 ? 0x20 : 0x10;
   const eid = base + (idx - 1) * 0x10;
   const lo = eid & 0x7F, hi = (eid >> 7) & 0x7F;
-  const msg = sysex(0x64, 0x03, 0x00, slot, 0x01, lo, hi, cat, 0x00, 0x00, 0x00);
-  send(msg);
+  const val16 = (cat << 8) | eid;
+  const lo16 = val16 & 0x7F, hi16 = (val16 >> 7) & 0x7F;
   const name = document.getElementById('eidEffect').selectedOptions[0].text;
+
+  let payload, desc;
+  if (variant === 'eid_cat') {
+    payload = [lo, hi, cat, 0x00, 0x00, 0x00, 0x00];
+    desc = `[eid_lo, eid_hi, cat, 0,0,0,0]`;
+  } else if (variant === 'cat_eid') {
+    payload = [cat, lo, hi, 0x00, 0x00, 0x00, 0x00];
+    desc = `[cat, eid_lo, eid_hi, 0,0,0,0]`;
+  } else if (variant === 'cat_eid_16') {
+    payload = [lo16, hi16, 0x00, 0x00, 0x00, 0x00, 0x00];
+    desc = `[cat<<8|eid 7-bit, 0,0,0,0,0,0]`;
+  } else {
+    payload = [lo, hi, 0x00, 0x00, 0x00, 0x00, 0x00];
+    desc = `[eid_lo, eid_hi, 0,0,0,0,0]`;
+  }
+
+  const msg = sysex(0x64, 0x03, 0x00, slot, 0x01, ...payload);
+  send(msg);
   document.getElementById('eidLog').textContent =
-    `Sent "${name}" → slot ${slot+1}\neid=0x${eid.toString(16).padStart(4,'0')} cat=${cat}\nmsg: ${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
-  log(`Set effect "${name}" → slot ${slot+1}`, 'info');
+    `"${name}" → slot ${slot+1} (${desc})\n${msg.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}`;
+  log(`Set effect "${name}" → slot ${slot+1} [${variant}]`, 'info');
 }
 
 function selectCmd(btn, cmd) {
